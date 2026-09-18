@@ -1,0 +1,63 @@
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.fpm
+    image: syscend-campus:latest
+    env_file:
+      - ../.env
+    environment:
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+    expose:
+      - "9000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - storage_data:/var/www/storage/app/public
+    restart: unless-stopped
+
+  assets:
+    image: syscend-campus:latest
+    depends_on:
+      - app
+    volumes:
+      - web_root:/public:rw
+    entrypoint: >
+      /bin/sh -c "
+        cp -a /var/www/public/. /public/ ;
+        echo 'assets synced' ;
+        exit 0
+      "
+    restart: "no"
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: syscend_campus
+      POSTGRES_USER: syscend
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U syscend -d syscend_campus"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  web:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - web_root:/var/www/public:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  storage_data:
+  web_root:
