@@ -96,22 +96,19 @@ class MonimeWebhookController extends Controller
         $amountMinor = $data['currency_amount'] ?? $data['amount']
             ?? $payload['object']['currency_amount'] ?? $payload['object']['amount'] ?? null;
 
-        if ($amountMinor !== null) {
-            $amountMinor = (int) round((float) $amountMinor);
-        }
-
-        $confirmed = app(SubscriptionPaymentService::class)->confirmByTransactionRef($reference);
-
-        if (! $confirmed) {
-            return response()->json(['status' => 'received', 'note' => 'payment not found'], 200);
-        }
-
-        $payment = SubscriptionPayment::where('transaction_ref', $reference)
-            ->orWhere('monime_session_id', $reference)
-            ->first();
+        $confirmed = app(SubscriptionPaymentService::class)->confirmPayment(
+            $payment,
+            $amountMinor !== null ? (float) $amountMinor : null,
+        );
 
         if (! $confirmed) {
-            return response()->json(['status' => 'received', 'note' => 'payment rejected']);
+            Log::warning('Monime webhook: payment rejected or mismatched', [
+                'payment_id'   => $payment->id,
+                'amount_reported' => $amountMinor,
+                'amount_expected' => $payment->amount,
+            ]);
+
+            return response()->json(['status' => 'received', 'note' => 'payment rejected'], 200);
         }
 
         Log::info("Monime webhook confirmed payment {$payment->id} (event {$eventName})");

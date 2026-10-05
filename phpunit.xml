@@ -30,9 +30,19 @@
         <env name="DB_USERNAME" value="postgres"/>
         <!-- DB_PASSWORD intentionally omitted: provided via .env / CI secret, never committed -->
         <env name="BCRYPT_ROUNDS" value="4"/>
+        <!-- CACHE_STORE is what config/cache.php reads on Laravel 11+. The old
+             CACHE_DRIVER name is ignored, which left the file cache enabled
+             during tests and made the rate limiter write to disk on every
+             request (flaky on Windows). Set both. -->
+        <env name="CACHE_STORE" value="array"/>
         <env name="CACHE_DRIVER" value="array"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <!-- routes/web.php registers the entire estate (~700 routes). The CLI
+             default of 128M is not enough to boot the app for every test file
+             in one process, and the suite dies partway through with
+             "Allowed memory size exhausted" while loading routes. -->
+        <ini name="memory_limit" value="2G"/>
     </php>
 </phpunit>

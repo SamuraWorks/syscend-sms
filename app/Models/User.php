@@ -88,4 +88,13 @@ class User extends Authenticatable
     {
         return $this->must_change_password && $this->is_temporary_password;
     }
+
+    /**
+     * Only 'active' accounts may authenticate. Any other status (inactive,
+     * suspended, ...) blocks sign-in at LoginController::store().
+     */
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
 }

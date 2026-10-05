@@ -10,6 +10,7 @@ use App\Services\UserCreationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -215,7 +216,7 @@ class ParentController extends Controller
         $tempPassword = Str::random(12);
 
         $user->update([
-            'password'              => $tempPassword,
+            'password'              => Hash::make($tempPassword),
             'is_temporary_password' => true,
             'must_change_password'  => true,
             'force_password_change' => true,

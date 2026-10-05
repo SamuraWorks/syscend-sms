@@ -30,9 +30,22 @@ class LoginController extends Controller
             ]);
         }
 
+        $user = Auth::user();
+
+        // Suspended/inactive accounts must not be able to authenticate, otherwise
+        // SchoolUserController::suspend()/bulkSuspend() have no effect at all.
+        if (! $user->isActive()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            throw ValidationException::withMessages([
+                'email' => 'Your account is not active. Please contact your school administrator.',
+            ]);
+        }
+
         $request->session()->regenerate();
 
-        $user = Auth::user();
         $user->update(['last_login_at' => now()]);
 
         activity()

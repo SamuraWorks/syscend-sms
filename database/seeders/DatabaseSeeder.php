@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             PermissionSeeder::class,       // roles + permissions (basic)
             RolePermissionSeeder::class,   // granular permissions + ministry/district roles
+            PackageSeeder::class,          // packages + module grants (must exist before any school trial)
             AdminSeeder::class,            // Super Admin + Ministry Admin + District Officer
             MinistrySeeder::class,         // 15 districts of Sierra Leone
             SierraLeoneSetupSeeder::class, // grade scales, assessment types, academic terms

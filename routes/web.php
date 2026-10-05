@@ -76,6 +76,8 @@ use App\Http\Controllers\SuperAdmin\SubscriptionController;
 use App\Http\Controllers\SuperAdmin\UserManagementController;
 use App\Http\Controllers\SuperAdmin\TwoFactorController;
 use App\Http\Controllers\SuperAdmin\SchoolWithAdminController;
+use App\Http\Controllers\SuperAdmin\NotificationController as SuperAdminNotificationController;
+use App\Http\Controllers\SuperAdmin\AuditLogController as SuperAdminAuditLogController;
 use App\Http\Controllers\Registration\RegistrationLandingController;
 use App\Http\Controllers\Registration\StudentRegistrationController;
 use App\Http\Controllers\Registration\ParentRegistrationController;
@@ -1156,6 +1158,20 @@ Route::middleware('auth')->group(function () {
 
             // Performance Intelligence
             Route::get('performance',                    [SuperAdminPerformanceController::class, 'dashboard'])->name('performance');
+
+            // Platform Notification Centre
+            Route::get('notifications',                     [SuperAdminNotificationController::class, 'index'])->name('notifications.index');
+            Route::get('notifications/stream',              [SuperAdminNotificationController::class, 'stream'])->name('notifications.stream');
+            Route::get('notifications/unread-count',        [SuperAdminNotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+            Route::post('notifications/read-all',           [SuperAdminNotificationController::class, 'markAllRead'])->name('notifications.read-all');
+            Route::post('notifications/{key}/read',         [SuperAdminNotificationController::class, 'markRead'])->name('notifications.read');
+            Route::post('notifications/{key}/dismiss',      [SuperAdminNotificationController::class, 'dismiss'])->name('notifications.dismiss');
+            Route::post('notifications/{key}/restore',      [SuperAdminNotificationController::class, 'restore'])->name('notifications.restore');
+
+            // Platform Reports & Audit
+            Route::get('audit-log',                     [SuperAdminAuditLogController::class, 'index'])->name('audit-log.index');
+            Route::get('audit-log/stream',              [SuperAdminAuditLogController::class, 'stream'])->name('audit-log.stream');
+            Route::get('audit-log/export',              [SuperAdminAuditLogController::class, 'export'])->name('audit-log.export');
 
             // Demo Reset
             Route::get('demo-reset', [DemoResetController::class, 'index'])->name('demo-reset.index');

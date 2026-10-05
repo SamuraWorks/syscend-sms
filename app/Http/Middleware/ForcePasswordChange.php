@@ -7,10 +7,22 @@ use Illuminate\Http\Request;
 class ForcePasswordChange
 {
     private array $allowedPaths = [
+        'profile',
+        'profile/*',
         'profile/password',
         'profile/password/*',
         'password/change',
         'password/change/*',
+        // The parent portal is gated behind the 'verified' middleware, so a user
+        // holding a temporary password must still be able to reach email
+        // verification before they are forced to change it.
+        'email/verify',
+        'email/verify/*',
+        'school-setup',
+        'school-setup/*',
+        'school/school-setup',
+        'school/school-setup/*',
+        'school/setup/*',
         'logout',
     ];
 

@@ -27,7 +27,10 @@ class PerformanceController extends Controller
 
     protected function schoolId(): int
     {
-        return Auth::user()->school_id;
+        // Must go through getSchoolId(): platform roles carry no school_id, and
+        // reading Auth::user()->school_id directly returned null for them,
+        // which raised a TypeError (HTTP 500) on the performance pages.
+        return $this->getSchoolId();
     }
 
     protected function currentYearId(): ?int

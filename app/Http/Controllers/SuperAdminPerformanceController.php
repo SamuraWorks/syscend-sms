@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\School;
+use App\Models\Student;
 use App\Models\SuccessScore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,8 +13,7 @@ class SuperAdminPerformanceController extends Controller
 {
     public function dashboard(Request $request)
     {
-        $schools = School::withCount(['students' => fn ($q) => $q->where('status', 'active')])
-            ->get();
+        $schools = School::query()->orderBy('name')->get();
 
         if ($schools->isEmpty()) {
             return Inertia::render('SuperAdmin/PlatformPerformance', [
@@ -27,7 +27,17 @@ class SuperAdminPerformanceController extends Controller
             ]);
         }
 
-        $schoolStats = $schools->map(function ($school) {
+        // School has no students() relation, so enrolment is counted per school
+        // from the students table. Counting in one grouped query avoids an
+        // N+1 across every school on the platform.
+        $studentCounts = Student::query()
+            ->where('status', 'active')
+            ->whereIn('school_id', $schools->pluck('id'))
+            ->groupBy('school_id')
+            ->selectRaw('school_id, COUNT(*) as aggregate')
+            ->pluck('aggregate', 'school_id');
+
+        $schoolStats = $schools->map(function ($school) use ($studentCounts) {
             $currentYearId = DB::table('academic_years')
                 ->where('school_id', $school->id)
                 ->where('is_current', true)
@@ -48,7 +58,7 @@ class SuperAdminPerformanceController extends Controller
             return [
                 'school_id'     => $school->id,
                 'school_name'   => $school->name,
-                'student_count' => $school->students_count,
+                'student_count' => (int) $studentCounts[$school->id],
                 'average_score' => $avg,
                 'promotion_rate' => $promoted,
                 'at_risk_count' => $atRisk,
@@ -65,7 +75,8 @@ class SuperAdminPerformanceController extends Controller
         $bestPerforming = $schoolStats->take(10);
         $lowestPerforming = $schoolStats->take(-10);
         $totalSchools = $schools->count();
-        $totalStudents = (int) $schools->sum('students_count');
+        // student_count now lives on each row of $schoolStats, not on the School model.
+        $totalStudents = (int) $schoolStats->sum('student_count');
         $platformAvg = $schoolStats->count() > 0
             ? round((float) $schoolStats->avg('average_score'), 2)
             : 0;

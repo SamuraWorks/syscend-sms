@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 
 class SubscriptionPaymentService
 {
-    public function initiatePayment(SchoolSubscription $subscription, string $phone, float $amount): array
+    public function initiatePayment(SchoolSubscription $subscription, string $phone, float $amount, string $method = 'orange_money'): array
     {
         $reference = 'SUB-' . strtoupper(Str::random(10)) . '-' . $subscription->id;
 
@@ -19,13 +19,15 @@ class SubscriptionPaymentService
             'school_id'       => $subscription->school_id,
             'subscription_id' => $subscription->id,
             'amount'          => $amount,
-            'method'          => 'orange_money',
+            'method'          => $method,
             'transaction_ref' => $reference,
             'status'          => 'pending',
             'payer_phone'     => $phone,
         ]);
 
-        $result = $this->callOrangeMoney($phone, $amount, $reference, "Subscription: {$subscription->package->name}");
+        $result = $method === 'monime'
+            ? $this->callMonime($phone, $amount, $reference, "Subscription: {$subscription->package->name}", $payment)
+            : $this->callOrangeMoney($phone, $amount, $reference, "Subscription: {$subscription->package->name}");
 
         if ($result['success']) {
             return [
@@ -61,15 +63,86 @@ class SubscriptionPaymentService
         return $payment;
     }
 
-    public function confirmByTransactionRef(string $transactionRef): bool
+    /**
+     * Confirm a pending payment and activate the subscription when fully paid.
+     *
+     * Accepts either a SubscriptionPayment or the transaction reference /
+     * Monime session id used by the webhook. Returns false when nothing
+     * matching a pending payment was found.
+     */
+    public function confirmPayment(SubscriptionPayment|string $paymentOrRef, ?float $amount = null): bool
     {
-        $payment = SubscriptionPayment::where('transaction_ref', $transactionRef)->where('status', 'pending')->first();
-        if (! $payment) return false;
+        $payment = $paymentOrRef instanceof SubscriptionPayment
+            ? $paymentOrRef
+            : SubscriptionPayment::where('transaction_ref', $paymentOrRef)
+                ->orWhere('monime_session_id', $paymentOrRef)
+                ->where('status', 'pending')
+                ->first();
 
-        $payment->confirm();
-        $this->checkAndActivate($payment->subscription);
+        if (! $payment) {
+            return false;
+        }
+
+        // Webhooks are retried by the gateway; already-confirmed payments are
+        // a success, not an error.
+        if ($payment->status === 'confirmed') {
+            return true;
+        }
+
+        // Only pending payments may be confirmed.
+        if ($payment->status !== 'pending') {
+            return false;
+        }
+
+        // Guard against a gateway confirming a different amount than we expect.
+        if ($amount !== null && ! $this->amountsMatch($payment, $amount)) {
+            $payment->update([
+                'status' => 'failed',
+                'notes'  => 'Amount mismatch reported by payment gateway.',
+            ]);
+            Log::warning('Subscription payment amount mismatch', [
+                'payment_id' => $payment->id,
+                'expected'   => (float) $payment->amount,
+                'reported'   => $amount,
+            ]);
+
+            return false;
+        }
+
+        // NOTE: this must NOT call $payment->confirm(). SubscriptionPayment::confirm()
+        // delegates back to this method, which would recurse until the stack blows.
+        // The state transition is applied directly here instead.
+        $payment->forceFill([
+            'status'       => 'confirmed',
+            'confirmed_at' => now(),
+            'paid_at'      => $payment->paid_at ?? now(),
+        ])->save();
+
+        $this->checkAndActivate($payment->subscription()->first());
 
         return true;
+    }
+
+    /**
+     * Gateways report currency in minor units (e.g. cents) while we store whole
+     * units, so accept whichever interpretation lines up with what we expect.
+     */
+    private function amountsMatch(SubscriptionPayment $payment, float $reported): bool
+    {
+        $expected = (float) $payment->amount;
+
+        if ($expected <= 0 || $reported <= 0) {
+            return false;
+        }
+
+        return abs($expected - $reported) < 0.01
+            || abs($expected - ($reported / 100)) < 0.01
+            || abs(($expected * 100) - $reported) < 1;
+    }
+
+    public function confirmByTransactionRef(string $transactionRef): bool
+    {
+        return $this->confirmPayment($transactionRef);
     }
 
     public function failByTransactionRef(string $transactionRef, string $reason = ''): void
@@ -79,12 +152,49 @@ class SubscriptionPaymentService
             ->update(['status' => 'failed', 'notes' => $reason]);
     }
 
-    private function checkAndActivate(SchoolSubscription $subscription): void
+    private function checkAndActivate(?SchoolSubscription $subscription): void
     {
+        if (! $subscription) {
+            return;
+        }
+
         if ($subscription->is_fully_paid && $subscription->status !== 'active') {
             $subscription->update(['status' => 'active']);
-            $subscription->school->update(['current_subscription_id' => $subscription->id]);
+            $subscription->school?->update(['current_subscription_id' => $subscription->id]);
             Log::info("Subscription {$subscription->id} activated for school {$subscription->school_id}");
+        }
+    }
+
+    private function callMonime(string $phone, float $amount, string $reference, string $description, ?SubscriptionPayment $payment = null): array
+    {
+        try {
+            $result = app(MonimeService::class)->createSubscriptionCheckout([
+                'name'          => $description,
+                'description'   => $description,
+                'amount_cents'  => (int) round($amount * 100),
+                'reference'     => $reference,
+                'metadata'      => ['phone' => $phone],
+            ]);
+
+            if (! ($result['ok'] ?? false)) {
+                return ['success' => false, 'error' => $result['error'] ?? 'Monime checkout could not be created.'];
+            }
+
+            // Store the session id so the webhook can match the payment even when
+            // Monime does not echo our reference back.
+            if ($payment && ! empty($result['session_id'])) {
+                $payment->forceFill(['monime_session_id' => $result['session_id']])->save();
+            }
+
+            return [
+                'success'     => true,
+                'payment_url' => $result['redirect_url'] ?? null,
+                'pay_token'   => null,
+            ];
+        } catch (\Throwable $e) {
+            Log::error('Monime subscription payment failed', ['reference' => $reference, 'error' => $e->getMessage()]);
+
+            return ['success' => false, 'error' => 'Payment gateway error: '.$e->getMessage()];
         }
     }
 

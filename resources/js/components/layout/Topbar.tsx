@@ -1,5 +1,5 @@
 import { router, usePage } from '@inertiajs/react';
-import { Moon, Sun, LogOut, User, Menu, KeyRound, Check, Shield } from 'lucide-react';
+import { Moon, Sun, LogOut, User, Menu, KeyRound, Check, Shield, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
@@ -7,9 +7,52 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuthStore } from '@/Stores/useAuthStore';
 import { useUIStore } from '@/Stores/useUIStore';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { PageProps } from '@/Types';
 import ProfileAvatar from '@/components/ProfileAvatar';
+
+/** Live unread badge for the platform notification centre. */
+function NotificationBell() {
+    const [count, setCount] = useState(0);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        async function poll() {
+            try {
+                const res = await fetch('/super-admin/notifications/unread-count', {
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    credentials: 'same-origin',
+                });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!cancelled) setCount(data.count ?? 0);
+            } catch {
+                /* badge is best-effort */
+            }
+        }
+
+        poll();
+        const id = setInterval(poll, 15000);
+        return () => { cancelled = true; clearInterval(id); };
+    }, []);
+
+    return (
+        <Button
+            variant="ghost" size="icon"
+            className="relative text-muted-foreground"
+            title="Platform notifications"
+            onClick={() => router.visit('/super-admin/notifications')}
+        >
+            <Bell className="w-4 h-4" />
+            {count > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
+                    {count > 99 ? '99+' : count}
+                </span>
+            )}
+        </Button>
+    );
+}
 
 const roleColors: Record<string, string> = {
     'super-admin':   'bg-primary/10 text-primary',
@@ -89,6 +132,9 @@ export default function Topbar({ title, breadcrumbs }: TopbarProps) {
 
             {/* Right */}
             <div className="flex items-center gap-2">
+                {/* Platform notifications — super-admin only */}
+                {activeRole === 'super-admin' && <NotificationBell />}
+
                 {/* Theme toggle */}
                 <Button
                     variant="ghost"

@@ -30,30 +30,36 @@ class EnforceSubscriptionModules
             return redirect('/dashboard')->with('error', 'Your school subscription is inactive. Please contact the platform administrator.');
         }
 
-        // Map routes to module slugs
-        $moduleMap = [
-            '/academics'      => 'academics',
-            '/fees'           => 'fees',
-            '/examinations'   => 'examinations',
-            '/attendance'     => 'attendance',
-            '/library'        => 'library',
-            '/transport'      => 'transport',
-            '/communication'  => 'communication',
-            '/hr'             => 'hr',
-            '/alumni'         => 'alumni',
-            '/assets'         => 'assets',
-            '/proposals'      => 'proposals',
-            '/inventory'      => 'inventory',
+        // Map module slugs to the routes they gate. These are matched against
+        // path segments rather than a raw prefix because real paths look like
+        // "school/communication/blast" or "ministry/reports" - they never start
+        // with the bare module name.
+        $moduleSlugs = [
+            'academics',
+            'fees',
+            'examinations',
+            'attendance',
+            'library',
+            'transport',
+            'communication',
+            'hr',
+            'alumni',
+            'assets',
+            'proposals',
+            'inventory',
         ];
 
-        $path = $request->path();
-        foreach ($moduleMap as $prefix => $moduleSlug) {
-            if (str_starts_with($path, $prefix)) {
-                if (! $school->hasModule($moduleSlug)) {
+        // Only the first matching module is enforced, mirroring the old
+        // prefix-scan behaviour.
+        $segments = explode('/', trim($request->path(), '/'));
+
+        foreach ($moduleSlugs as $slug) {
+            if (in_array($slug, $segments, true)) {
+                if (! $school->hasModule($slug)) {
                     if ($this->isAjaxOrInertia($request)) {
-                        return response()->json(['error' => "Module '{$moduleSlug}' is not enabled in your current subscription plan."], 403);
+                        return response()->json(['error' => "Module '{$slug}' is not enabled in your current subscription plan."], 403);
                     }
-                    return redirect('/dashboard')->with('error', "Module '{$moduleSlug}' is not enabled in your current subscription plan.");
+                    return redirect('/dashboard')->with('error', "Module '{$slug}' is not enabled in your current subscription plan.");
                 }
                 break;
             }

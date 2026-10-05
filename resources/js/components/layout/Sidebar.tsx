@@ -76,19 +76,10 @@ const navGroups: NavGroup[] = [
         ],
     },
     {
-        title: 'Support & Communication',
-        items: [
-            { label: 'Announcements',   href: '/school/communication/announcements',   icon: Megaphone,     roles: ['super-admin'] },
-            { label: 'Messages',        href: '/school/communication/messages',         icon: MessageSquare, roles: ['super-admin'] },
-            { label: 'Notifications',   href: '/school/communication/notifications',   icon: Bell,          roles: ['super-admin'] },
-            { label: 'Email Templates', href: '/school/communication/email-templates', icon: Mail,          roles: ['super-admin'] },
-            { label: 'SMS/Email Blast', href: '/school/communication/blast',           icon: Send,          roles: ['super-admin'] },
-        ],
-    },
-    {
         title: 'Reports & Audit',
         items: [
-            { label: 'Audit Log', href: '/school/reports/audit-log', icon: ShieldCheck, roles: ['super-admin'] },
+            { label: 'Notifications', href: '/super-admin/notifications', icon: Bell, roles: ['super-admin'] },
+            { label: 'Audit Log',      href: '/super-admin/audit-log',     icon: ShieldCheck, roles: ['super-admin'] },
         ],
     },
 
