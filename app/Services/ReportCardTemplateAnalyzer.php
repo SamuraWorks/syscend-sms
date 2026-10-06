@@ -15,10 +15,20 @@ class ReportCardTemplateAnalyzer
             return $this->getMockAnalysis();
         }
 
-        $imagePath = Storage::disk('public')->path($template->front_image_path);
-        $fileContent = file_get_contents($imagePath);
+        $disk = Storage::disk('public');
+
+        if (! $disk->exists($template->front_image_path)) {
+            return $this->getMockAnalysis();
+        }
+
+        $fileContent = $disk->get($template->front_image_path);
         $base64 = base64_encode($fileContent);
-        $mimeType = mime_content_type($imagePath) ?: 'image/jpeg';
+
+        try {
+            $mimeType = $disk->mimeType($template->front_image_path) ?: 'image/jpeg';
+        } catch (\Throwable) {
+            $mimeType = 'image/jpeg';
+        }
 
         $prompt = $this->getAnalysisPrompt();
 

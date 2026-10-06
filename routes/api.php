@@ -4,6 +4,7 @@ use App\Models\School;
 use App\Models\SubscriptionPayment;
 use App\Services\SubscriptionPaymentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -93,3 +94,41 @@ Route::prefix('v1')->group(function () {
     });
 
 });
+
+// ── Scheduled jobs (Vercel Cron / any external scheduler) ──
+//
+// Vercel has no long running scheduler, so the entries in routes/console.php
+// are exposed here instead. Every call must carry the CRON_SECRET as a
+// bearer token and the route fails closed when no secret is configured.
+
+Route::get('/cron/{job}', function (Request $request, string $job) {
+    $secret = (string) config('services.cron.secret', '');
+    $token  = $request->bearerToken();
+
+    if ($secret === '' || $token === null || ! hash_equals($secret, $token)) {
+        return response()->json(['status' => 'unauthorized'], 401);
+    }
+
+    $commands = [
+        'expire-subscriptions' => ['subscriptions:expire', []],
+        'check-escalations'    => ['syscend:check-escalations', []],
+        'archive-old-records'  => ['syscend:archive-old-records', []],
+        'migrate'              => ['migrate', ['--force' => true]],
+    ];
+
+    if (! array_key_exists($job, $commands)) {
+        return response()->json(['status' => 'unknown_job', 'job' => $job], 404);
+    }
+
+    [$command, $parameters] = $commands[$job];
+
+    $exitCode = Artisan::call($command, $parameters);
+
+    return response()->json([
+        'status'    => $exitCode === 0 ? 'ok' : 'failed',
+        'job'       => $job,
+        'command'   => $command,
+        'exit_code' => $exitCode,
+        'output'    => trim(Artisan::output()),
+    ], $exitCode === 0 ? 200 : 500);
+})->where('job', '[a-z0-9\-]+');

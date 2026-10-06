@@ -107,4 +107,19 @@ return [
         'api_key' => env('GEMINI_API_KEY', ''),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Scheduled Job Endpoints
+    |--------------------------------------------------------------------------
+    |
+    | Vercel Cron (or any other scheduler) calls /api/cron/{job} with this
+    | secret as a bearer token. The endpoint fails closed when no secret is
+    | configured, so the value must be set in production before crons run.
+    |
+    */
+
+    'cron' => [
+        'secret' => env('CRON_SECRET', ''),
+    ],
+
 ];
