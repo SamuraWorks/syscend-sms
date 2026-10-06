@@ -38,7 +38,19 @@ class AuditLogController extends Controller
         $summaryQuery = $this->buildQuery($filters);
 
         return Inertia::render('SuperAdmin/AuditLog/Index', [
-            'logs'           => $logs,
+            // Inertia v3 serialises a raw paginator flat, so the shape every other
+            // paginated page in this app consumes (`prop.meta.*`) is built here.
+            'logs'           => [
+                'data' => $logs->items(),
+                'meta' => [
+                    'total'        => $logs->total(),
+                    'per_page'     => $logs->perPage(),
+                    'current_page' => $logs->currentPage(),
+                    'last_page'    => $logs->lastPage(),
+                    'from'         => $logs->firstItem(),
+                    'to'           => $logs->lastItem(),
+                ],
+            ],
             'stats'          => [
                 'total'          => (clone $summaryQuery)->count(),
                 'today'          => (clone $summaryQuery)->whereDate('created_at', Carbon::today())->count(),

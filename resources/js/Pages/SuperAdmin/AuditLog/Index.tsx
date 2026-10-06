@@ -31,19 +31,16 @@ interface AuditRow {
 }
 
 interface Props {
-    /**
-     * LengthAwarePaginator. Inertia v3 flattens the paginator fields alongside
-     * `data` rather than nesting them under `meta`, matching how every other
-     * paginated page in this app reads them.
-     */
     logs: {
         data: AuditRow[];
-        current_page: number;
-        last_page: number;
-        per_page: number;
-        total: number;
-        from: number | null;
-        to: number | null;
+        meta: {
+            total: number;
+            per_page: number;
+            current_page: number;
+            last_page: number;
+            from: number | null;
+            to: number | null;
+        };
     };
     stats: {
         total: number; today: number; last_7_days: number;
@@ -402,23 +399,23 @@ export default function AuditLogIndex({
                 </Card>
 
                 {/* Pagination */}
-                {logs.last_page > 1 && (
+                {logs.meta.last_page > 1 && (
                     <div className="flex items-center justify-between text-sm">
                         <p className="text-muted-foreground">
-                            Page {logs.current_page} of {logs.last_page} · {logs.total} entries
+                            Page {logs.meta.current_page} of {logs.meta.last_page} · {logs.meta.total} entries
                         </p>
                         <div className="flex gap-2">
                             <Button
                                 variant="outline" size="sm"
-                                disabled={logs.current_page <= 1}
-                                onClick={() => router.get(`/super-admin/audit-log?page=${logs.current_page - 1}`)}
+                                disabled={logs.meta.current_page <= 1}
+                                onClick={() => router.get(`/super-admin/audit-log?page=${logs.meta.current_page - 1}`)}
                             >
                                 Previous
                             </Button>
                             <Button
                                 variant="outline" size="sm"
-                                disabled={logs.current_page >= logs.last_page}
-                                onClick={() => router.get(`/super-admin/audit-log?page=${logs.current_page + 1}`)}
+                                disabled={logs.meta.current_page >= logs.meta.last_page}
+                                onClick={() => router.get(`/super-admin/audit-log?page=${logs.meta.current_page + 1}`)}
                             >
                                 Next
                             </Button>

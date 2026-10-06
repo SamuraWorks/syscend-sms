@@ -445,11 +445,12 @@ class PlatformNotificationsAndAuditTest extends TestCase
             );
     }
 
-    public function test_audit_paginator_is_flat_not_nested_under_meta(): void
+    public function test_audit_paginator_matches_the_app_meta_convention(): void
     {
-        // Inertia v3 flattens paginator fields next to `data`. The page reads
-        // logs.last_page / logs.current_page, so a nested `meta` shape would
-        // crash the component with "cannot read properties of undefined".
+        // Every other paginated page in this app reads `prop.meta.current_page`
+        // etc. because controllers build that shape by hand - Inertia v3 would
+        // serialise a raw paginator flat instead, crashing those components
+        // with "cannot read properties of undefined (reading 'last_page')".
         Activity::create(['log_name' => 'default', 'description' => 'row', 'event' => 'created']);
 
         $this->actingAsSuperAdmin();
@@ -457,10 +458,11 @@ class PlatformNotificationsAndAuditTest extends TestCase
         $this->get('/super-admin/audit-log')
             ->assertInertia(fn ($p) => $p
                 ->has('logs.data')
-                ->where('logs.current_page', 1)
-                ->where('logs.last_page', 1)
-                ->where('logs.total', 1)
-                ->missing('logs.meta')
+                ->where('logs.meta.current_page', 1)
+                ->where('logs.meta.last_page', 1)
+                ->where('logs.meta.total', 1)
+                ->where('logs.meta.per_page', 50)
+                ->missing('logs.current_page')
             );
     }
 
