@@ -62,7 +62,17 @@ class SubjectController extends Controller
             ->get(['id', 'name', 'code']);
 
         return Inertia::render('SchoolAdmin/Subjects/Index', [
-            'subjects'    => $subjects,
+            'subjects'    => [
+                'data' => $subjects->items(),
+                'meta' => [
+                    'total'        => $subjects->total(),
+                    'per_page'     => $subjects->perPage(),
+                    'current_page' => $subjects->currentPage(),
+                    'last_page'    => $subjects->lastPage(),
+                    'from'         => $subjects->firstItem(),
+                    'to'           => $subjects->lastItem(),
+                ],
+            ],
             'classes'     => $classes,
             'departments' => $departments,
         ]);

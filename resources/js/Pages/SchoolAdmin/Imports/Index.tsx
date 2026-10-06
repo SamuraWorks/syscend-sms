@@ -21,7 +21,10 @@ interface ImportJob {
 }
 
 interface Props {
-    imports: { data: ImportJob[]; current_page: number; last_page: number; per_page: number; total: number };
+    imports: {
+        data: ImportJob[];
+        meta: { total: number; per_page: number; current_page: number; last_page: number; from: number | null; to: number | null };
+    };
 }
 
 const TYPE_STYLE: Record<string, string> = {
@@ -54,7 +57,7 @@ const STATUS_ICON: Record<string, typeof Upload> = {
     importing: Loader2,
 };
 
-export default function BulkImportsIndex({ imports = { data: [], current_page: 1, last_page: 1, per_page: 15, total: 0 } }: Props) {
+export default function BulkImportsIndex({ imports = { data: [], meta: { total: 0, per_page: 15, current_page: 1, last_page: 1, from: null, to: null } } }: Props) {
     const { flash } = usePage<PageProps>().props;
 
     return (
@@ -141,17 +144,17 @@ export default function BulkImportsIndex({ imports = { data: [], current_page: 1
                 </div>
 
                 {/* Pagination */}
-                {imports.last_page > 1 && (
+                {imports.meta.last_page > 1 && (
                     <div className="flex items-center justify-between">
-                        <p className="text-xs text-slate-400">Page {imports.current_page} of {imports.last_page} ({imports.total} total)</p>
+                        <p className="text-xs text-slate-400">Page {imports.meta.current_page} of {imports.meta.last_page} ({imports.meta.total} total)</p>
                         <div className="flex gap-2">
-                            {imports.current_page > 1 && (
-                                <Button variant="outline" size="sm" onClick={() => router.get(`/school-admin/imports?page=${imports.current_page - 1}`)}>
+                            {imports.meta.current_page > 1 && (
+                                <Button variant="outline" size="sm" onClick={() => router.get(`/school-admin/imports?page=${imports.meta.current_page - 1}`)}>
                                     Previous
                                 </Button>
                             )}
-                            {imports.current_page < imports.last_page && (
-                                <Button variant="outline" size="sm" onClick={() => router.get(`/school-admin/imports?page=${imports.current_page + 1}`)}>
+                            {imports.meta.current_page < imports.meta.last_page && (
+                                <Button variant="outline" size="sm" onClick={() => router.get(`/school-admin/imports?page=${imports.meta.current_page + 1}`)}>
                                     Next
                                 </Button>
                             )}

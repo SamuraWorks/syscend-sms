@@ -491,7 +491,17 @@ class UserManagementController extends Controller
 
         return Inertia::render('SchoolAdmin/Users/AuditLogs', [
             'user'  => $user->only('id', 'name', 'email'),
-            'logs'  => $logs,
+            'logs'  => [
+                'data' => $logs->items(),
+                'meta' => [
+                    'total'        => $logs->total(),
+                    'per_page'     => $logs->perPage(),
+                    'current_page' => $logs->currentPage(),
+                    'last_page'    => $logs->lastPage(),
+                    'from'         => $logs->firstItem(),
+                    'to'           => $logs->lastItem(),
+                ],
+            ],
         ]);
     }
 }

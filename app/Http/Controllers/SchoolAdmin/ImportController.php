@@ -36,12 +36,19 @@ class ImportController extends Controller
             ->withQueryString();
 
         return Inertia::render('SchoolAdmin/Imports/Index', [
+            // This component is also rendered by ResultImportController at
+            // /school/imports, which sends the nested meta shape - both must
+            // agree or the page breaks on one of the two routes.
             'imports' => [
                 'data'  => $jobs->items(),
-                'current_page' => $jobs->currentPage(),
-                'last_page'    => $jobs->lastPage(),
-                'per_page'     => $jobs->perPage(),
-                'total'        => $jobs->total(),
+                'meta'  => [
+                    'total'        => $jobs->total(),
+                    'per_page'     => $jobs->perPage(),
+                    'current_page' => $jobs->currentPage(),
+                    'last_page'    => $jobs->lastPage(),
+                    'from'         => $jobs->firstItem(),
+                    'to'           => $jobs->lastItem(),
+                ],
             ],
         ]);
     }
