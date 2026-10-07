@@ -4,6 +4,7 @@ namespace Tests\Feature\Public;
 
 use App\Models\SchoolSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\Concerns\InteractsWithDomain;
 use Tests\TestCase;
 
@@ -29,7 +30,7 @@ class SchoolBrandingTest extends TestCase
 
         $this->assertSame('Excellence in Education', $branding['tagline']);
         $this->assertSame('© 2026 Test School.', $branding['footer_text']);
-        $this->assertSame(asset('storage/schools/branding/fav.ico'), $branding['favicon_url']);
+        $this->assertSame(Storage::disk('public')->url('schools/branding/fav.ico'), $branding['favicon_url']);
     }
 
     public function test_settings_branding_saves_colors_and_text(): void
@@ -76,6 +77,6 @@ class SchoolBrandingTest extends TestCase
         $this->get(route('school.students.index'))
             ->assertOk()
             ->assertInertia(fn ($page) => $page
-                ->where('faviconUrl', asset('storage/schools/branding/fav.ico')));
+                ->where('faviconUrl', Storage::disk('public')->url('schools/branding/fav.ico')));
     }
 }

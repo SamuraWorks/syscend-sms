@@ -69,12 +69,12 @@ class ReportCardTemplate extends Model
 
     public function getFrontImageUrlAttribute(): ?string
     {
-        return $this->front_image_path ? asset('storage/' . $this->front_image_path) : null;
+        return $this->front_image_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->front_image_path) : null;
     }
 
     public function getBackImageUrlAttribute(): ?string
     {
-        return $this->back_image_path ? asset('storage/' . $this->back_image_path) : null;
+        return $this->back_image_path ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->back_image_path) : null;
     }
 
     // ── Scopes ──────────────────────────────────────────────

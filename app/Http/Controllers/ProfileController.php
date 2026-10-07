@@ -23,7 +23,7 @@ class ProfileController extends Controller
         return Inertia::render('Profile', [
             'user' => array_merge($user->toArray(), [
                 'role'      => $user->getRoleNames()->first() ?? '',
-                'avatar_url' => $user->avatar ? asset('storage/' . $user->avatar) : null,
+                'avatar_url' => $user->avatar_url,
             ]),
         ]);
     }
@@ -80,7 +80,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'success'   => true,
-            'avatar_url' => asset('storage/' . $path),
+            'avatar_url' => Storage::disk('public')->url($path),
             'message'   => 'Profile photo updated successfully.',
         ]);
     }

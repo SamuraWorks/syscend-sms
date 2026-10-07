@@ -17,8 +17,8 @@ class SettingsController extends Controller
 
         return Inertia::render('SuperAdmin/Settings/Index', [
             'settings' => $s,
-            'logoUrl'    => isset($s['platform_logo'])    && $s['platform_logo']    ? asset('storage/' . $s['platform_logo'])    : null,
-            'faviconUrl' => isset($s['platform_favicon']) && $s['platform_favicon'] ? asset('storage/' . $s['platform_favicon']) : null,
+            'logoUrl'    => isset($s['platform_logo'])    && $s['platform_logo']    ? Storage::disk('public')->url($s['platform_logo'])    : null,
+            'faviconUrl' => isset($s['platform_favicon']) && $s['platform_favicon'] ? Storage::disk('public')->url($s['platform_favicon']) : null,
         ]);
     }
 

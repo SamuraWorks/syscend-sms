@@ -150,27 +150,27 @@ class School extends Model
 
     public function getLogoUrlAttribute(): ?string
     {
-        return $this->logo ? asset('storage/' . $this->logo) : null;
+        return $this->logo ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->logo) : null;
     }
 
     public function getBadgeUrlAttribute(): ?string
     {
-        return $this->badge ? asset('storage/' . $this->badge) : null;
+        return $this->badge ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->badge) : null;
     }
 
     public function getBannerUrlAttribute(): ?string
     {
-        return $this->banner ? asset('storage/' . $this->banner) : null;
+        return $this->banner ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->banner) : null;
     }
 
     public function getSignatureUrlAttribute(): ?string
     {
-        return $this->official_signature ? asset('storage/' . $this->official_signature) : null;
+        return $this->official_signature ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->official_signature) : null;
     }
 
     public function getStampUrlAttribute(): ?string
     {
-        return $this->official_stamp ? asset('storage/' . $this->official_stamp) : null;
+        return $this->official_stamp ? \Illuminate\Support\Facades\Storage::disk('public')->url($this->official_stamp) : null;
     }
 
     /**
@@ -190,7 +190,7 @@ class School extends Model
             'badge_url'        => $this->badge_url,
             'banner_url'       => $this->banner_url,
             'favicon_url'      => isset($settings['favicon'])
-                ? asset('storage/' . $settings['favicon'])
+                ? \Illuminate\Support\Facades\Storage::disk('public')->url($settings['favicon'])
                 : null,
             'primary_color'    => $this->primary_color,
             'secondary_color'  => $this->secondary_color,

@@ -85,11 +85,11 @@ class HandleInertiaRequests extends Middleware
                 }
 
                 if ($favicon) {
-                    return asset('storage/' . $favicon);
+                    return \Illuminate\Support\Facades\Storage::disk('public')->url($favicon);
                 }
 
                 $path = PlatformSetting::get('platform_favicon');
-                return $path ? asset('storage/' . $path) : null;
+                return $path ? \Illuminate\Support\Facades\Storage::disk('public')->url($path) : null;
             }),
             'schoolBranding' => fn () => once(function () use ($request) {
                 $user = $request->user();
