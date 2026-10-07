@@ -142,65 +142,45 @@ class DemoSeeder extends Seeder
         ]);
         $this->schoolId = $this->school->id;
 
-        $package = Package::firstOrCreate(
-            ['slug' => 'small-school'],
+        $freePackage = Package::firstOrCreate(
+            ['slug' => 'free'],
             [
-                'name' => 'Small school',
-                'description' => 'For a single small school getting organised.',
-                'price_monthly' => 0,
-                'price_yearly' => 0,
-                'price_per_term' => 850,
-                'max_students' => 0,
-                'max_staff' => 20,
-                'storage_gb' => 5,
-                'is_active' => true,
-                'features' => ['students', 'attendance', 'fees', 'reports', 'exams'],
-            ]
-        );
-
-        $largePackage = Package::firstOrCreate(
-            ['slug' => 'large-school'],
-            [
-                'name' => 'Large school',
-                'description' => 'For larger schools and multi-branch campuses.',
-                'price_monthly' => 0,
-                'price_yearly' => 0,
-                'price_per_term' => 1400,
-                'max_students' => 0,
-                'max_staff' => 0,
-                'storage_gb' => 50,
-                'is_active' => true,
-                'features' => ['students', 'staff', 'exams', 'fees', 'library', 'transport', 'hostel', 'inventory', 'payroll'],
+                'name'           => 'Free',
+                'description'    => 'All modules enabled at no cost.',
+                'price_monthly'  => 0,
+                'price_yearly'   => 0,
+                'price_per_term' => 0,
+                'max_students'   => 0,
+                'max_staff'      => 0,
+                'storage_gb'     => 0,
+                'is_active'      => true,
+                'features'       => \App\Http\Controllers\SuperAdmin\ModuleManagerController::ALL_MODULES,
             ]
         );
 
         $subscription = SchoolSubscription::create([
-            'school_id' => $this->schoolId,
-            'package_id' => $package->id,
-            'start_date' => now()->subMonth(),
-            'end_date' => now()->addYear(),
-            'status' => 'active',
-            'is_trial' => false,
-            'price_per_term' => 850,
-            'amount_paid' => 850,
-            'payment_method' => 'bank_transfer',
-            'notes' => 'Small school term subscription (demo)',
+            'school_id'      => $this->schoolId,
+            'package_id'     => $freePackage->id,
+            'start_date'     => now()->subMonth(),
+            'end_date'       => now()->addYear(),
+            'status'         => 'active',
+            'is_trial'       => false,
+            'price_per_term' => 0,
+            'amount_paid'    => 0,
+            'payment_method' => null,
+            'notes'          => 'Free plan (demo)',
         ]);
 
         \App\Models\School::where('id', $this->schoolId)->update(['current_subscription_id' => $subscription->id]);
 
         foreach (\App\Http\Controllers\SuperAdmin\ModuleManagerController::ALL_MODULES as $slug) {
             \App\Models\PackageModule::firstOrCreate([
-                'package_id'  => $package->id,
-                'module_slug' => $slug,
-            ]);
-            \App\Models\PackageModule::firstOrCreate([
-                'package_id'  => $largePackage->id,
+                'package_id'  => $freePackage->id,
                 'module_slug' => $slug,
             ]);
         }
 
-        $this->command->line('  School + Small school term Subscription');
+        $this->command->line('  School + Free plan Subscription');
     }
 
     private function createAcademicStructure(): void

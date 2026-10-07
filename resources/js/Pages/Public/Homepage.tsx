@@ -1,7 +1,6 @@
 import { Head } from '@inertiajs/react';
 import SiteHeader from '@/components/landing/SiteHeader';
 import SiteFooter from '@/components/landing/SiteFooter';
-import Hero from '@/components/landing/Hero';
 import Stats from '@/components/landing/Stats';
 import OfflineSection from '@/components/landing/OfflineSection';
 import Modules from '@/components/landing/Modules';
@@ -24,8 +23,7 @@ export default function Homepage() {
         <div className="landing">
             <Head title="Syscend Campus — School Management Platform for Sierra Leone" />
             <SiteHeader />
-            <main>
-                <Hero />
+            <main id="top" className="pt-[72px]">
                 <Reveal><Stats /></Reveal>
                 <Reveal><OfflineSection /></Reveal>
                 <Reveal><Modules /></Reveal>

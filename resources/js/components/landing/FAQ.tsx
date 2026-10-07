@@ -25,7 +25,7 @@ const FAQS = [
     },
     {
         q: 'What does it cost?',
-        a: 'Plans start at Le 850/term for small schools and Le 1,400/term for larger schools, every term starts with a free trial. Setup and on-site training is also available. See the pricing section above for full details.',
+        a: 'Nothing. Syscend Campus is free for schools — every module is included, with no card required and no time limit. See the pricing section above.',
     },
 ];
 
