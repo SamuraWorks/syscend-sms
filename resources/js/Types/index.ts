@@ -56,16 +56,7 @@ export interface AcademicTerm {
     is_current: boolean;
 }
 
-export interface LicenseStatus {
-    status: string;
-    is_trial: boolean;
-    is_fully_paid: boolean;
-    trial_ends_at: string | null;
-    end_date: string | null;
-    balance: number;
-    package_name: string | null;
-    currency_symbol: string | null;
-}
+export type SchoolSubscriptionStatus = 'trial' | 'active' | 'expired' | 'suspended';
 
 export interface LicenseStatus {
     status: SchoolSubscriptionStatus;
