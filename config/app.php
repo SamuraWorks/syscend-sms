@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\ServiceProvider;
+
 return [
 
     /*
@@ -153,5 +155,22 @@ return [
     */
 
     'trial_days' => (int) env('TRIAL_DAYS', 14),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Autoloaded Service Providers
+    |--------------------------------------------------------------------------
+    |
+    | Laravel 11+ discovers framework providers from the composer package
+    | manifest, but laravel/framework 13 no longer publishes them there, so
+    | they must be declared explicitly. The stock cached services.php from
+    | development is gitignored and never reaches serverless builds, which is
+    | why this array is mandatory for Vercel deploys.
+    |
+    */
+
+    'providers' => ServiceProvider::defaultProviders()
+        ->merge([])
+        ->toArray(),
 
 ];
