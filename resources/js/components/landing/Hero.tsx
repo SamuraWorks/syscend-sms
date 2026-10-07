@@ -13,11 +13,11 @@ const CHIPS = [
 export default function Hero() {
     return (
         <section id="top" className="relative overflow-hidden bg-[#f4f7fb]">
-            {/* Soft tonal background */}
-            <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(31,102,245,0.08),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgba(255,91,58,0.06),transparent_55%)]"
-            />
+            {/* Hero background image */}
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+                <img src="/images/hero-bg.jpeg" alt="" className="h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-b from-white/85 via-white/75 to-[#f4f7fb]" />
+            </div>
 
             <div className="relative mx-auto max-w-7xl px-6 pt-36 pb-20 lg:px-10 lg:pt-40 lg:pb-28">
                 <div className="mx-auto max-w-3xl text-center">

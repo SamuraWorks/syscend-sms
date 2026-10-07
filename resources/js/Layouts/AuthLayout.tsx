@@ -40,7 +40,13 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
     }, [schoolBranding]);
 
     return (
-        <div className="landing min-h-screen bg-gradient-to-br from-background via-secondary/50 to-background flex items-center justify-center p-4">
+        <div className="landing relative min-h-screen bg-gradient-to-br from-background via-secondary/50 to-background flex items-center justify-center p-4">
+            <img
+                aria-hidden="true"
+                src="/images/hero-bg.jpeg"
+                alt=""
+                className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-[0.12]"
+            />
             {children}
         </div>
     );
