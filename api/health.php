@@ -116,6 +116,26 @@ if ($app !== null) {
     } catch (Throwable $e) {
         $out['view_resolve'] = get_class($e).': '.substr($e->getMessage(), 0, 300);
     }
+
+    try {
+        $cfg2 = $app->make('config');
+        $out['services_cache_path'] = $app->getCachedServicesPath();
+        $out['packages_cache_path'] = $app->getCachedPackagesPath();
+        $out['drivers'] = [
+            'session' => $cfg2->get('session.driver'),
+            'cache' => $cfg2->get('cache.default'),
+            'filesystem' => $cfg2->get('filesystems.default'),
+            'log' => $cfg2->get('logging.default'),
+            'queue' => $cfg2->get('queue.default'),
+            'view_compiled' => $cfg2->get('view.compiled'),
+            'app_key_set' => $cfg2->get('app.key') !== null,
+            'db_default' => $cfg2->get('database.default'),
+            'session_connection' => $cfg2->get('session.connection'),
+            'cache_connection' => $cfg2->get('cache.stores.database.connection'),
+        ];
+    } catch (Throwable $e) {
+        $out['drivers_error'] = get_class($e).': '.$e->getMessage();
+    }
 }
 
 // stage: fresh application, manually register providers, no kernel

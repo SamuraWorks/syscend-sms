@@ -4,6 +4,36 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
+/*
+|--------------------------------------------------------------------------
+| Serverless writable manifest cache
+|--------------------------------------------------------------------------
+|
+| Vercel mounts the project directory as read-only, but Laravel recompiles
+| the package and service provider manifests into bootstrap/cache on every
+| cold start. When that directory is not writable, redirect the two
+| manifests to the temporary directory so provider registration does not
+| fail before the request is handled.
+|
+*/
+
+if (! is_writable(dirname(__DIR__).'/bootstrap/cache')) {
+    $tmpBootstrap = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'syscend-bootstrap-cache';
+
+    if (! is_dir($tmpBootstrap)) {
+        @mkdir($tmpBootstrap, 0777, true);
+    }
+
+    $setEnv = static function (string $key, string $value): void {
+        putenv($key.'='.$value);
+        $_ENV[$key] = $value;
+        $_SERVER[$key] = $value;
+    };
+
+    $setEnv('APP_SERVICES_CACHE', $tmpBootstrap.DIRECTORY_SEPARATOR.'services.php');
+    $setEnv('APP_PACKAGES_CACHE', $tmpBootstrap.DIRECTORY_SEPARATOR.'packages.php');
+}
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
