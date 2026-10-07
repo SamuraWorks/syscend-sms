@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\School;
-use App\Models\SchoolSetting;
+use App\Services\SchoolPublicProfileService;
 use Inertia\Inertia;
 
 class HomeController extends Controller
@@ -14,7 +14,7 @@ class HomeController extends Controller
 
         if ($school?->public_profile_enabled) {
             return Inertia::render('Public/SchoolHomepage', [
-                'school' => $this->schoolPublicProfile($school),
+                'school' => SchoolPublicProfileService::for($school),
             ]);
         }
 
@@ -37,21 +37,5 @@ class HomeController extends Controller
         $active = School::where('status', 'active')->get();
 
         return $active->count() === 1 ? $active->first() : null;
-    }
-
-    private function schoolPublicProfile(School $school): array
-    {
-        return array_merge($school->branding, [
-            'id'          => $school->id,
-            'slug'        => $school->slug,
-            'email'       => $school->email,
-            'phone'       => $school->phone,
-            'address'     => $school->address,
-            'city'        => $school->city,
-            'state'       => $school->state,
-            'country'     => $school->country,
-            'footer_text' => SchoolSetting::get($school->id, 'footer_text')
-                ?? ('© ' . date('Y') . ' ' . ($school->name) . '.'),
-        ]);
     }
 }

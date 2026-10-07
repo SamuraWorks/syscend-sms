@@ -7,7 +7,9 @@ use App\Models\DemoRequest;
 use App\Models\DemoRequestNote;
 use App\Models\DemoRequestStatusHistory;
 use App\Models\User;
+use App\Services\SchoolAdminOnboardingService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class DemoManagementController extends Controller
@@ -86,12 +88,87 @@ class DemoManagementController extends Controller
 
     public function show(DemoRequest $demoRequest)
     {
-        $demoRequest->load(['assignee', 'notes.user', 'statusHistory.user']);
+        $demoRequest->load(['assignee', 'notes.user', 'statusHistory.user', 'convertedSchool']);
 
         return Inertia::render('SuperAdmin/DemoRequests/Show', [
             'request' => $demoRequest,
             'staff'   => User::where('status', 'active')->orderBy('name')->get(['id', 'name']),
         ]);
+    }
+
+    /**
+     * Approve a demo request for onboarding: creates the School and provisions
+     * the requester as the School Admin. Idempotent — a request that already
+     * produced a school (or was already marked converted) cannot be converted twice.
+     */
+    public function convertToSchool(Request $request, DemoRequest $demoRequest)
+    {
+        if ($demoRequest->status === 'converted' || $demoRequest->convertedSchool) {
+            return redirect()
+                ->route('super-admin.demo-requests.show', $demoRequest)
+                ->with('error', 'This demo request has already been converted to a school.');
+        }
+
+        $base = Str::slug($demoRequest->school_name);
+        $slug = $base;
+        $i = 2;
+        while (\App\Models\School::where('slug', $slug)->exists()) {
+            $slug = $base . '-' . ($i++);
+        }
+
+        $schoolData = [
+            'name'            => $demoRequest->school_name,
+            'slug'            => $slug,
+            'email'           => $demoRequest->contact_email,
+            'phone'           => $demoRequest->contact_phone,
+            'city'            => $demoRequest->district,
+            'school_level'    => $demoRequest->school_level,
+            'demo_request_id' => $demoRequest->id,
+        ];
+
+        // schools.school_type enum does not include 'faith_based'; leave the
+        // column to its default rather than triggering an enum violation.
+        if (in_array($demoRequest->school_type, ['government', 'government_assisted', 'private', 'community'], true)) {
+            $schoolData['school_type'] = $demoRequest->school_type;
+        }
+
+        $result = (new SchoolAdminOnboardingService)->createSchoolWithAdmin(
+            $schoolData,
+            [
+                'name'  => $demoRequest->contact_name,
+                'email' => $demoRequest->contact_email,
+                'phone' => $demoRequest->contact_phone,
+            ],
+            auth()->id()
+        );
+
+        $oldStatus = $demoRequest->status;
+        $demoRequest->update(['status' => 'converted']);
+
+        DemoRequestStatusHistory::create([
+            'demo_request_id' => $demoRequest->id,
+            'user_id'         => auth()->id(),
+            'old_status'      => $oldStatus,
+            'new_status'      => 'converted',
+            'notes'           => 'Approved for onboarding — school created and School Admin provisioned.',
+        ]);
+
+        activity()
+            ->causedBy(auth()->user())
+            ->performedOn($result['school'])
+            ->withProperties([
+                'demo_request_id'  => $demoRequest->id,
+                'admin_id'         => $result['admin']->id,
+                'admin_email'      => $result['admin']->email,
+                'temp_generated'   => true,
+            ])
+            ->log('Demo request converted — school and School Admin created');
+
+        return redirect()
+            ->route('super-admin.demo-requests.show', $demoRequest)
+            ->with('temp_password', $result['temp_password'])
+            ->with('show_credentials', true)
+            ->with('success', "School \"{$result['school']->name}\" created. {$result['admin']->name} is now the School Admin (temporary credentials shown below).");
     }
 
     public function updateStatus(Request $request, DemoRequest $demoRequest)

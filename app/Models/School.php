@@ -18,6 +18,7 @@ class School extends Model
         'address', 'city', 'state', 'country',
         'timezone', 'currency', 'currency_symbol', 'language',
         'settings', 'status', 'is_configured', 'allowed_ips', 'current_subscription_id',
+        'demo_request_id',
 
         // MoE fields
         'district_id', 'school_type', 'ownership',
@@ -183,6 +184,7 @@ class School extends Model
         return [
             'name'             => $this->name,
             'short_name'       => $this->short_name,
+            'slug'             => $this->slug,
             'motto'            => $this->motto,
             'tagline'          => $settings['tagline'] ?? null,
             'footer_text'      => $settings['footer_text'] ?? null,

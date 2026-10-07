@@ -77,6 +77,7 @@ export interface PageProps {
     schoolBranding: {
         name: string | null;
         short_name: string | null;
+        slug: string | null;
         motto: string | null;
         tagline: string | null;
         footer_text: string | null;

@@ -9,6 +9,8 @@
             $faviconHref = $platformFavicon ? \Illuminate\Support\Facades\Storage::disk('public')->url($platformFavicon) : asset('favicon.ico');
         @endphp
         <link id="app-favicon" rel="icon" type="image/x-icon" href="{{ $faviconHref }}" />
+        <link id="app-manifest" rel="manifest" href="/manifest.webmanifest" />
+        <meta id="theme-color-meta" name="theme-color" content="#1e40af" />
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx'])
         @inertiaHead

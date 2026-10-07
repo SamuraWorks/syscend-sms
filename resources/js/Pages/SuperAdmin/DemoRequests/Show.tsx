@@ -1,5 +1,5 @@
 import AppLayout from '@/Layouts/AppLayout';
-import { useForm, Link, router } from '@inertiajs/react';
+import { useForm, usePage, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import type { PageProps } from '@/Types';
 import {
     ArrowLeft, Save, Phone, Mail, MessageSquare, Calendar,
-    Building2, Users, Globe, FileText, Clock,
+    Building2, Users, Globe, FileText, Clock, Rocket, KeyRound,
 } from 'lucide-react';
 
 interface Note {
@@ -33,9 +34,13 @@ interface DemoReq {
     preferred_day: string | null; preferred_time: string | null;
     created_at: string; assignee: { id: number; name: string } | null;
     notes: Note[]; status_history: History[];
+    converted_school: { id: number; name: string; slug: string } | null;
 }
 
-interface Props { request: DemoReq; staff: { id: number; name: string }[]; }
+interface Props extends PageProps {
+    request: DemoReq;
+    staff: { id: number; name: string }[];
+}
 
 const STATUS_COLORS: Record<string, string> = {
     new: 'bg-blue-100 text-blue-700', contacted: 'bg-yellow-100 text-yellow-700',
@@ -61,6 +66,10 @@ export default function DemoRequestShow({ request: r, staff }: Props) {
     const statusForm = useForm({ status: r.status, notes: '' });
     const assignForm = useForm({ assigned_to: r.assignee?.id ? String(r.assignee.id) : '' });
     const noteForm = useForm({ note: '', type: 'internal' });
+    const convertForm = useForm({});
+    const { flash } = usePage<Props>().props;
+
+    const alreadyConverted = r.status === 'converted' || !!r.converted_school;
 
     function updateStatus(e: React.FormEvent) {
         e.preventDefault();
@@ -169,6 +178,69 @@ export default function DemoRequestShow({ request: r, staff }: Props) {
 
                     {/* Sidebar */}
                     <div className="space-y-6 order-1 lg:order-3">
+                        {/* Onboarding / Convert to School */}
+                        <Card className={cn(alreadyConverted && 'border-green-200 bg-green-50/40')}>
+                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Rocket className="w-4 h-4" /> Onboarding</CardTitle></CardHeader>
+                            <CardContent className="space-y-3">
+                                {alreadyConverted ? (
+                                    <>
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <Badge variant="outline">Converted</Badge>
+                                            {r.converted_school && (
+                                                <span className="text-muted-foreground">→</span>
+                                            )}
+                                        </div>
+                                        {r.converted_school ? (
+                                            <Link href={`/super-admin/schools/${r.converted_school.id}`} className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+                                                <Building2 className="w-4 h-4" /> {r.converted_school.name}
+                                            </Link>
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground">This request has already been converted.</p>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-sm text-muted-foreground">
+                                            Approving this request creates the school and provisions{' '}
+                                            <span className="font-medium text-foreground">{r.contact_name || 'the requester'}</span>{' '}
+                                            as its School Admin (temporary credentials are emailed to them).
+                                        </p>
+                                        <Button
+                                            type="button"
+                                            className="w-full gap-2"
+                                            disabled={convertForm.processing}
+                                            onClick={() => {
+                                                if (!window.confirm(`Create the school "${r.school_name}" and make ${r.contact_name || 'the requester'} its School Admin?`)) return;
+                                                convertForm.post(`/super-admin/demo-requests/${r.id}/convert`, { preserveScroll: true });
+                                            }}
+                                        >
+                                            <Rocket className="w-4 h-4" /> Approve & Create School
+                                        </Button>
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Temporary credentials (shown once after conversion) */}
+                        {flash?.show_credentials && flash?.temp_password && (
+                            <Card className="border-amber-200 bg-amber-50/60">
+                                <CardHeader><CardTitle className="text-base flex items-center gap-2"><KeyRound className="w-4 h-4" /> Temporary Credentials</CardTitle></CardHeader>
+                                <CardContent className="space-y-3 text-sm">
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">Email</Label>
+                                        <div className="font-medium break-all">{r.contact_email}</div>
+                                    </div>
+                                    <div>
+                                        <Label className="text-xs text-muted-foreground">Temporary password</Label>
+                                        <div className="font-mono font-medium break-all bg-white/70 border border-amber-200 rounded-md px-3 py-2 mt-1">{flash.temp_password}</div>
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            The admin must change this on first sign-in. It was also emailed to them.
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
                         {/* Status */}
                         <Card>
                             <CardHeader><CardTitle className="text-base">Update Status</CardTitle></CardHeader>

@@ -5,6 +5,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import Topbar from '@/components/layout/Topbar';
 import LicenseBanner from '@/components/layout/LicenseBanner';
 import PageProgress from '@/components/layout/PageProgress';
+import InstallAppPrompt from '@/components/InstallAppPrompt';
 import { useAuthStore } from '@/Stores/useAuthStore';
 import { useUIStore } from '@/Stores/useUIStore';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,29 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
             link.href = faviconUrl ?? '/favicon.ico';
         }
     }, [faviconUrl]);
+
+    // School-branded PWA: point the manifest at the school's dynamic manifest
+    // and sync theme-colour so installs use the school identity.
+    useEffect(() => {
+        const manifest = document.getElementById('app-manifest') as HTMLLinkElement | null;
+        const manifestHref = schoolBranding?.slug
+            ? `/${schoolBranding.slug}/manifest.webmanifest`
+            : '/manifest.webmanifest';
+        if (manifest && manifest.href !== manifestHref) manifest.href = manifestHref;
+
+        const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+        const color = schoolBranding?.primary_color ?? '#1e40af';
+        if (themeColor && themeColor.content !== color) themeColor.content = color;
+
+        const apple = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null ??
+            document.createElement('link');
+        if (!document.querySelector('link[rel="apple-touch-icon"]')) {
+            apple.setAttribute('rel', 'apple-touch-icon');
+            apple.setAttribute('sizes', '180x180');
+            document.head.appendChild(apple);
+        }
+        apple.href = schoolBranding?.logo_url || '/images/logo.png';
+    }, [schoolBranding]);
 
     // Dark mode sync
     useEffect(() => {
@@ -97,6 +121,8 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
                     {children}
                 </main>
             </div>
+
+            <InstallAppPrompt />
         </div>
     );
 }

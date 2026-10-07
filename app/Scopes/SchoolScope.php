@@ -25,6 +25,12 @@ class SchoolScope implements Scope
         // School-scoped users: filter by their school_id
         if ($user->school_id) {
             $builder->where($model->getTable() . '.school_id', $user->school_id);
+            return;
         }
+
+        // A school-scoped account without a school assigned must never see
+        // other schools' data — deny access to everything rather than leaking
+        // records across schools.
+        $builder->whereRaw('1 = 0');
     }
 }

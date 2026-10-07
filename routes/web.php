@@ -126,8 +126,8 @@ Route::middleware('guest')->group(function () {
 | School-slug login (guest, resolves school branding for unauthenticated users)
 |--------------------------------------------------------------------------
 */
-Route::get('/{schoolSlug}/login', [LoginController::class, 'create'])->name('school.login');
-Route::post('/{schoolSlug}/login', [LoginController::class, 'store'])->middleware('throttle:login');
+Route::get('/{schoolSlug}/login', [LoginController::class, 'create'])->middleware('guest')->name('school.login');
+Route::post('/{schoolSlug}/login', [LoginController::class, 'store'])->middleware(['guest', 'throttle:login']);
 
 /*
 |--------------------------------------------------------------------------
@@ -1140,6 +1140,7 @@ Route::middleware('auth')->group(function () {
             Route::put('demo-requests/{demoRequest}/status',                 [DemoManagementController::class, 'updateStatus'])->name('demo-requests.status');
             Route::post('demo-requests/{demoRequest}/assign',                [DemoManagementController::class, 'assign'])->name('demo-requests.assign');
             Route::post('demo-requests/{demoRequest}/notes',                 [DemoManagementController::class, 'addNote'])->name('demo-requests.notes');
+            Route::post('demo-requests/{demoRequest}/convert',               [DemoManagementController::class, 'convertToSchool'])->name('demo-requests.convert');
 
             // User Management
             Route::get('users',                          [UserManagementController::class, 'index'])->name('users.index');
@@ -1243,3 +1244,16 @@ Route::middleware('auth')->group(function () {
 // Public admission form (no auth)
 Route::get('/apply/{school}',  [PublicAdmissionController::class, 'show'])->name('public.admission.show');
 Route::post('/apply/{school}', [PublicAdmissionController::class, 'submit'])->middleware('throttle:demo')->name('public.admission.submit');
+
+/*
+|--------------------------------------------------------------------------
+| School public homepages & PWA manifests
+|--------------------------------------------------------------------------
+| Registered last so these parameterised routes never shadow the concrete
+| routes above (e.g. /login, /about, /apply/..., /school/..., /super-admin/...).
+*/
+Route::get('/manifest.webmanifest', [SchoolPublicController::class, 'platformManifest'])->name('platform.manifest');
+Route::get('/{schoolSlug}/manifest.webmanifest', [SchoolPublicController::class, 'manifest'])->name('school.manifest');
+Route::get('/{schoolSlug}', [SchoolPublicController::class, 'show'])
+    ->where('schoolSlug', '[a-z0-9-]+')
+    ->name('school.homepage');

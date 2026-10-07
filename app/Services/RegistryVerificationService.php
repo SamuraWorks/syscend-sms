@@ -112,7 +112,7 @@ class RegistryVerificationService
         }
 
         if ($student->claimed_by !== null || $student->user_id !== null) {
-            return ['success' => false, 'message' => 'This student record has already been registered. Please contact your school administrator if you need assistance.'];
+            return ['success' => false, 'message' => 'This student record already has an account. Please sign in instead — or contact your school administrator if you need help.'];
         }
 
         return [
@@ -317,7 +317,7 @@ class RegistryVerificationService
         }
 
         if ($staff->claimed_by !== null || $staff->user_id !== null) {
-            return ['success' => false, 'message' => 'This staff record has already been registered. Please contact your school administrator if you need assistance.'];
+            return ['success' => false, 'message' => 'This staff record already has an account. Please sign in instead — or contact your school administrator if you need help.'];
         }
 
         return [

@@ -21,10 +21,12 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-interface LoginProps extends PageProps {}
+interface LoginProps extends PageProps {
+    school_slug?: string | null;
+}
 
 export default function Login() {
-    const { flash, errors: serverErrors, schoolBranding } = usePage<LoginProps>().props;
+    const { flash, errors: serverErrors, schoolBranding, school_slug } = usePage<LoginProps>().props;
 
     const hasSchoolBranding = !!schoolBranding?.name;
 
@@ -51,7 +53,7 @@ export default function Login() {
     }, [serverErrors, setError]);
 
     const onSubmit = (data: LoginFormData) => {
-        router.post('/login', data, {
+        router.post(school_slug ? `/${school_slug}/login` : '/login', data, {
             onError: (errs) => {
                 if (errs.email) setError('email', { message: errs.email });
                 if (errs.password) setError('password', { message: errs.password });

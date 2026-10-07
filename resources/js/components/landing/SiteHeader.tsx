@@ -53,6 +53,12 @@ export default function SiteHeader() {
 
                 <div className="hidden items-center gap-4 lg:flex">
                     <Link
+                        href="/register"
+                        className="inline-flex items-center px-3 py-2 text-sm font-semibold text-slate-600 transition-colors hover:text-slate-900"
+                    >
+                        Find your school
+                    </Link>
+                    <Link
                         href="/login"
                         className="inline-flex items-center px-3 py-2 text-sm font-semibold text-slate-700 transition-colors hover:text-slate-900"
                     >
@@ -91,6 +97,13 @@ export default function SiteHeader() {
                             </a>
                         ))}
                         <div className="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4">
+                            <Link
+                                href="/register"
+                                onClick={() => setOpen(false)}
+                                className="inline-flex items-center justify-center rounded-[8px] border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600"
+                            >
+                                Find your school
+                            </Link>
                             <Link
                                 href="/login"
                                 onClick={() => setOpen(false)}

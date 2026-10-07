@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
@@ -51,6 +52,11 @@ class DemoRequest extends Model
     public function statusHistory(): HasMany
     {
         return $this->hasMany(DemoRequestStatusHistory::class);
+    }
+
+    public function convertedSchool(): HasOne
+    {
+        return $this->hasOne(School::class, 'demo_request_id');
     }
 
     public function scopeStatus($query, string $status)
