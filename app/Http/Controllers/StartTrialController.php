@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AdminNewSchoolMail;
 use App\Models\School;
 use App\Services\SchoolAdminOnboardingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
@@ -67,6 +69,14 @@ class StartTrialController extends Controller
             ->performedOn($result['school'])
             ->withProperties(['ip' => $request->ip(), 'user_agent' => $request->userAgent()])
             ->log('School self-registered via free trial');
+
+        // Notify the platform admin so new schools don't go unnoticed
+        // (mirrors the demo-request admin email; non-blocking on failure).
+        try {
+            Mail::to('syscend@gmail.com')->send(new AdminNewSchoolMail($result['school'], $result['admin']));
+        } catch (\Throwable $e) {
+            \Log::warning('Admin new-school notification email failed: ' . $e->getMessage());
+        }
 
         return redirect()
             ->route('school.school-setup')

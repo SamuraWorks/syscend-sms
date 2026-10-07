@@ -6,6 +6,7 @@ import Topbar from '@/components/layout/Topbar';
 import LicenseBanner from '@/components/layout/LicenseBanner';
 import PageProgress from '@/components/layout/PageProgress';
 import InstallAppPrompt from '@/components/InstallAppPrompt';
+import NotificationPrompt from '@/components/NotificationPrompt';
 import { useAuthStore } from '@/Stores/useAuthStore';
 import { useUIStore } from '@/Stores/useUIStore';
 import { cn } from '@/lib/utils';
@@ -123,6 +124,7 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
             </div>
 
             <InstallAppPrompt />
+            <NotificationPrompt />
         </div>
     );
 }

@@ -28,6 +28,21 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
     }
 }
 
+// Register the service worker so the app is PWA-installable and the install
+// prompt can appear. Only on secure origins (https / localhost) and in the
+// browser — never during SSR. Registration failures are non-fatal.
+if ('serviceWorker' in navigator && typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
+    if (window.location.protocol === 'https:' || isLocalHost) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(() => {
+                // Ignore — the app still works without a service worker.
+            });
+        });
+    }
+}
+
 const appName = document.title;
 
 createInertiaApp({
