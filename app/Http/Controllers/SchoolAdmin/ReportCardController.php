@@ -23,6 +23,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -605,6 +606,7 @@ class ReportCardController extends Controller
             ])->setPaper('a4', 'portrait');
 
             $filename = "report-card-{$reportCard->student->admission_no}-{$reportCard->term->name}.pdf";
+            File::ensureDirectoryExists(storage_path('app/private/report-cards'));
             $pdf->save(storage_path("app/private/report-cards/{$filename}"));
 
             $reportCard->update(['pdf_path' => "report-cards/{$filename}"]);
