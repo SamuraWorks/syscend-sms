@@ -1,91 +1,63 @@
-import { ShieldCheck, ArrowRight, Check } from 'lucide-react';
+import { ShieldCheck, ArrowRight } from 'lucide-react';
 import { Link } from '@inertiajs/react';
-
-const CHIPS = [
-    'Works offline',
-    'Multi-school',
-    'NPSE · BECE · WASSCE',
-    'CA scores entered once',
-    'Ministry reporting',
-    'Free trial',
-];
+import Logo from '@/components/landing/Logo';
 
 export default function Hero() {
     return (
-        <section id="top" className="relative overflow-hidden bg-[#f4f7fb]">
-            {/* Hero background image */}
+        <section id="top" className="relative flex min-h-[92svh] items-center overflow-hidden bg-[#0b1f33] lg:min-h-screen">
+            {/* Full-bleed photography */}
             <div aria-hidden="true" className="pointer-events-none absolute inset-0">
                 <img
                     src="/images/hero-bg.jpeg"
                     alt=""
-                    className="h-full w-full object-cover saturate-[1.05] contrast-[1.04]"
+                    className="h-full w-full object-cover object-center"
                 />
-                <div
-                    className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/30 to-[#f4f7fb]"
-                />
+                {/* Subtle cinematic gradient: lighter at the top, deeper where the text sits */}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/65" />
+                <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black/70 to-transparent" />
             </div>
 
-            <div className="relative mx-auto max-w-7xl px-6 pt-32 pb-20 lg:px-10 lg:pt-40 lg:pb-28">
-                <div className="mx-auto max-w-3xl">
-                    {/* Text on a frosted panel so the copy stays fully legible
-                        while the background image stays clearly visible */}
-                    <div className="rounded-3xl bg-white/80 px-6 py-10 text-center shadow-[0_24px_60px_-30px_rgba(15,23,42,0.35)] ring-1 ring-white/70 backdrop-blur-md sm:px-12 sm:py-12">
-                        <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-slate-700 shadow-sm">
-                            <ShieldCheck className="size-3.5 text-[#1f66f5]" aria-hidden="true" />
-                            School management made for Sierra Leone
-                        </span>
-
-                        <h1 className="mt-7 text-balance text-4xl font-extrabold tracking-[-0.03em] text-slate-900 sm:text-5xl lg:text-6xl">
-                            Run your whole school on one system, not{' '}
-                            <span className="whitespace-nowrap text-[#1f66f5]">six registers.</span>
-                        </h1>
-
-                        <p className="mx-auto mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-slate-600">
-                            Syscend Campus unifies student records, attendance, fees, staff, and
-                            national examinations — and keeps working when the network drops, then
-                            syncs when you&apos;re back online.
-                        </p>
-
-                        <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                            <Link
-                                href="/start-trial"
-                                className="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] bg-[#1f66f5] px-7 text-sm font-semibold text-white shadow-[0_10px_24px_-12px_rgba(31,102,245,0.6)] transition-colors hover:bg-[#174ed7]"
-                            >
-                                Start free trial
-                                <ArrowRight className="size-4" aria-hidden="true" />
-                            </Link>
-                            <Link
-                                href="/request-demo"
-                                className="inline-flex h-12 items-center justify-center rounded-[8px] border border-slate-300 bg-white px-7 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:text-slate-900"
-                            >
-                                Book a demo
-                            </Link>
-                        </div>
-
-                        <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-                            {CHIPS.map((chip) => (
-                                <li key={chip} className="flex items-center gap-1.5 text-sm text-slate-500">
-                                    <Check className="size-3.5 text-[#1f66f5]" aria-hidden="true" />
-                                    {chip}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+            <div className="relative z-10 mx-auto w-full max-w-5xl px-5 pb-20 pt-28 text-center sm:px-8 lg:pb-28 lg:pt-32">
+                {/* Existing Syscend logo, directly over the photograph */}
+                <div className="mb-8 flex justify-center">
+                    <Logo tone="light" />
                 </div>
 
-                {/* Dashboard screenshot */}
-                <div className="relative mx-auto mt-16 max-w-5xl">
-                    <div
-                        aria-hidden="true"
-                        className="absolute -inset-x-8 -top-8 -bottom-8 rounded-[24px] bg-gradient-to-b from-[#1f66f5]/10 via-[#f4f7fb] to-[#ff5b3a]/10 blur-2xl"
-                    />
-                    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_60px_-24px_rgba(15,23,42,0.35)]">
-                        <img
-                            src="/images/dashboard.jpeg"
-                            alt="Syscend Campus dashboard showing school operations"
-                            className="w-full object-cover"
-                        />
-                    </div>
+                {/* Security badge — the only small container allowed */}
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/95 backdrop-blur-sm">
+                    <ShieldCheck className="size-3.5" aria-hidden="true" />
+                    Secure, cloud-ready school management
+                </span>
+
+                {/* Headline sits directly on the photograph — no background */}
+                <h1 className="mt-7 text-balance text-[2.7rem] font-extrabold leading-[1.05] tracking-[-0.03em] text-white sm:text-6xl lg:mt-9 lg:text-7xl lg:leading-[1.02]">
+                    Run your entire school{' '}
+                    <br className="md:hidden" />
+                    on one integrated
+                    <br className="md:hidden" />
+                    platform.
+                </h1>
+
+                <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-relaxed text-white/85 sm:text-lg lg:mt-8">
+                    Syscend Campus brings admissions, academics, finance, staff, communication, and
+                    student management into one connected system — built around how schools in
+                    Sierra Leone actually operate.
+                </p>
+
+                <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row lg:mt-12">
+                    <Link
+                        href="/start-trial"
+                        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-7 text-sm font-semibold text-slate-900 shadow-xl shadow-black/10 transition-colors hover:bg-slate-100 sm:w-auto"
+                    >
+                        Get Started
+                        <ArrowRight className="size-4" aria-hidden="true" />
+                    </Link>
+                    <a
+                        href="#modules"
+                        className="inline-flex h-12 w-full items-center justify-center rounded-[8px] border border-white/40 bg-white/10 px-7 text-sm font-semibold text-white backdrop-blur-sm transition-colors hover:bg-white/20 sm:w-auto"
+                    >
+                        Explore Platform
+                    </a>
                 </div>
             </div>
         </section>
