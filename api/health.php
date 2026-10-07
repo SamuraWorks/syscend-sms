@@ -155,4 +155,19 @@ try {
     $out['staged_error'] = get_class($e).': '.substr($e->getMessage(), 0, 400).' @ '.$e->getFile().':'.$e->getLine();
 }
 
-echo json_encode($out, JSON_PRETTY_PRINT);// probe v4
+// probe v7 - real inbound request scheme (trusted proxy state)
+try {
+    $real = Illuminate\Http\Request::capture();
+    $out['real_request'] = [
+        'scheme' => $real->getScheme(),
+        'secure' => $real->secure(),
+        'root' => $real->root(),
+        'forwarded_proto' => $real->headers->get('x-forwarded-proto'),
+        'forwarded_for' => $real->headers->get('x-forwarded-for'),
+        'host' => $real->getHost(),
+    ];
+} catch (Throwable $e) {
+    $out['real_request_error'] = get_class($e).': '.$e->getMessage();
+}
+
+echo json_encode($out, JSON_PRETTY_PRINT);// probe v7
