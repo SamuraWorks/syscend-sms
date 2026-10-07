@@ -2,27 +2,11 @@
 
 /*
 | Diagnostic endpoint (temporary) - reports runtime facts without booting
-| Laravel, so a failing bootstrap cannot hide the environment.
+| Laravel, then boots the HTTP kernel against "/" to surface the real
+| bootstrap error the deployed app is throwing.
 */
 
 header('Content-Type: application/json; charset=utf-8');
-
-$keys = [
-    'APP_KEY', 'APP_ENV', 'APP_URL', 'APP_DEBUG', 'APP_TIMEZONE',
-    'DB_HOST', 'DB_PORT', 'DB_DATABASE', 'DB_USERNAME', 'DB_PASSWORD', 'DB_SSLMODE',
-    'CRON_SECRET', 'STORAGE_DRIVER', 'AWS_ACCESS_KEY_ID', 'AWS_BUCKET',
-    'AWS_PUBLIC_BUCKET', 'AWS_ENDPOINT', 'AWS_PUBLIC_URL',
-    'LOG_CHANNEL', 'SESSION_DRIVER', 'CACHE_STORE', 'QUEUE_CONNECTION', 'MAIL_MAILER',
-];
-
-$env = [];
-foreach ($keys as $key) {
-    $value = getenv($key);
-    if ($value === false) {
-        $value = $_ENV[$key] ?? $_SERVER[$key] ?? null;
-    }
-    $env[$key] = ($value === null || $value === '') ? '(unset)' : 'set';
-}
 
 $out = [
     'php' => PHP_VERSION,
@@ -30,18 +14,16 @@ $out = [
     'time' => date('c'),
     'request_uri' => $_SERVER['REQUEST_URI'] ?? '(none)',
     'cwd' => getcwd(),
-    'script' => realpath($_SERVER['SCRIPT_FILENAME'] ?? __FILE__),
-    'vendor_autoload' => file_exists(__DIR__.'/../vendor/autoload.php'),
-    'public_index' => file_exists(__DIR__.'/../public/index.php'),
-    'env' => $env,
 ];
 
 if ($out['vendor_autoload']) {
     require __DIR__.'/../vendor/autoload.php';
-    $out['laravel'] = class_exists('Illuminate\Foundation\Application')
-        ? Illuminate\Foundation\Application::VERSION
-        : 'not loaded';
+    $out['laravel'] = Illuminate\Foundation\Application::VERSION;
 }
+
+$out['views_path'] = getenv('VIEW_COMPILED_PATH') ?: '(unset)';
+$out['storage_framework_views_exists'] = is_dir(__DIR__.'/../storage/framework/views');
+$out['tmp_writable'] = is_writable(sys_get_temp_dir());
 
 if (class_exists('PDO')) {
     $host = getenv('DB_HOST');
@@ -60,8 +42,7 @@ if (class_exists('PDO')) {
                 $password,
                 [PDO::ATTR_TIMEOUT => 8, PDO::ATTR_CONNECT_TIMEOUT => 8]
             );
-            $pdo->query('select 1');
-            $out['db_test'] = 'connected';
+            $out['db_test'] = $pdo->query('select 1')->fetchColumn() !== false ? 'connected' : 'connected(empty)';
             unset($pdo);
         } catch (Throwable $e) {
             $out['db_test'] = 'FAIL: '.substr($e->getMessage(), 0, 240);
@@ -69,6 +50,27 @@ if (class_exists('PDO')) {
     }
 } else {
     $out['db_test'] = 'PDO unavailable';
+}
+
+$compiledViews = getenv('VIEW_COMPILED_PATH') ?: rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'syscend-views';
+if (! is_dir($compiledViews)) {
+    @mkdir($compiledViews, 0777, true);
+}
+$_ENV['VIEW_COMPILED_PATH'] = $compiledViews;
+$_SERVER['VIEW_COMPILED_PATH'] = $compiledViews;
+putenv('VIEW_COMPILED_PATH='.$compiledViews);
+
+$out['boot'] = null;
+try {
+    $app = require __DIR__.'/../bootstrap/app.php';
+    $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+    $request = Illuminate\Http\Request::create('https://example.test/', 'GET');
+    $response = $kernel->handle($request);
+    $out['boot'] = 'kernel returned status '.$response->getStatusCode();
+} catch (Throwable $e) {
+    $out['boot'] = 'TIMEOUT/ERROR: '.get_class($e).': '.substr($e->getMessage(), 0, 500)
+        .' @ '.$e->getFile().':'.$e->getLine()
+        .(method_exists($e, 'getStatusCode') ? ' (http '.$e->getStatusCode().')' : '');
 }
 
 echo json_encode($out, JSON_PRETTY_PRINT);
