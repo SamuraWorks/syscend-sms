@@ -66,8 +66,10 @@ require __DIR__.'/../vendor/autoload.php';
 
 $app = null;
 $out['boot'] = null;
+$bootTrace = null;
 try {
     $app = require __DIR__.'/../bootstrap/app.php';
+    $out['has_been_bootstrapped'] = $app->hasBeenBootstrapped();
     $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
     $request = Illuminate\Http\Request::create('https://example.test/', 'GET');
     $response = $kernel->handle($request);
@@ -76,37 +78,34 @@ try {
     $out['boot'] = 'TIMEOUT/ERROR: '.get_class($e).': '.substr($e->getMessage(), 0, 500)
         .' @ '.$e->getFile().':'.$e->getLine()
         .(method_exists($e, 'getStatusCode') ? ' (http '.$e->getStatusCode().')' : '');
+    $frames = [];
+    foreach (array_slice($e->getTrace(), 0, 10) as $f) {
+        $frames[] = ($f['class'] ?? '').($f['type'] ?? '::').($f['function'] ?? '')
+            .' @ '.($f['file'] ?? '?').':'.($f['line'] ?? '?');
+    }
+    $out['boot_stack'] = $frames;
 }
 
-// probe v5 - deployed tree introspection
+// probe v6 - deployed tree introspection
 $out['app_env'] = getenv('APP_ENV') ?: '(unset)';
 $out['config_app_md5'] = md5_file(__DIR__.'/../config/app.php');
-$out['app_php_lines'] = count(file(__DIR__.'/../config/app.php'));
 $out['cached_config_exists'] = is_file(__DIR__.'/../bootstrap/cache/config.php');
 $out['cached_services_exists'] = is_file(__DIR__.'/../bootstrap/cache/services.php');
+$out['bootstrap_cache_writable'] = is_writable(__DIR__.'/../bootstrap/cache');
+$out['base_path'] = isset($app) && $app !== null ? $app->basePath() : '(no app)';
 
 if ($app !== null) {
     try {
-        $out['configuration_cached'] = $app->configurationIsCached();
-        $out['bootstrap_providers_file'] = is_file(__DIR__.'/../bootstrap/providers.php');
-
         $cfg = $app->make('config');
         $providers = (array) $cfg->get('app.providers');
         $out['provider_count'] = count($providers);
         $out['view_provider_in_config'] = in_array('Illuminate\View\ViewServiceProvider', $providers, true);
-        $out['config_source_provider_index'] = array_values(array_filter(
-            $providers,
-            static fn ($p) => is_string($p) && (str_contains($p, 'ViewServiceProvider') || str_contains($p, '\\View\\'))
-        ));
-
         $loaded = $app->getLoadedProviders();
         $out['loaded_provider_view'] = array_key_exists('Illuminate\View\ViewServiceProvider', $loaded)
             ? ($loaded['Illuminate\View\ViewServiceProvider'] ? 'loaded' : 'registered-but-not-loaded')
             : 'absent';
+        $out['loaded_provider_count'] = count($loaded);
         $out['bound_view'] = $app->bound('view');
-
-        $out['view_compiled_config'] = $cfg->get('view.compiled');
-        $out['view_paths_config'] = $cfg->get('view.paths');
     } catch (Throwable $e) {
         $out['introspection_error'] = get_class($e).': '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine();
     }
@@ -117,8 +116,23 @@ if ($app !== null) {
     } catch (Throwable $e) {
         $out['view_resolve'] = get_class($e).': '.substr($e->getMessage(), 0, 300);
     }
-} else {
-    $out['app'] = 'bootstrap/app.php produced nothing';
+}
+
+// stage: fresh application, manually register providers, no kernel
+try {
+    $app2 = require __DIR__.'/../bootstrap/app.php';
+    $out['staged_has_been_bootstrapped'] = $app2->hasBeenBootstrapped();
+    $app2->registerConfiguredProviders();
+    $loaded2 = $app2->getLoadedProviders();
+    $out['staged_loaded_provider_view'] = array_key_exists('Illuminate\View\ViewServiceProvider', $loaded2)
+        ? 'loaded' : 'absent';
+    $out['staged_loaded_provider_count'] = count($loaded2);
+    $out['staged_bound_view'] = $app2->bound('view');
+    if ($app2->bound('view')) {
+        $out['staged_view_class'] = get_class($app2->make('view'));
+    }
+} catch (Throwable $e) {
+    $out['staged_error'] = get_class($e).': '.substr($e->getMessage(), 0, 400).' @ '.$e->getFile().':'.$e->getLine();
 }
 
 echo json_encode($out, JSON_PRETTY_PRINT);// probe v4
