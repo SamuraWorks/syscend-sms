@@ -9,11 +9,12 @@ import {
     PieChart, FileText, TrendingUp, Wrench, ShieldCheck, Plug,
     CreditCard, Tag, Wallet, Receipt, FileSpreadsheet, AlertTriangle, Landmark,
     Brain, Trophy, AlertCircle, Target, Eye, Sparkles, Crown, Stethoscope,
-    Fingerprint, CalendarClock, RotateCcw, Flag,
+    Fingerprint, CalendarClock, RotateCcw, Flag, Smartphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/Stores/useUIStore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { requestInstallPrompt } from '@/components/InstallAppPrompt';
 import type { PageProps } from '@/Types';
 
 interface NavItem {
@@ -765,6 +766,22 @@ export default function Sidebar() {
                         </div>
                     ))}
                 </nav>
+
+                {/* Download app — works even before the browser fires the
+                    install prompt (shows iOS/home-screen instructions too) */}
+                <div className="px-2 pb-2">
+                    <button
+                        type="button"
+                        onClick={requestInstallPrompt}
+                        className={cn(
+                            'flex w-full items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-secondary-foreground hover:bg-accent hover:text-foreground transition-colors',
+                            collapsed && 'md:justify-center md:px-0',
+                        )}
+                    >
+                        <Smartphone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                        {!collapsed && <span>Download App</span>}
+                    </button>
+                </div>
 
                 {/* Collapse toggle — hidden on mobile */}
                 <button

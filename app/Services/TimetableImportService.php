@@ -3,7 +3,8 @@
 namespace App\Services;
 
 use App\Models\{AcademicYear, SchoolClass, Section, Staff, Subject, Timetable};
-use Illuminate\Support\Facades\{Storage, DB};
+use App\Support\StoredFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\{Collection, Str};
 
 class TimetableImportService
@@ -25,7 +26,7 @@ class TimetableImportService
 
     public function parseFile($job): void
     {
-        $filePath = Storage::disk('private')->path($job->file_path);
+        $filePath = StoredFile::localPath($job->file_path, 'private');
         $rows = $this->readRows($filePath);
 
         $header = array_map(fn ($h) => Str::slug(Str::lower(trim((string) $h)), '_'), $rows[0] ?? []);
@@ -70,7 +71,7 @@ class TimetableImportService
 
     public function executeImport($job): array
     {
-        $filePath = Storage::disk('private')->path($job->file_path);
+        $filePath = StoredFile::localPath($job->file_path, 'private');
         $rows = $this->readRows($filePath);
         $header = array_map(fn ($h) => Str::slug(Str::lower(trim((string) $h)), '_'), $rows[0] ?? []);
         $dataRows = array_slice($rows, 1);

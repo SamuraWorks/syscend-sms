@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\{Guardian, ImportJob, Student};
-use Illuminate\Support\Facades\Storage;
+use App\Support\StoredFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -37,7 +37,7 @@ class ParentImportService
 
     public function parseFile(ImportJob $job): array
     {
-        $filePath = Storage::disk('private')->path($job->file_path);
+        $filePath = StoredFile::localPath($job->file_path, 'private');
 
         if (!file_exists($filePath)) {
             throw new \RuntimeException("Import file not found: {$job->file_name}");

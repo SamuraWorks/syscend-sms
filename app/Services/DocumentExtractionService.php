@@ -3,8 +3,9 @@
 namespace App\Services;
 
 use App\Models\DocumentImport;
+use App\Support\StoredFile;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\{DB, Http, Storage};
+use Illuminate\Support\Facades\{DB, Http};
 
 class DocumentExtractionService
 {
@@ -47,7 +48,7 @@ class DocumentExtractionService
         $import->update(['status' => 'processing']);
 
         try {
-            $filePath = Storage::disk('private')->path($import->file_path);
+            $filePath = StoredFile::localPath($import->file_path, 'private');
             $fileContent = file_get_contents($filePath);
             $base64 = base64_encode($fileContent);
             $mimeType = $import->file_type ?? 'image/jpeg';

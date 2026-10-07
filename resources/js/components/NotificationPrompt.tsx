@@ -53,18 +53,22 @@ export default function NotificationPrompt() {
     if (!visible) return null;
 
     return (
-        <div className="fixed bottom-4 left-4 z-40 w-full max-w-sm rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+        <div
+            className="fixed inset-x-0 top-0 z-40 rounded-b-2xl border border-t-0 border-slate-200 bg-white p-5 pt-[calc(1.25rem+env(safe-area-inset-top))] shadow-[0_12px_40px_-16px_rgba(15,23,42,0.35)] sm:inset-x-auto sm:top-auto sm:bottom-4 sm:left-4 sm:w-[26rem] sm:rounded-2xl sm:border-t sm:pb-5 sm:pt-5"
+            role="dialog"
+            aria-label="Enable notifications"
+        >
             <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
                     {schoolBranding?.logo_url ? (
                         <img src={schoolBranding.logo_url} alt="" className="h-full w-full object-contain p-1" />
                     ) : (
                         <BellRing className="h-5 w-5 text-slate-500" />
                     )}
                 </div>
-                <div className="flex-1">
+                <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-slate-900">Stay connected</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
+                    <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
                         Enable notifications to receive important updates from {appName} — announcements,
                         results, homework, fees, and more.
                     </p>
@@ -78,18 +82,18 @@ export default function NotificationPrompt() {
                     <X className="h-4 w-4" />
                 </button>
             </div>
-            <div className="mt-3 flex gap-2">
+            <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
                 <button
                     type="button"
                     onClick={maybeLater}
-                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                     Maybe later
                 </button>
                 <button
                     type="button"
                     onClick={enable}
-                    className="flex-1 rounded-lg bg-[#1f66f5] px-3 py-2 text-sm font-semibold text-white hover:bg-[#174ed7]"
+                    className="flex-1 rounded-lg bg-[#1f66f5] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#174ed7]"
                 >
                     Enable Notifications
                 </button>

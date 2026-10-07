@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { usePage } from '@inertiajs/react';
-import { X, Download } from 'lucide-react';
+import { X, Download, Info } from 'lucide-react';
 import type { PageProps } from '@/Types';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -9,93 +9,184 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const DISMISS_KEY = 'syscend_install_prompt_dismissed_v1';
+const MANUAL_EVENT = 'syscend:install-app';
+
+function isStandalone(): boolean {
+    if (typeof window === 'undefined') return false;
+    return (
+        window.matchMedia?.('(display-mode: standalone)').matches === true ||
+        // iOS home-screen apps set navigator.standalone
+        (window.navigator as unknown as { standalone?: boolean }).standalone === true
+    );
+}
+
+function isIOS(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    const ua = navigator.userAgent;
+    const isIphoneLike = /iPhone|iPad|iPod/.test(ua);
+    const isMacDesktopIpad = ua.includes('Macintosh') && 'ontouchend' in document && !isStandalone();
+    return isIphoneLike || isMacDesktopIpad;
+}
 
 export default function InstallAppPrompt() {
     const { schoolBranding } = usePage<PageProps>().props;
     const [event, setEvent] = useState<BeforeInstallPromptEvent | null>(null);
-    const [dismissed, setDismissed] = useState(() => {
+    const [visible, setVisible] = useState(false);
+    const [installed, setInstalled] = useState<boolean | null>(null);
+
+    const alreadyInstalled = installed === true;
+    const ios = typeof window !== 'undefined' && isIOS();
+
+    const appName = schoolBranding?.name || 'Syscend Campus';
+
+    const dismiss = useCallback(() => {
+        setVisible(false);
         try {
-            return localStorage.getItem(DISMISS_KEY) === '1';
+            localStorage.setItem(DISMISS_KEY, '1');
         } catch {
-            return false;
+            /* ignore */
         }
-    });
+    }, []);
 
     useEffect(() => {
+        if (typeof window === 'undefined') return;
+        setInstalled(isStandalone());
+
         const onPrompt = (e: Event) => {
             e.preventDefault();
             setEvent(e as BeforeInstallPromptEvent);
+            // Auto-surface once after the browser signals installability.
+            let dismissed = false;
+            try {
+                dismissed = localStorage.getItem(DISMISS_KEY) === '1';
+            } catch {
+                /* ignore */
+            }
+            if (!dismissed && !isStandalone()) setVisible(true);
         };
-        const onInstalled = () => setEvent(null);
+        const onInstalled = () => {
+            setInstalled(true);
+            setVisible(false);
+            setEvent(null);
+        };
+        const onManual = () => setVisible(true);
 
         window.addEventListener('beforeinstallprompt', onPrompt);
         window.addEventListener('appinstalled', onInstalled);
+        window.addEventListener(MANUAL_EVENT, onManual);
 
         return () => {
             window.removeEventListener('beforeinstallprompt', onPrompt);
             window.removeEventListener('appinstalled', onInstalled);
+            window.removeEventListener(MANUAL_EVENT, onManual);
         };
     }, []);
 
-    if (!event || dismissed) return null;
+    if (!visible || alreadyInstalled) return null;
 
     const install = async () => {
-        await event.prompt();
-        const choice = await event.userChoice;
-        setEvent(null);
-        if (choice.outcome === 'accepted') {
-            try { localStorage.setItem(DISMISS_KEY, '1'); } catch { /* ignore */ }
+        if (!event) return;
+        try {
+            await event.prompt();
+            const choice = await event.userChoice;
+            if (choice.outcome === 'accepted') {
+                try {
+                    localStorage.setItem(DISMISS_KEY, '1');
+                } catch {
+                    /* ignore */
+                }
+            }
+        } catch {
+            /* ignore */
         }
+        setVisible(false);
     };
 
-    const maybeLater = () => {
-        setEvent(null);
-        try { localStorage.setItem(DISMISS_KEY, '1'); } catch { /* ignore */ }
-    };
-
-    const appName = schoolBranding?.name || 'Syscend Campus';
+    const steps = ios
+        ? ['Tap the Share icon in Safari', 'Choose "Add to Home Screen"', 'Tap "Add" to finish installing']
+        : event
+          ? 'Tap Install and follow the browser prompt.'
+          : ['Open your browser menu', 'Choose "Install app" or "Add to Home Screen"', 'Confirm to finish installing'];
 
     return (
-        <div className="fixed bottom-4 right-4 z-50 w-full max-w-sm rounded-xl border border-slate-200 bg-white p-4 shadow-xl">
+        <div
+            className="fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border border-b-0 border-slate-200 bg-white p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-[0_-12px_40px_-12px_rgba(15,23,42,0.35)] sm:inset-x-auto sm:bottom-4 sm:right-4 sm:w-[26rem] sm:rounded-2xl sm:border-b sm:pb-5"
+            role="dialog"
+            aria-label={`Install ${appName}`}
+        >
             <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-slate-100">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-100">
                     {schoolBranding?.logo_url ? (
                         <img src={schoolBranding.logo_url} alt="" className="h-full w-full object-contain p-1" />
                     ) : (
                         <Download className="h-5 w-5 text-slate-500" />
                     )}
                 </div>
-                <div className="flex-1">
-                    <p className="text-sm font-semibold text-slate-900">Install {appName}</p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                        Add {appName} to your home screen for a faster, app-like experience.
+                <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-900">Download {appName}</p>
+                    <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
+                        {event
+                            ? `Install ${appName} for a faster, app-like experience with one tap from your home screen.`
+                            : 'The web app works on all devices. To install it on your phone, add it to your home screen.'}
                     </p>
                 </div>
                 <button
                     type="button"
-                    onClick={maybeLater}
+                    onClick={dismiss}
                     aria-label="Dismiss install prompt"
                     className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                 >
                     <X className="h-4 w-4" />
                 </button>
             </div>
-            <div className="mt-3 flex gap-2">
+
+            {!event && (
+                <ul className="mt-3 space-y-1.5">
+                    {Array.isArray(steps) ? steps.map((s, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-slate-600">
+                            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-500" />
+                            {s}
+                        </li>
+                    )) : (
+                        <li className="flex items-start gap-2 text-xs text-slate-600">
+                            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-500" />
+                            {steps}
+                        </li>
+                    )}
+                </ul>
+            )}
+
+            <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
                 <button
                     type="button"
-                    onClick={maybeLater}
-                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    onClick={dismiss}
+                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                     Maybe later
                 </button>
-                <button
-                    type="button"
-                    onClick={install}
-                    className="flex-1 rounded-lg bg-[#1f66f5] px-3 py-2 text-sm font-semibold text-white hover:bg-[#174ed7]"
-                >
-                    Install
-                </button>
+                {event ? (
+                    <button
+                        type="button"
+                        onClick={install}
+                        className="flex-1 rounded-lg bg-[#1f66f5] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#174ed7]"
+                    >
+                        Install
+                    </button>
+                ) : (
+                    <button
+                        type="button"
+                        onClick={dismiss}
+                        className="flex-1 rounded-lg bg-[#1f66f5] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[#174ed7]"
+                    >
+                        Got it
+                    </button>
+                )}
             </div>
         </div>
     );
+}
+
+export function requestInstallPrompt() {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(new Event(MANUAL_EVENT));
 }

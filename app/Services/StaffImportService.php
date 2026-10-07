@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Models\{Department, Designation, ImportJob, Staff};
-use Illuminate\Support\Facades\Storage;
+use App\Support\StoredFile;
 use Illuminate\Support\{DB, Str};
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -36,7 +36,7 @@ class StaffImportService
 
     public function parseFile(ImportJob $job): array
     {
-        $filePath = Storage::disk('private')->path($job->file_path);
+        $filePath = StoredFile::localPath($job->file_path, 'private');
 
         if (!file_exists($filePath)) {
             throw new \RuntimeException("Import file not found: {$job->file_name}");

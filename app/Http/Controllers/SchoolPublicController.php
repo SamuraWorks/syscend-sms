@@ -74,19 +74,31 @@ class SchoolPublicController extends Controller
     {
         $icon = $data['icon'] ?? null;
 
+        // Chrome/Edge/Android installability needs real 192x192 and 512x512
+        // PNG icons. Ship the static brand icons always, then add the school's
+        // logo as an extra 512 entry when one exists.
+        $icons = [
+            ['src' => asset('icons/icon-192.png'), 'sizes' => '192x192', 'type' => 'image/png',  'purpose' => 'any'],
+            ['src' => asset('icons/icon-512.png'), 'sizes' => '512x512', 'type' => 'image/png',  'purpose' => 'any'],
+            ['src' => asset('icons/icon-512.png'), 'sizes' => '512x512', 'type' => 'image/png',  'purpose' => 'maskable'],
+        ];
+
+        if ($icon) {
+            $icons[] = ['src' => $icon, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'];
+        }
+
         return response()->json([
-            'name'            => $data['name'],
-            'short_name'      => $data['short_name'],
-            'id'              => $data['start_url'],
-            'start_url'       => $data['start_url'],
-            'scope'           => '/',
-            'display'         => 'standalone',
-            'background_color'=> '#ffffff',
-            'theme_color'     => $data['theme_color'] ?? '#1e40af',
-            'description'     => $data['name'] . ' — Syscend Campus',
-            'icons'           => array_values(array_filter([
-                $icon ? ['src' => $icon, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any maskable'] : null,
-            ])),
+            'name'             => $data['name'],
+            'short_name'       => $data['short_name'],
+            'id'               => $data['start_url'],
+            'start_url'        => $data['start_url'],
+            'scope'            => '/',
+            'display'          => 'standalone',
+            'display_override' => ['standalone', 'minimal-ui'],
+            'background_color' => '#ffffff',
+            'theme_color'      => $data['theme_color'] ?? '#1e40af',
+            'description'      => $data['name'] . ' — Syscend Campus',
+            'icons'            => $icons,
         ], 200, [], JSON_UNESCAPED_SLASHES)->header('Content-Type', 'application/manifest+json');
     }
 }

@@ -110,8 +110,10 @@ export default function CreateEnrollment() {
         });
     };
 
-    // Student picker mode — no student selected yet
-    if (!student && students.length > 0) {
+    // Student picker mode — no student selected yet. A null student with an
+    // empty list (e.g. no active students in this school) must still render
+    // the picker, otherwise the main view dereferences a null student below.
+    if (!student) {
         const filteredStudents = students.filter(s =>
             s.first_name.toLowerCase().includes(studentSearch.toLowerCase()) ||
             s.last_name?.toLowerCase().includes(studentSearch.toLowerCase()) ||

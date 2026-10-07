@@ -85,7 +85,19 @@ class ImportController extends Controller
         ]);
 
         $service = $this->getImportService($type);
-        $service->parseFile($job);
+
+        try {
+            $service->parseFile($job);
+        } catch (\Throwable $e) {
+            report($e);
+            $job->update([
+                'status'         => 'failed',
+                'import_summary' => ['error' => $e->getMessage()],
+            ]);
+
+            return redirect()->route('school-admin.imports.index')
+                ->with('error', 'We could not read that file. Please check it uses the template format and try again.');
+        }
 
         return redirect()->route('school-admin.imports.preview', $job);
     }
@@ -95,7 +107,20 @@ class ImportController extends Controller
         abort_unless($job->school_id === $this->getSchoolId(), 403);
 
         $service = $this->getImportService($job->import_type);
-        $raw = $service->previewRows($job);
+
+        try {
+            $raw = $service->previewRows($job);
+        } catch (\Throwable $e) {
+            report($e);
+            $job->update([
+                'status'         => 'failed',
+                'import_summary' => ['error' => $e->getMessage()],
+            ]);
+
+            return redirect()
+                ->route('school-admin.imports.index')
+                ->with('error', 'We could not parse that file. Please download the template again and retry.');
+        }
 
         $preview = match ($job->import_type) {
             'curriculum' => $raw,
@@ -134,7 +159,20 @@ class ImportController extends Controller
         abort_unless($job->school_id === $this->getSchoolId(), 403);
 
         $service = $this->getImportService($job->import_type);
-        $summary = $service->executeImport($job);
+
+        try {
+            $summary = $service->executeImport($job);
+        } catch (\Throwable $e) {
+            report($e);
+            $job->update([
+                'status'         => 'failed',
+                'import_summary' => ['error' => $e->getMessage()],
+            ]);
+
+            return redirect()
+                ->route('school-admin.imports.index')
+                ->with('error', 'The import failed. Please review your file and try again.');
+        }
 
         $job->update([
             'status'   => 'completed',
@@ -176,6 +214,7 @@ class ImportController extends Controller
 
         $filename = "{$type}_import_template.xlsx";
         $tempPath = storage_path("app/private/{$filename}");
+        \Illuminate\Support\Facades\File::ensureDirectoryExists(dirname($tempPath));
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
         $writer->save($tempPath);
 
