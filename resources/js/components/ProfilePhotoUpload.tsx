@@ -82,7 +82,7 @@ export default function ProfilePhotoUpload({
                 toast.success(res.data.message);
                 setPreview(null);
                 setSelectedFile(null);
-                onPhotoUpdated?.(res.data.avatar_url);
+                onPhotoUpdated?.(res.data.avatar_url ?? null);
                 router.reload();
             }
         } catch (err: any) {

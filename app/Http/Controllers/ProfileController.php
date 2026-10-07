@@ -53,15 +53,25 @@ class ProfileController extends Controller
 
         $file = $request->file('photo');
 
-        $filename = $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+        $filename = $user->id . '_' . time() . '_' . \Illuminate\Support\Str::random(6) . '.' . $file->getClientOriginalExtension();
 
-        $file->storeAs('avatars', $filename, 'public');
+        $path = $file->storeAs('avatars', $filename, 'public');
 
-        $path = 'avatars/' . $filename;
+        // The public disk is configured with throw=false, so a failed write
+        // returns false instead of throwing. Without this check the request
+        // would report success and persist an avatar path that points at a
+        // file that was never written - the photo then appears nowhere, even
+        // after a refresh or re-login. Fail loudly instead.
+        if ($path === false) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Profile photo could not be uploaded. Please try again.',
+            ], 422);
+        }
 
         $oldAvatar = $user->avatar;
 
-        if ($oldAvatar && Storage::disk('public')->exists($oldAvatar)) {
+        if ($oldAvatar && $oldAvatar !== $path && Storage::disk('public')->exists($oldAvatar)) {
             Storage::disk('public')->delete($oldAvatar);
         }
 
@@ -78,10 +88,13 @@ class ProfileController extends Controller
             'ip_address'     => request()->ip(),
         ]);
 
+        $user->refresh();
+
         return response()->json([
-            'success'   => true,
-            'avatar_url' => Storage::disk('public')->url($path),
-            'message'   => 'Profile photo updated successfully.',
+            'success'    => true,
+            'avatar_url' => $user->avatar_url,
+            'avatar'     => $user->avatar,
+            'message'    => 'Profile photo updated successfully.',
         ]);
     }
 
