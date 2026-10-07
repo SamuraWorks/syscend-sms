@@ -16,6 +16,8 @@ $out = [
     'cwd' => getcwd(),
 ];
 
+$out['vendor_autoload'] = file_exists(__DIR__.'/../vendor/autoload.php');
+
 if ($out['vendor_autoload']) {
     require __DIR__.'/../vendor/autoload.php';
     $out['laravel'] = Illuminate\Foundation\Application::VERSION;
@@ -40,7 +42,7 @@ if (class_exists('PDO')) {
                 "pgsql:host={$host};port={$port};dbname={$dbname};sslmode=require",
                 $username,
                 $password,
-                [PDO::ATTR_TIMEOUT => 8, PDO::ATTR_CONNECT_TIMEOUT => 8]
+                [PDO::ATTR_TIMEOUT => 8]
             );
             $out['db_test'] = $pdo->query('select 1')->fetchColumn() !== false ? 'connected' : 'connected(empty)';
             unset($pdo);
@@ -59,6 +61,8 @@ if (! is_dir($compiledViews)) {
 $_ENV['VIEW_COMPILED_PATH'] = $compiledViews;
 $_SERVER['VIEW_COMPILED_PATH'] = $compiledViews;
 putenv('VIEW_COMPILED_PATH='.$compiledViews);
+
+require __DIR__.'/../vendor/autoload.php';
 
 $out['boot'] = null;
 try {
