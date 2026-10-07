@@ -60,6 +60,8 @@ class SubscriptionPaymentService
         $subscription->update(['payment_method' => $method]);
         $this->checkAndActivate($subscription);
 
+        app(\App\Services\InvoiceService::class)->settleForPayment($payment);
+
         return $payment;
     }
 
@@ -119,6 +121,8 @@ class SubscriptionPaymentService
         ])->save();
 
         $this->checkAndActivate($payment->subscription()->first());
+
+        app(\App\Services\InvoiceService::class)->settleForPayment($payment);
 
         return true;
     }

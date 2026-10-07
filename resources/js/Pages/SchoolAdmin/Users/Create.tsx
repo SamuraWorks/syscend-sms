@@ -92,6 +92,11 @@ export default function CreateUser({ roles, classes, sections, departments, desi
         [data.form_master_class_id, sections],
     );
 
+    const fmClasses = useMemo(
+        () => classes.filter(c => sections.some(s => s.class_id === Number(c.id))),
+        [classes, sections],
+    );
+
     function next() {
         if (step === 0 && !accountType) return;
         if (step === 0) setData('account_type', accountType);
@@ -305,7 +310,7 @@ export default function CreateUser({ roles, classes, sections, departments, desi
                                                     <Select value={data.form_master_class_id} onValueChange={v => setData({ form_master_class_id: v, form_master_section_id: '' })}>
                                                         <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                                                         <SelectContent>
-                                                            {classes.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                                                            {fmClasses.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
@@ -314,7 +319,9 @@ export default function CreateUser({ roles, classes, sections, departments, desi
                                                     <Select value={data.form_master_section_id} onValueChange={v => setData('form_master_section_id', v)}>
                                                         <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                                                         <SelectContent>
-                                                            {fmSections.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+                                                            {fmSections.length === 0
+                                                                ? <SelectItem value="__none" disabled className="text-slate-400">No section for this class</SelectItem>
+                                                                : fmSections.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
                                                         </SelectContent>
                                                     </Select>
                                                 </div>

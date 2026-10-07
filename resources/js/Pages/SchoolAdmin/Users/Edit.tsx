@@ -84,6 +84,10 @@ export default function EditUser({ user, staff, roles, classes, sections, depart
         data.form_master_class_id ? s.class_id === Number(data.form_master_class_id) : true
     );
 
+    const fmClasses = classes.filter(c =>
+        sections.some(s => s.class_id === Number(c.id)) || c.id === Number(data.form_master_class_id)
+    );
+
     const hasStaffChanges = staff ? (
         data.gender !== (staff.gender ?? '')
         || data.date_of_birth !== (staff.date_of_birth ? staff.date_of_birth.split('T')[0] : '')
@@ -293,7 +297,7 @@ export default function EditUser({ user, staff, roles, classes, sections, depart
                                             className="mt-1 flex h-9 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1 text-sm shadow-sm"
                                         >
                                             <option value="">None</option>
-                                            {classes.map(c => (
+                                            {fmClasses.map(c => (
                                                 <option key={c.id} value={c.id}>{c.name}</option>
                                             ))}
                                         </select>
@@ -308,6 +312,9 @@ export default function EditUser({ user, staff, roles, classes, sections, depart
                                             className="mt-1 flex h-9 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-1 text-sm shadow-sm disabled:opacity-50"
                                         >
                                             <option value="">None</option>
+                                            {data.form_master_class_id && filteredSections.length === 0 && (
+                                                <option value="" disabled>No section for this class</option>
+                                            )}
                                             {filteredSections.map(s => (
                                                 <option key={s.id} value={s.id}>{s.name}</option>
                                             ))}

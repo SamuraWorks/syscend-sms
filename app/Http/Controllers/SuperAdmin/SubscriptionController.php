@@ -79,6 +79,8 @@ class SubscriptionController extends Controller
             Coupon::find($data['coupon_id'])->apply();
         }
 
+        app(\App\Services\InvoiceService::class)->generateForSubscription($sub);
+
         if ($request->input('initiate_payment') && $request->input('payer_phone')) {
             $result = $paymentService->initiatePayment($sub, $request->input('payer_phone'), (float) $data['price_per_term']);
             if ($result['success'] && isset($result['payment_url'])) {

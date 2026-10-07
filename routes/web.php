@@ -15,6 +15,7 @@ use App\Http\Controllers\SchoolAdmin\UserManagementController as SchoolUserManag
 use App\Http\Controllers\SchoolAdmin\SchoolTimeSettingsController;
 use App\Http\Controllers\SchoolAdmin\FeeCategoryController;
 use App\Http\Controllers\SchoolAdmin\FeePaymentController;
+use App\Http\Controllers\SchoolAdmin\SchoolBillingController;
 use App\Http\Controllers\SchoolAdmin\FeeStructureController;
 use App\Http\Controllers\SchoolAdmin\CommunicationController;
 use App\Http\Controllers\SchoolAdmin\ImportController;
@@ -73,6 +74,7 @@ use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DemoRequestController;
 use App\Http\Controllers\StartTrialController;
 use App\Http\Controllers\SuperAdmin\SubscriptionController;
+use App\Http\Controllers\SuperAdmin\InvoiceController;
 use App\Http\Controllers\SuperAdmin\UserManagementController;
 use App\Http\Controllers\SuperAdmin\TwoFactorController;
 use App\Http\Controllers\SuperAdmin\SchoolWithAdminController;
@@ -543,6 +545,12 @@ Route::middleware('auth')->group(function () {
 
             Route::middleware('permission:collect-fees')->group(function () {
                 Route::post('fees/payments',                     [FeePaymentController::class, 'store'])->name('fees.payments.store');
+            });
+
+            // Billing & Invoices
+            Route::middleware('role:super-admin|school-admin|accountant')->group(function () {
+                Route::get('billing/invoices',                [SchoolBillingController::class, 'index'])->name('billing.invoices.index');
+                Route::get('billing/invoices/{invoice}/pdf',  [SchoolBillingController::class, 'downloadPdf'])->name('billing.invoices.pdf');
             });
 
             // Communication
@@ -1113,6 +1121,10 @@ Route::middleware('auth')->group(function () {
             Route::delete('subscriptions/{subscription}',      [SubscriptionController::class, 'destroy'])->name('subscriptions.destroy');
             Route::post('subscriptions/{subscription}/offline-payment', [SubscriptionController::class, 'recordOfflinePayment'])->name('subscriptions.offline-payment');
             Route::post('subscriptions/{subscription}/online-payment',  [SubscriptionController::class, 'initiateOnlinePayment'])->name('subscriptions.online-payment');
+
+            // Invoices
+            Route::get('invoices',                [InvoiceController::class, 'index'])->name('invoices.index');
+            Route::get('invoices/{invoice}/pdf',  [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
 
             // Pricing
             Route::get('pricing', fn () => Inertia::render('SuperAdmin/Pricing/Index', [

@@ -164,6 +164,10 @@ class DemoManagementController extends Controller
             ])
             ->log('Demo request converted — school and School Admin created');
 
+        if ($subscription = $result['school']->currentSubscription) {
+            app(\App\Services\InvoiceService::class)->generateForSubscription($subscription);
+        }
+
         return redirect()
             ->route('super-admin.demo-requests.show', $demoRequest)
             ->with('temp_password', $result['temp_password'])
