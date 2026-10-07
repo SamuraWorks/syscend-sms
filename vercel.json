@@ -14,6 +14,14 @@
       "destination": "/api/assets.php"
     },
     {
+      "source": "/(favicon.ico|robots.txt|favicon.png|apple-touch-icon.png|manifest.json|site.webmanifest)",
+      "destination": "/api/assets.php"
+    },
+    {
+      "source": "/images/(.*)",
+      "destination": "/api/assets.php"
+    },
+    {
       "source": "/(.*)",
       "destination": "/api/index.php"
     }
