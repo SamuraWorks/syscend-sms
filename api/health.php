@@ -64,6 +64,7 @@ putenv('VIEW_COMPILED_PATH='.$compiledViews);
 
 require __DIR__.'/../vendor/autoload.php';
 
+$app = null;
 $out['boot'] = null;
 try {
     $app = require __DIR__.'/../bootstrap/app.php';
@@ -75,6 +76,49 @@ try {
     $out['boot'] = 'TIMEOUT/ERROR: '.get_class($e).': '.substr($e->getMessage(), 0, 500)
         .' @ '.$e->getFile().':'.$e->getLine()
         .(method_exists($e, 'getStatusCode') ? ' (http '.$e->getStatusCode().')' : '');
+}
+
+// probe v5 - deployed tree introspection
+$out['app_env'] = getenv('APP_ENV') ?: '(unset)';
+$out['config_app_md5'] = md5_file(__DIR__.'/../config/app.php');
+$out['app_php_lines'] = count(file(__DIR__.'/../config/app.php'));
+$out['cached_config_exists'] = is_file(__DIR__.'/../bootstrap/cache/config.php');
+$out['cached_services_exists'] = is_file(__DIR__.'/../bootstrap/cache/services.php');
+
+if ($app !== null) {
+    try {
+        $out['configuration_cached'] = $app->configurationIsCached();
+        $out['bootstrap_providers_file'] = is_file(__DIR__.'/../bootstrap/providers.php');
+
+        $cfg = $app->make('config');
+        $providers = (array) $cfg->get('app.providers');
+        $out['provider_count'] = count($providers);
+        $out['view_provider_in_config'] = in_array('Illuminate\View\ViewServiceProvider', $providers, true);
+        $out['config_source_provider_index'] = array_values(array_filter(
+            $providers,
+            static fn ($p) => is_string($p) && (str_contains($p, 'ViewServiceProvider') || str_contains($p, '\\View\\'))
+        ));
+
+        $loaded = $app->getLoadedProviders();
+        $out['loaded_provider_view'] = array_key_exists('Illuminate\View\ViewServiceProvider', $loaded)
+            ? ($loaded['Illuminate\View\ViewServiceProvider'] ? 'loaded' : 'registered-but-not-loaded')
+            : 'absent';
+        $out['bound_view'] = $app->bound('view');
+
+        $out['view_compiled_config'] = $cfg->get('view.compiled');
+        $out['view_paths_config'] = $cfg->get('view.paths');
+    } catch (Throwable $e) {
+        $out['introspection_error'] = get_class($e).': '.$e->getMessage().' @ '.$e->getFile().':'.$e->getLine();
+    }
+
+    try {
+        $app->make('view');
+        $out['view_resolve'] = 'ok';
+    } catch (Throwable $e) {
+        $out['view_resolve'] = get_class($e).': '.substr($e->getMessage(), 0, 300);
+    }
+} else {
+    $out['app'] = 'bootstrap/app.php produced nothing';
 }
 
 echo json_encode($out, JSON_PRETTY_PRINT);// probe v4
