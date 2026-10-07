@@ -77,4 +77,4 @@ try {
         .(method_exists($e, 'getStatusCode') ? ' (http '.$e->getStatusCode().')' : '');
 }
 
-echo json_encode($out, JSON_PRETTY_PRINT);
+echo json_encode($out, JSON_PRETTY_PRINT);// probe v4
