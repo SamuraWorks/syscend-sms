@@ -114,7 +114,11 @@ class Student extends Model
         parent::booted();
 
         static::creating(function (Student $student) {
-            if (empty($student->admission_no)) {
+            // The school owns its identifiers. A supplied admission_no/student_id
+            // is always preserved; generation is optional and only fills an empty
+            // field when the school enabled identity generation.
+            if (empty($student->admission_no)
+                && \App\Services\StudentIdService::generationEnabled((int) $student->school_id)) {
                 $student->admission_no = app(\App\Services\StudentIdService::class)::generate((int) $student->school_id);
             }
         });

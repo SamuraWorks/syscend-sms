@@ -122,10 +122,13 @@ class Staff extends Model
         parent::booted();
 
         static::creating(function (Staff $staff) {
-            if (empty($staff->emp_id)) {
-                $year  = now()->format('Y');
-                $count = static::withoutGlobalScopes()->where('school_id', $staff->school_id)->count() + 1;
-                $staff->emp_id = "EMP-{$year}-" . str_pad($count, 4, '0', STR_PAD_LEFT);
+            if (empty($staff->emp_id)
+                && \App\Services\SchoolPersonIdService::generationEnabled((int) $staff->school_id)) {
+                $type = $staff->isSubjectTeacher() || $staff->isFormMaster()
+                    ? 'teacher'
+                    : 'staff';
+
+                $staff->emp_id = \App\Services\SchoolPersonIdService::generate((int) $staff->school_id, $type);
             }
         });
     }

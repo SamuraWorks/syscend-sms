@@ -36,6 +36,7 @@ use App\Http\Controllers\SchoolAdmin\LibraryController;
 use App\Http\Controllers\SchoolAdmin\PayrollController;
 use App\Http\Controllers\SchoolAdmin\TimetableController;
 use App\Http\Controllers\SchoolAdmin\AIController;
+use App\Http\Controllers\SchoolAdmin\PersonIdentityController;
 use App\Http\Controllers\SchoolAdmin\ClassController;
 use App\Http\Controllers\SchoolAdmin\DepartmentController;
 use App\Http\Controllers\SchoolAdmin\DesignationController;
@@ -871,6 +872,13 @@ Route::middleware('auth')->group(function () {
             Route::post('/form-master', [TeacherAssignmentController::class, 'assignFormMaster'])->name('form-master');
             Route::delete('/form-master/{section}', [TeacherAssignmentController::class, 'removeFormMaster'])->name('form-master.remove');
             Route::delete('/{assignment}', [TeacherAssignmentController::class, 'destroy'])->name('destroy');
+        });
+
+        // ── School-Owned Identity (configurable ID generation + school ID changes) ──
+        Route::middleware('role:super-admin|school-admin|principal')->group(function () {
+            Route::get('identity/settings',                            [PersonIdentityController::class, 'settings'])->name('identity.settings');
+            Route::put('identity/settings',                            [PersonIdentityController::class, 'saveSettings'])->name('identity.settings.save');
+            Route::patch('people/{personType}/{personId}/school-id',   [PersonIdentityController::class, 'updatePersonId'])->name('people.school-id.update');
         });
     });
 
