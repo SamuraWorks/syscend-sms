@@ -100,7 +100,7 @@ export default function SchoolsIndex() {
             <Head title="Schools" />
 
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900 dark:text-white">Schools</h1>
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Manage all registered schools</p>
@@ -128,9 +128,9 @@ export default function SchoolsIndex() {
             </div>
 
             {/* Filters */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-x-auto">
-                <div className="flex items-center gap-3 p-4 border-b border-slate-200 dark:border-slate-800">
-                    <form onSubmit={handleSearch} className="flex items-center gap-2 flex-1 max-w-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-3 flex-wrap p-4 border-b border-slate-200 dark:border-slate-800">
+                    <form onSubmit={handleSearch} className="flex items-center gap-2 flex-1 min-w-[200px] max-w-sm">
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <Input
@@ -224,8 +224,8 @@ export default function SchoolsIndex() {
                 </div>
 
                 {/* Desktop: table */}
-                <div className="hidden md:block">
-                    <Table>
+                <div className="hidden md:block overflow-x-auto">
+                    <Table className="min-w-[980px]">
                         <TableHeader>
                             <TableRow className="hover:bg-transparent">
                                 <TableHead>School</TableHead>
@@ -345,7 +345,7 @@ export default function SchoolsIndex() {
 
                 {/* Pagination */}
                 {schools.meta.last_page > 1 && (
-                    <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-3 border-t border-slate-200 dark:border-slate-800">
                         <p className="text-xs text-slate-500">
                             Showing {schools.meta.from}–{schools.meta.to} of {schools.meta.total}
                         </p>

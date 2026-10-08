@@ -28,7 +28,7 @@ export default function ShowSchool() {
             <Head title={school.name} />
 
             {/* Header */}
-            <div className="flex items-start justify-between mb-6">
+            <div className="flex items-start justify-between flex-wrap gap-3 mb-6">
                 <div className="flex items-center gap-3">
                     <Button variant="ghost" size="icon" asChild>
                         <Link href="/super-admin/schools"><ArrowLeft className="w-4 h-4" /></Link>
@@ -51,7 +51,7 @@ export default function ShowSchool() {
                         </div>
                     </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                     {school.status === 'suspended' ? (
                         <Button size="sm" variant="outline" className="text-emerald-600" onClick={() => router.patch(`/super-admin/schools/${school.id}/activate`)}>
                             <CheckCircle className="w-4 h-4 mr-1.5" /> Activate
@@ -92,7 +92,7 @@ export default function ShowSchool() {
                 {/* Details */}
                 <Card className="col-span-2 dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                     <CardHeader className="pb-3"><CardTitle className="text-sm">Contact & Location</CardTitle></CardHeader>
-                    <CardContent className="grid grid-cols-2 gap-3 text-sm">
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                         {[
                             { icon: Mail, label: 'Email', value: school.email },
                             { icon: Phone, label: 'Phone', value: school.phone },

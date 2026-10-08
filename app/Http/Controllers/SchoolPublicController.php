@@ -84,7 +84,7 @@ class SchoolPublicController extends Controller
         ];
 
         if ($icon) {
-            $icons[] = ['src' => $icon, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'];
+            $icons[] = ['src' => $icon, 'sizes' => '1024x1024', 'type' => 'image/png', 'purpose' => 'any'];
         }
 
         return response()->json([

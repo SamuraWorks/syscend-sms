@@ -31,17 +31,11 @@ export default function Hero() {
 
                 {/* Headline sits directly on the photograph — no background */}
                 <h1 className="mt-7 text-balance text-[2.7rem] font-extrabold leading-[1.05] tracking-[-0.03em] text-white sm:text-6xl lg:mt-9 lg:text-7xl lg:leading-[1.02]">
-                    Your whole school,{' '}
-                    <br className="md:hidden" />
-                    <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-200 bg-clip-text text-transparent">
-                        finally in sync.
-                    </span>
+                    YOUR SCHOOL DESERVES MORE THAN SIX REGISTERS.
                 </h1>
 
                 <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-relaxed text-white/85 sm:text-lg lg:mt-8">
-                    Syscend Campus keeps admissions, attendance, results, fees, staff and parent
-                    communication in one secure, cloud-based system — built around how schools in
-                    Sierra Leone actually work.
+                    One platform for everything that keeps your school running. From admissions and academics to finance, staff, students, parents, and records — Syscend Campus brings it all together in one secure digital system.
                 </p>
 
                 <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row lg:mt-12">

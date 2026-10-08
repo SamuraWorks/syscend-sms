@@ -4,7 +4,7 @@
  * cache-first for static build assets only. Data/API responses are never
  * cached.
  */
-const CACHE = 'syscend-v1';
+const CACHE = 'syscend-v2';
 const NAV_CACHE_KEY = '/';
 
 self.addEventListener('install', (event) => {
