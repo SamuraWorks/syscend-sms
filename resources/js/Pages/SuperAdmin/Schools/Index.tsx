@@ -1,5 +1,5 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Plus, Search, School, MoreHorizontal, Pencil, Ban, CheckCircle, XCircle, Trash2, Eye } from 'lucide-react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -88,6 +88,13 @@ export default function SchoolsIndex() {
         }
     };
 
+    useEffect(() => {
+        const id = setInterval(() => {
+            router.reload({ only: ['schools', 'stats'] });
+        }, 15000);
+        return () => clearInterval(id);
+    }, []);
+
     return (
         <AppLayout breadcrumbs={[{ label: 'Super Admin' }, { label: 'Schools' }]}>
             <Head title="Schools" />
@@ -165,29 +172,81 @@ export default function SchoolsIndex() {
                     </Select>
                 </div>
 
-                {/* Table */}
-                <Table>
-                    <TableHeader>
-                        <TableRow className="hover:bg-transparent">
-                            <TableHead>School</TableHead>
-                            <TableHead>Contact</TableHead>
-                            <TableHead>Location</TableHead>
-                            <TableHead>Users</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Approval</TableHead>
-                            <TableHead>Created</TableHead>
-                            <TableHead className="w-10" />
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {schools.data.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={8} className="text-center py-16 text-slate-400">
-                                    <School className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                                    <p className="text-sm">No schools found</p>
-                                </TableCell>
+                {/* Mobile: school cards */}
+                <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-800">
+                    {schools.data.length === 0 ? (
+                        <p className="py-16 text-center text-sm text-slate-400">No schools found</p>
+                    ) : schools.data.map((school) => (
+                        <div key={school.id} className="p-4 space-y-3">
+                            <div className="flex items-start gap-3">
+                                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 shrink-0">
+                                    {school.logo_url
+                                        ? <img src={school.logo_url} alt="" className="w-8 h-8 rounded object-cover" />
+                                        : <School className="w-4 h-4 text-indigo-500" />
+                                    }
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <Link href={`/super-admin/schools/${school.id}`} className="font-medium text-slate-900 dark:text-white text-sm block truncate">{school.name}</Link>
+                                    <p className="text-xs text-slate-400 truncate">{school.email ?? ''}</p>
+                                    <p className="text-xs text-slate-500 mt-0.5 truncate">
+                                        {[school.city, school.country].filter(Boolean).join(', ') || '—'}
+                                    </p>
+                                </div>
+                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                    {statusBadge(school.status)}
+                                    {registrationBadge(school.registration_status)}
+                                </div>
+                            </div>
+                            {school.registration_rejection_reason && (
+                                <p className="text-[11px] text-red-500 dark:text-red-400 line-clamp-1" title={school.registration_rejection_reason}>
+                                    {school.registration_rejection_reason}
+                                </p>
+                            )}
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <Button asChild variant="outline" size="sm">
+                                    <Link href={`/super-admin/schools/${school.id}`}><Eye className="w-3.5 h-3.5 mr-1" /> View</Link>
+                                </Button>
+                                {school.registration_status !== 'approved' && (
+                                    <>
+                                        <Button size="sm" variant="outline" onClick={() => approveSchool(school)} className="text-emerald-600">
+                                            <CheckCircle className="w-3.5 h-3.5 mr-1" /> Approve
+                                        </Button>
+                                        {school.registration_status !== 'rejected' && (
+                                            <Button size="sm" variant="outline" onClick={() => rejectSchool(school)} className="text-red-600">
+                                                <XCircle className="w-3.5 h-3.5 mr-1" /> Reject
+                                            </Button>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Desktop: table */}
+                <div className="hidden md:block">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="hover:bg-transparent">
+                                <TableHead>School</TableHead>
+                                <TableHead>Contact</TableHead>
+                                <TableHead>Location</TableHead>
+                                <TableHead>Users</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Approval</TableHead>
+                                <TableHead>Created</TableHead>
+                                <TableHead className="w-10" />
                             </TableRow>
-                        ) : schools.data.map((school) => (
+                        </TableHeader>
+                        <TableBody>
+                            {schools.data.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={8} className="text-center py-16 text-slate-400">
+                                        <School className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                                        <p className="text-sm">No schools found</p>
+                                    </TableCell>
+                                </TableRow>
+                            ) : schools.data.map((school) => (
                             <TableRow key={school.id}>
                                 <TableCell>
                                     <div className="flex items-center gap-3">
@@ -282,6 +341,7 @@ export default function SchoolsIndex() {
                         ))}
                     </TableBody>
                 </Table>
+                </div>
 
                 {/* Pagination */}
                 {schools.meta.last_page > 1 && (

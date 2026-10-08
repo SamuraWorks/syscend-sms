@@ -354,7 +354,7 @@ export default function CreateStudent() {
                     open={showConfirm}
                     onOpenChange={setShowConfirm}
                     title="Confirm Student Admission"
-                    description={`Admit ${firstName || 'this student'} ${lastName || ''}? A guardian account will also be created if an email is provided.`}
+                    description={`Admit ${firstName || 'this student'} ${lastName || ''}? No login is created automatically — the student and parent sign up themselves with the school portal.`}
                     confirmText="Admit Student"
                     onConfirm={() => handleSubmit(onSubmit)()}
                 />

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\AdminNewSchoolMail;
+use App\Models\District;
 use App\Models\School;
 use App\Services\SchoolAdminOnboardingService;
 use Illuminate\Http\RedirectResponse;
@@ -17,18 +18,21 @@ class StartTrialController extends Controller
 {
     public function create(): Response
     {
-        return Inertia::render('Public/StartTrial');
+        return Inertia::render('Public/StartTrial', [
+            'districts' => District::orderBy('name')->get(['id', 'name', 'province']),
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
             // School info
-            'name'    => ['required', 'string', 'max:255'],
-            'email'   => ['nullable', 'email', 'max:255'],
-            'phone'   => ['nullable', 'string', 'max:25'],
-            'address' => ['nullable', 'string', 'max:500'],
-            'city'    => ['nullable', 'string', 'max:100'],
+            'name'        => ['required', 'string', 'max:255'],
+            'email'       => ['nullable', 'email', 'max:255'],
+            'phone'       => ['nullable', 'string', 'max:25'],
+            'address'     => ['nullable', 'string', 'max:500'],
+            'city'        => ['nullable', 'string', 'max:100'],
+            'district_id' => ['nullable', 'exists:districts,id'],
 
             // School admin account
             'admin_name'  => ['required', 'string', 'max:255'],
@@ -45,14 +49,21 @@ class StartTrialController extends Controller
             $slug = $base.'-'.($i++);
         }
 
+        $district = !empty($data['district_id'])
+            ? District::find($data['district_id'])
+            : null;
+
         $result = (new SchoolAdminOnboardingService)->createSchoolWithAdmin(
             [
-                'name'    => $data['name'],
-                'slug'    => $slug,
-                'email'   => $data['email'] ?? null,
-                'phone'   => $data['phone'] ?? null,
-                'address' => $data['address'] ?? null,
-                'city'    => $data['city'] ?? null,
+                'name'        => $data['name'],
+                'slug'        => $slug,
+                'email'       => $data['email'] ?? null,
+                'phone'       => $data['phone'] ?? null,
+                'address'     => $data['address'] ?? null,
+                'city'        => $data['city'] ?? null,
+                'district_id' => $district?->id,
+                'district_name' => $district?->name,
+                'province'    => $district?->province,
             ],
             [
                 'name'  => $data['admin_name'],

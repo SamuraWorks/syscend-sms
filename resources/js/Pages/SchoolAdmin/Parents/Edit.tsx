@@ -50,7 +50,6 @@ export default function EditParent() {
         email: parent.email ?? '',
         occupation: parent.occupation ?? '',
         address: parent.address ?? '',
-        create_account: false,
     });
 
     const set = (field: string, value: any) => setForm((f) => ({ ...f, [field]: value }));
@@ -142,20 +141,8 @@ export default function EditParent() {
                             </div>
 
                             {form.email && !parent.user_id && (
-                                <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-                                    <Checkbox
-                                        id="create_account"
-                                        checked={form.create_account}
-                                        onCheckedChange={(v) => set('create_account', !!v)}
-                                    />
-                                    <label htmlFor="create_account" className="text-sm text-slate-700 dark:text-slate-300">
-                                        Create parent login account
-                                    </label>
-                                </div>
-                            )}
-                            {form.email && !parent.user_id && (
                                 <p className="text-xs text-slate-400">
-                                    If a user with this email already exists (e.g. a teacher), the parent role will be added to their existing account.
+                                    The parent will sign up for their own login using this email and their child&apos;s Student ID.
                                 </p>
                             )}
                         </CardContent>

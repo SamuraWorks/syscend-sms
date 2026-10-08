@@ -1,6 +1,6 @@
 import AppLayout from '@/Layouts/AppLayout';
 import { useForm, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -96,6 +96,13 @@ export default function DemoRequestsIndex({ requests, filters, districts, staff,
             search, status: form.data.status, district: form.data.district, assigned_to: form.data.assigned_to,
         }, { preserveState: true, replace: true });
     }
+
+    useEffect(() => {
+        const id = setInterval(() => {
+            router.reload({ only: ['requests', 'stats', 'filters'] });
+        }, 15000);
+        return () => clearInterval(id);
+    }, []);
 
     return (
         <AppLayout title="Demo Requests">

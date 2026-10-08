@@ -31,31 +31,25 @@ class StaffRegistrationController extends Controller
         if (RateLimiter::tooManyAttempts($this->throttleKey . ':' . $request->ip(), 5)) {
             $seconds = RateLimiter::availableIn($this->throttleKey . ':' . $request->ip());
             return back()->withErrors([
-                'emp_id' => 'Too many verification attempts. Please try again in ' . $seconds . ' seconds.',
+                'email' => 'Too many verification attempts. Please try again in ' . $seconds . ' seconds.',
             ]);
         }
 
         $school = School::where('slug', $schoolSlug)->firstOrFail();
 
         $data = $request->validate([
-            'emp_id'     => 'required|string|max:50',
-            'full_name'  => 'required|string|max:255',
-            'email'      => 'nullable|email|max:255',
+            'email'     => 'required|email|max:255',
+            'full_name' => 'required|string|max:255',
         ]);
 
         RateLimiter::hit($this->throttleKey . ':' . $request->ip(), 60);
 
         $service = new RegistryVerificationService();
-        $result = $service->verifyStaff($school->id, $data['emp_id'], $data['full_name'], $data['email'] ?? null);
+        $result = $service->verifyStaffByEmail($school->id, $data['email'], $data['full_name']);
 
         if (!$result['success']) {
             RateLimiter::hit($this->throttleKey . ':' . $request->ip(), 60);
-            $errors = ['emp_id' => $result['message']];
-            if (isset($result['requires_email'])) {
-                $errors['email'] = $result['message'];
-                unset($errors['emp_id']);
-            }
-            return back()->withErrors($errors)->onlyInput('emp_id', 'full_name');
+            return back()->withErrors(['email' => $result['message']])->onlyInput('email', 'full_name');
         }
 
         $verificationToken = bin2hex(random_bytes(32));
@@ -72,6 +66,7 @@ class StaffRegistrationController extends Controller
 
         return back()->with('verified', [
             'staff_name'   => $result['staff']->first_name . ' ' . $result['staff']->last_name,
+            'email'        => $result['staff']->email,
             'department'   => $result['staff']->department->name ?? '',
             'designation'  => $result['staff']->designation->name ?? '',
             'teacher_type' => $result['staff']->teacher_type ?? '',
@@ -108,12 +103,18 @@ class StaffRegistrationController extends Controller
             'password_confirmation' => 'required',
         ]);
 
+        // Signup account must use the email the school has on file.
+        $email = mb_strtolower(trim((string) $data['email']));
+        if (mb_strtolower(trim((string) $staff->email)) !== $email) {
+            return back()->withErrors(['email' => 'Please use the exact email address your school has on file for you.'])->onlyInput('email');
+        }
+
         $staffRoles = $this->resolveStaffRoles($staff);
 
         $user = User::create([
             'school_id'             => $school->id,
             'name'                  => trim($staff->first_name . ' ' . $staff->last_name),
-            'email'                 => $data['email'],
+            'email'                 => $email,
             'phone'                 => $staff->phone,
             'password'              => Hash::make($data['password']),
             'is_temporary_password' => false,

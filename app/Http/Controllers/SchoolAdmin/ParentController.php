@@ -5,8 +5,6 @@ namespace App\Http\Controllers\SchoolAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\Guardian;
 use App\Models\Student;
-use App\Models\User;
-use App\Services\UserCreationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -62,8 +60,6 @@ class ParentController extends Controller
 
         try {
             $schoolId = $this->getSchoolId();
-            $tempPassword = null;
-            $msg = null;
 
             $duplicate = $this->findDuplicate($schoolId, $data['email'] ?? null, $data['phone'] ?? null);
             if ($duplicate) {
@@ -73,7 +69,7 @@ class ParentController extends Controller
                 );
             }
 
-            DB::transaction(function () use ($data, $schoolId, &$tempPassword, &$msg) {
+            DB::transaction(function () use ($data, $schoolId) {
                 $guardian = Guardian::create([
                     'school_id'  => $schoolId,
                     'name'       => $data['name'],
@@ -87,25 +83,14 @@ class ParentController extends Controller
 
                 $this->syncChildren($guardian, $data['student_ids'] ?? []);
 
-                if (!empty($data['email']) && !empty($data['create_account'])) {
-                    [$msg, $tempPassword] = $this->attachOrCreateAccount($guardian, $data);
-                }
-
                 activity()
                     ->performedOn($guardian)
                     ->withProperties(['school_id' => $schoolId, 'children_linked' => count($data['student_ids'] ?? [])])
                     ->log('Parent created manually');
             });
 
-            $msg = $msg ?? 'Parent created successfully.';
-            if ($tempPassword) {
-                $msg .= ' Login credentials have been created.';
-            }
-
             return redirect()->route('school-admin.parents.index')
-                ->with('success', $msg)
-                ->with('temp_password', $tempPassword)
-                ->with('show_credentials', (bool) $tempPassword);
+                ->with('success', 'Parent created successfully. They can now sign up for their own login through the school portal.');
         } catch (\Throwable $e) {
             return back()->withInput()->with('error', 'Failed to create parent: ' . $e->getMessage());
         }
@@ -188,10 +173,6 @@ class ParentController extends Controller
                         'children_after' => $after,
                     ])
                     ->log('Parent updated');
-
-                if (empty($parent->user_id) && !empty($data['email']) && !empty($data['create_account'])) {
-                    $this->attachOrCreateAccount($parent, $data);
-                }
             });
 
             return redirect()->route('school-admin.parents.show', $parent)->with('success', 'Parent updated.');
@@ -279,7 +260,6 @@ class ParentController extends Controller
             'address'        => 'nullable|string|max:500',
             'student_ids'    => 'nullable|array',
             'student_ids.*'  => Rule::exists('students', 'id')->where(fn ($q) => $q->where('school_id', $this->getSchoolId())),
-            'create_account' => 'sometimes|boolean',
         ]);
     }
 
@@ -364,34 +344,5 @@ class ParentController extends Controller
                 }
             }
         })->first();
-    }
-
-    /**
-     * Link an existing user or create a portal account for this guardian.
-     * Returns [message, tempPassword|null].
-     */
-    private function attachOrCreateAccount(Guardian $guardian, array $data): array
-    {
-        $existingUser = User::where('school_id', $guardian->school_id)
-            ->where('email', $data['email'])
-            ->first();
-
-        if ($existingUser) {
-            if (!$existingUser->hasRole('parent')) {
-                $existingUser->assignRole('parent');
-            }
-            $guardian->update(['user_id' => $existingUser->id]);
-            return ["Parent linked to existing user account ({$existingUser->getRoleNames()->implode(', ')}).", null];
-        }
-
-        $service = new UserCreationService($guardian->school_id, auth()->id());
-        $result = $service->createUser([
-            'name'  => $data['name'],
-            'email' => $data['email'],
-            'phone' => $data['phone'] ?? null,
-        ], ['parent']);
-        $guardian->update(['user_id' => $result['user']->id]);
-
-        return [null, $result['temp_password']];
     }
 }

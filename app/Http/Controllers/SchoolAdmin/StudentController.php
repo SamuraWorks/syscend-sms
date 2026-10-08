@@ -10,10 +10,8 @@ use App\Models\SchoolClass;
 use App\Models\Section;
 use App\Models\Student;
 use App\Models\StudentDocument;
-use App\Models\User;
 use App\Services\NotificationDispatchService;
 use App\Services\StudentIdService;
-use App\Services\UserCreationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -172,10 +170,8 @@ class StudentController extends Controller
 
         try {
             $schoolId = $this->getSchoolId();
-            $parentTempPassword = null;
-            $parentUserId = null;
 
-            DB::transaction(function () use ($data, $schoolId, &$parentTempPassword, &$parentUserId) {
+            DB::transaction(function () use ($data, $schoolId) {
                 $guardian = Guardian::create(array_merge(
                     $data['guardian'],
                     ['school_id' => $schoolId],
@@ -189,43 +185,7 @@ class StudentController extends Controller
                 $student->guardians()->syncWithoutDetaching([
                     $guardian->id => ['relationship' => $data['guardian']['relation'], 'is_primary' => true, 'school_id' => $schoolId],
                 ]);
-
-                if (!empty($data['guardian']['email']) && !$guardian->user_id) {
-                    $existingUser = User::where('school_id', $schoolId)->where('email', $data['guardian']['email'])->first();
-
-                    if ($existingUser) {
-                        if (!$existingUser->hasRole('parent')) {
-                            $existingUser->assignRole('parent');
-                        }
-                        $guardian->update(['user_id' => $existingUser->id]);
-                        $parentUserId = $existingUser->id;
-                    } else {
-                        $service = new UserCreationService($schoolId, auth()->id());
-                        $result = $service->createUser(
-                            [
-                                'name'  => $data['guardian']['name'],
-                                'email' => $data['guardian']['email'],
-                                'phone' => $data['guardian']['phone'] ?? null,
-                            ],
-                            ['parent']
-                        );
-                        $guardian->update(['user_id' => $result['user']->id]);
-                        $parentTempPassword = $result['temp_password'] ?? null;
-                        $parentUserId = $result['user']->id ?? null;
-                    }
-                }
             });
-
-            $guardian = Guardian::latest()->where('school_id', $schoolId)->first();
-            if ($guardian?->user_id) {
-                $guardianUser = User::find($guardian->user_id);
-                NotificationDispatchService::notifyUser(
-                    $guardianUser,
-                    'Student Admitted',
-                    "Your child {$data['first_name']} " . ($data['last_name'] ?? '') . " has been admitted to the school.",
-                    '/school/parent/students'
-                );
-            }
 
             NotificationDispatchService::notifyRole(
                 $schoolId, 'school-admin',
@@ -234,23 +194,10 @@ class StudentController extends Controller
                 '/school/students'
             );
 
-            $studentName = $data['first_name'] . ' ' . ($data['last_name'] ?? '');
-            $msg = 'Student admitted successfully.';
-            if ($parentUserId) {
-                $msg .= " Parent account created for {$data['guardian']['name']}. Credentials shown below.";
-            } else {
-                $msg .= ' No parent email provided — guardian contact saved without login access.';
-            }
+            $msg = 'Student admitted successfully. The student and their parent can now sign up for their own logins through the school portal.';
 
-            $redirect = $parentUserId
-                ? redirect()->route('school.users.show', $parentUserId)
-                : redirect()->route('school.students.index');
-
-            return $redirect
-                ->with('success', $msg)
-                ->with('temp_password', $parentTempPassword)
-                ->with('show_credentials', (bool) $parentTempPassword)
-                ->with('parent_name', $data['guardian']['name']);
+            return redirect()->route('school.students.index')
+                ->with('success', $msg);
         } catch (\Throwable $e) {
             return back()->withInput()->with('error', 'Failed to admit student: ' . $e->getMessage());
         }

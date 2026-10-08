@@ -328,6 +328,43 @@ class RegistryVerificationService
     }
 
     /**
+     * Verify a staff/teacher by their registered email and full name within a
+     * specific school. The email must be present on the school-created record —
+     * signup only succeeds if the person was already uploaded/created by the school.
+     *
+     * @return array{success: bool, staff?: Staff, message: string}
+     */
+    public function verifyStaffByEmail(int $schoolId, string $email, string $fullName): array
+    {
+        $normalizedEmail = mb_strtolower(trim($email));
+
+        $staff = Staff::where('school_id', $schoolId)
+            ->where('status', 'active')
+            ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
+            ->first();
+
+        if (!$staff) {
+            Log::info('Staff verification failed: no record with email', ['school_id' => $schoolId, 'email' => $normalizedEmail]);
+            return ['success' => false, 'message' => self::GENERIC_FAILURE];
+        }
+
+        if (!self::namesMatch($fullName, $staff->full_name)) {
+            Log::info('Staff verification failed: name mismatch', ['school_id' => $schoolId, 'email' => $normalizedEmail]);
+            return ['success' => false, 'message' => self::GENERIC_FAILURE];
+        }
+
+        if ($staff->claimed_by !== null || $staff->user_id !== null) {
+            return ['success' => false, 'message' => 'This staff record already has an account. Please sign in instead — or contact your school administrator if you need help.'];
+        }
+
+        return [
+            'success' => true,
+            'staff'   => $staff,
+            'message' => 'Your school record has been found. Please create your account password.',
+        ];
+    }
+
+    /**
      * Claim a registry record for a user within a transaction with row-level locking.
      * Prevents race conditions where two people try to claim the same record simultaneously.
      *

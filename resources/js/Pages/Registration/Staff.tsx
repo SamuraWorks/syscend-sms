@@ -13,9 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { BadgeCheck, Shield, CheckCircle2, ChevronLeft } from 'lucide-react';
 
 const verifySchema = z.object({
-    emp_id: z.string().min(1, 'Staff/Teacher ID is required'),
+    email: z.string().email('Please enter the email your school has on file'),
     full_name: z.string().min(2, 'Full name is required'),
-    email: z.string().email('Please enter a valid email address').optional().or(z.literal('')),
 });
 
 const completeSchema = z.object({
@@ -31,7 +30,7 @@ type VerifyFormData = z.infer<typeof verifySchema>;
 type CompleteFormData = z.infer<typeof completeSchema>;
 
 interface School { id: number; name: string; slug: string; code: string | null; }
-interface VerifiedData { staff_name: string; department: string; designation: string; teacher_type: string; roles: string[]; message: string; verify_token: string; }
+interface VerifiedData { staff_name: string; email: string; department: string; designation: string; teacher_type: string; roles: string[]; message: string; verify_token: string; }
 interface StaffRegistrationProps { school: School; verified?: VerifiedData; flash?: { success?: string; error?: string }; [key: string]: unknown; }
 
 type RegState = 'initial' | 'verifying' | 'verified' | 'failed' | 'creating';
@@ -39,16 +38,15 @@ type RegState = 'initial' | 'verifying' | 'verified' | 'failed' | 'creating';
 export default function StaffRegistration({ school, verified }: StaffRegistrationProps) {
     const { flash } = usePage<StaffRegistrationProps>().props;
     const [state, setState] = useState<RegState>(verified ? 'verified' : 'initial');
-    const [requiresEmail, setRequiresEmail] = useState(false);
 
     const verifyForm = useForm<VerifyFormData>({
         resolver: zodResolver(verifySchema),
-        defaultValues: { emp_id: '', full_name: '', email: '' },
+        defaultValues: { email: '', full_name: '' },
     });
 
     const completeForm = useForm<CompleteFormData>({
         resolver: zodResolver(completeSchema),
-        defaultValues: { email: '', password: '', password_confirmation: '' },
+        defaultValues: { email: verified?.email ?? '', password: '', password_confirmation: '' },
     });
 
     useEffect(() => {
@@ -57,18 +55,16 @@ export default function StaffRegistration({ school, verified }: StaffRegistratio
     }, [flash]);
 
     useEffect(() => {
-        if (verified) { setState('verified'); toast.success(verified.message); }
+        if (verified) { setState('verified'); completeForm.setValue('email', verified.email); toast.success(verified.message); }
     }, [verified]);
 
     const onVerify = (data: VerifyFormData) => {
         setState('verifying');
-        setRequiresEmail(false);
         router.post(`/${school.slug}/register/staff/verify`, data, {
             onError: (errs) => {
                 setState('failed');
-                if (errs.emp_id) verifyForm.setError('emp_id', { message: errs.emp_id });
+                if (errs.email) verifyForm.setError('email', { message: errs.email });
                 if (errs.full_name) verifyForm.setError('full_name', { message: errs.full_name });
-                if (errs.email) { verifyForm.setError('email', { message: errs.email }); setRequiresEmail(true); }
             },
         });
     };
@@ -106,7 +102,7 @@ export default function StaffRegistration({ school, verified }: StaffRegistratio
                         <CardDescription className="text-muted-foreground">
                             {state === 'verified' || state === 'creating'
                                 ? 'Your school record has been found. Create your account password below.'
-                                : 'Enter your Staff/Teacher ID and full name to verify your school record.'}
+                                : 'Enter the email your school has on file and your full name.'}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -159,21 +155,14 @@ export default function StaffRegistration({ school, verified }: StaffRegistratio
                         ) : (
                             <form onSubmit={verifyForm.handleSubmit(onVerify)} className="space-y-4" noValidate>
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="emp_id" className="text-sm font-medium">Staff/Teacher ID</Label>
-                                    <Input id="emp_id" placeholder="e.g. EMP-2026-00001" className="h-10" {...verifyForm.register('emp_id')} />
-                                    {verifyForm.formState.errors.emp_id && <p className="text-xs text-red-500">{verifyForm.formState.errors.emp_id.message}</p>}
+                                    <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
+                                    <Input id="email" type="email" placeholder="you@example.com" className="h-10" {...verifyForm.register('email')} />
+                                    {verifyForm.formState.errors.email && <p className="text-xs text-red-500">{verifyForm.formState.errors.email.message}</p>}
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label htmlFor="full_name" className="text-sm font-medium">Full Name</Label>
                                     <Input id="full_name" placeholder="As registered in your school" className="h-10" {...verifyForm.register('full_name')} />
                                     {verifyForm.formState.errors.full_name && <p className="text-xs text-red-500">{verifyForm.formState.errors.full_name.message}</p>}
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="email" className="text-sm font-medium">
-                                        Email Address {requiresEmail ? <span className="text-red-500">*</span> : <span className="text-muted-foreground font-normal">(if on file)</span>}
-                                    </Label>
-                                    <Input id="email" type="email" placeholder="you@example.com" className="h-10" {...verifyForm.register('email')} />
-                                    {verifyForm.formState.errors.email && <p className="text-xs text-red-500">{verifyForm.formState.errors.email.message}</p>}
                                 </div>
                                 <Button type="submit" className="w-full h-10" disabled={state === 'verifying'}>
                                     {state === 'verifying' ? 'Verifying…' : 'Verify My Details'}

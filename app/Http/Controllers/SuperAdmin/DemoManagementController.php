@@ -116,12 +116,19 @@ class DemoManagementController extends Controller
             $slug = $base . '-' . ($i++);
         }
 
+        // Link the school to the ministry's district registry when the demo's
+        // district matches a seeded Sierra Leone district by name.
+        $district = \App\Models\District::where('name', $demoRequest->district)->first();
+
         $schoolData = [
             'name'            => $demoRequest->school_name,
             'slug'            => $slug,
             'email'           => $demoRequest->contact_email,
             'phone'           => $demoRequest->contact_phone,
             'city'            => $demoRequest->district,
+            'district_id'     => $district?->id,
+            'district_name'   => $district?->name ?? $demoRequest->district,
+            'province'        => $district?->province,
             'school_level'    => $demoRequest->school_level,
             'demo_request_id' => $demoRequest->id,
         ];

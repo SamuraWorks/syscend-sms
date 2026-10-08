@@ -3,17 +3,29 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     ArrowRight, CheckCircle, ChevronLeft, WifiOff, ShieldCheck, GraduationCap, Mail, Phone,
 } from 'lucide-react';
 
-export default function StartTrial() {
+interface District {
+    id: number;
+    name: string;
+    province: string;
+}
+
+interface StartTrialProps {
+    districts?: District[];
+}
+
+export default function StartTrial({ districts = [] }: StartTrialProps) {
     const form = useForm({
         name: '',
         email: '',
         phone: '',
         address: '',
         city: '',
+        district_id: '',
         admin_name: '',
         admin_email: '',
         admin_phone: '',
@@ -88,6 +100,20 @@ export default function StartTrial() {
                                                 <Label>City / Town</Label>
                                                 <Input value={form.data.city} onChange={e => form.setData('city', e.target.value)} placeholder="e.g. Freetown" />
                                                 {form.errors.city && <p className="text-xs text-red-500 mt-1">{form.errors.city}</p>}
+                                            </div>
+                                            <div>
+                                                <Label>District</Label>
+                                                <Select value={form.data.district_id} onValueChange={v => form.setData('district_id', v)}>
+                                                    <SelectTrigger className="w-full">
+                                                        <SelectValue placeholder="Select district" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {districts.map((d) => (
+                                                            <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                {form.errors.district_id && <p className="text-xs text-red-500 mt-1">{form.errors.district_id}</p>}
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
