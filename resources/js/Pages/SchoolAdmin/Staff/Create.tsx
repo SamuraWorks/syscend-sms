@@ -16,11 +16,12 @@ import type { Department, Designation } from '@/Types';
 interface Props {
     departments: Department[];
     designations: Designation[];
+    next_emp_id?: string;
 }
 
 const STEPS = ['Personal Info', 'Employment Details', 'Notes & Status'];
 
-export default function StaffCreate({ departments, designations }: Props) {
+export default function StaffCreate({ departments, designations, next_emp_id }: Props) {
     const [step, setStep] = useState(0);
 
     const { data, setData, post, processing, errors } = useForm({
@@ -34,6 +35,7 @@ export default function StaffCreate({ departments, designations }: Props) {
         phone:         '',
         email:         '',
         address:       '',
+        emp_id:         '',
         department_id:  '',
         designation_id: '',
         joining_date:   '',
@@ -183,6 +185,20 @@ export default function StaffCreate({ departments, designations }: Props) {
                                 <CardTitle className="text-lg">Employment Details</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-5">
+                                <div className="space-y-1.5">
+                                    <Label>School Staff ID <span className="font-normal text-slate-400">(optional)</span></Label>
+                                    <Input
+                                        className="font-mono"
+                                        value={data.emp_id}
+                                        onChange={e => setData('emp_id', e.target.value)}
+                                        placeholder={next_emp_id ? `e.g. ${next_emp_id} — leave blank to auto-generate` : 'e.g. EMP-2026-0001'}
+                                    />
+                                    {errors.emp_id && <p className="text-xs text-red-500">{errors.emp_id}</p>}
+                                    <p className="text-xs text-slate-400">
+                                        The ID your school issues to this staff member. Leave blank to auto-generate from your school's format (if enabled).
+                                    </p>
+                                </div>
+
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <Label>Department</Label>
@@ -282,6 +298,8 @@ export default function StaffCreate({ departments, designations }: Props) {
                                         <span>{designations.find(d => String(d.id) === data.designation_id)?.name ?? '—'}</span>
                                         <span>Status:</span>
                                         <span className="capitalize">{data.status.replace('_', ' ')}</span>
+                                        <span>Staff ID:</span>
+                                        <span className="font-mono">{data.emp_id || 'Auto-generated'}</span>
                                     </div>
                                 </div>
 

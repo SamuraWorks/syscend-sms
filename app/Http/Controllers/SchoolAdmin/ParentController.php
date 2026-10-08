@@ -139,7 +139,7 @@ class ParentController extends Controller
             })
             ->where('status', 'active')
             ->orderBy('first_name')
-            ->get(['id', 'first_name', 'last_name', 'admission_no', 'class_id']);
+            ->get(['id', 'first_name', 'last_name', 'student_id', 'admission_no', 'class_id']);
 
         return Inertia::render('SchoolAdmin/Parents/Edit', [
             'parent'           => $parent,
@@ -292,7 +292,7 @@ class ParentController extends Controller
             ->whereDoesntHave('guardians')
             ->where('status', 'active')
             ->orderBy('first_name')
-            ->get(['id', 'first_name', 'last_name', 'admission_no', 'class_id']);
+            ->get(['id', 'first_name', 'last_name', 'student_id', 'admission_no', 'class_id']);
     }
 
     /**

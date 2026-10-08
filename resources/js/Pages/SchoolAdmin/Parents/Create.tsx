@@ -13,6 +13,7 @@ interface Student {
     id: number;
     first_name: string;
     last_name: string;
+    student_id: string | null;
     admission_no: string;
     school_class: { id: number; name: string } | null;
 }
@@ -25,6 +26,8 @@ export default function CreateParent({ unlinkedStudents = [] }: Props) {
     const [submitting, setSubmitting] = useState(false);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [studentSearch, setStudentSearch] = useState('');
+    const [childIdInput, setChildIdInput] = useState('');
+    const [lookupError, setLookupError] = useState<string | null>(null);
 
     const [form, setForm] = useState({
         name: '',
@@ -43,8 +46,27 @@ export default function CreateParent({ unlinkedStudents = [] }: Props) {
         setSelectedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]);
     };
 
+    const linkBySchoolId = () => {
+        const term = childIdInput.trim().toLowerCase();
+        if (!term) return;
+
+        const target = unlinkedStudents.find((s) =>
+            (s.admission_no && s.admission_no.toLowerCase() === term) ||
+            (s.student_id && s.student_id.toLowerCase() === term)
+        );
+
+        if (!target) {
+            setLookupError('No unlinked student matches that ID. It may already be linked to another parent, or the ID is incorrect.');
+            return;
+        }
+
+        setLookupError(null);
+        setChildIdInput('');
+        setSelectedIds((ids) => (ids.includes(target.id) ? ids : [...ids, target.id]));
+    };
+
     const filteredStudents = unlinkedStudents.filter((s) =>
-        `${s.first_name} ${s.last_name} ${s.admission_no}`.toLowerCase().includes(studentSearch.toLowerCase())
+        `${s.first_name} ${s.last_name} ${s.student_id ?? ''} ${s.admission_no}`.toLowerCase().includes(studentSearch.toLowerCase())
     );
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -149,8 +171,24 @@ export default function CreateParent({ unlinkedStudents = [] }: Props) {
                                 <p className="text-sm text-slate-400 py-4 text-center">No unlinked students available</p>
                             ) : (
                                 <>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            placeholder="Child's School ID or Admission No"
+                                            className="h-9 font-mono flex-1"
+                                            value={childIdInput}
+                                            onChange={(e) => { setChildIdInput(e.target.value); setLookupError(null); }}
+                                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); linkBySchoolId(); } }}
+                                        />
+                                        <Button type="button" variant="outline" onClick={linkBySchoolId} className="h-9">
+                                            Link by ID
+                                        </Button>
+                                    </div>
+                                    {lookupError && <p className="text-xs text-red-500">{lookupError}</p>}
+                                    <p className="text-xs text-slate-400">
+                                        Link this parent to their child(ren) by entering the child's School ID or Admission No above, or search and tick the boxes below.
+                                    </p>
                                     <Input
-                                        placeholder="Search students by name or admission no..."
+                                        placeholder="Search students by name, school ID or admission no..."
                                         className="h-9"
                                         value={studentSearch}
                                         onChange={(e) => setStudentSearch(e.target.value)}
@@ -167,7 +205,10 @@ export default function CreateParent({ unlinkedStudents = [] }: Props) {
                                                 />
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-sm font-medium text-slate-900 dark:text-white">{s.first_name} {s.last_name}</p>
-                                                    <p className="text-xs text-slate-400">{s.admission_no} · {s.school_class?.name ?? 'No class'}</p>
+                                                    <p className="text-xs text-slate-400">
+                                                        <span className="font-mono">{s.student_id && s.student_id !== s.admission_no ? `${s.student_id} · ` : ''}{s.admission_no}</span>
+                                                        <span> · {s.school_class?.name ?? 'No class'}</span>
+                                                    </p>
                                                 </div>
                                             </label>
                                         ))}

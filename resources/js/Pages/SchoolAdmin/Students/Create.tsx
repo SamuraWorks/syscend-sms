@@ -224,21 +224,25 @@ export default function CreateStudent() {
                     {/* Step 1 — Class */}
                     {step === 1 && (
                         <Card className="dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-                            <CardHeader className="pb-3"><CardTitle className="text-sm">Student ID &amp; Class Assignment</CardTitle></CardHeader>
+                            <CardHeader className="pb-3"><CardTitle className="text-sm">Student IDs &amp; Class Assignment</CardTitle></CardHeader>
                             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Field
+                                    name="student_id"
+                                    label="School Student ID (optional)"
+                                    placeholder="ID given by the school"
+                                />
                                 <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">Student ID</Label>
+                                    <Label className="text-sm font-medium">Admission No <span className="font-normal text-slate-400">(auto)</span></Label>
                                     <Input
                                         className="h-9 font-mono"
                                         placeholder={next_admission_no ?? 'Auto-generated'}
                                         {...register('admission_no')}
                                     />
                                     <p className="text-xs text-slate-400">
-                                        Leave blank to auto-generate. Must be unique within your school.
+                                        Leave blank to auto-generate from your school's format. Must be unique within your school.
                                     </p>
                                     {errors.admission_no && <p className="text-xs text-red-500">{errors.admission_no.message}</p>}
                                 </div>
-                                <Field name="student_id" label="Alt / National ID (optional)" placeholder="e.g. EMIS or national ID" />
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Class <span className="text-red-500">*</span></Label>
                                     <Select onValueChange={(v) => { setValue('class_id', Number(v)); setValue('section_id', null); setValue('department_id', undefined); }}>

@@ -94,7 +94,7 @@ class UserCreationService
                     'blood_group', 'religion', 'nationality', 'phone', 'email',
                     'address', 'photo', 'department_id', 'designation_id',
                     'joining_date', 'salary_type', 'salary', 'status', 'notes',
-                    'teacher_type',
+                    'teacher_type', 'emp_id',
                 ])->toArray(),
                 [
                     'school_id' => $this->schoolId,

@@ -11,6 +11,7 @@ use App\Services\UserCreationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -65,11 +66,14 @@ class StaffController extends Controller
         return Inertia::render('SchoolAdmin/Staff/Create', [
             'departments'  => Department::orderBy('name')->get(['id', 'name']),
             'designations' => Designation::orderBy('name')->get(['id', 'department_id', 'name']),
+            'next_emp_id'  => \App\Services\SchoolPersonIdService::nextPreview($this->getSchoolId(), 'staff'),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
+        $schoolId = $this->getSchoolId();
+
         $data = $request->validate([
             'first_name'     => 'required|string|max:100',
             'last_name'      => 'nullable|string|max:100',
@@ -81,6 +85,10 @@ class StaffController extends Controller
             'phone'          => 'nullable|string|max:20',
             'email'          => 'nullable|email|max:150',
             'address'        => 'nullable|string|max:500',
+            'emp_id'         => [
+                'nullable', 'string', 'max:50',
+                Rule::unique('staff', 'emp_id')->where('school_id', $schoolId)->whereNull('deleted_at'),
+            ],
             'department_id'  => 'nullable|exists:departments,id',
             'designation_id' => 'nullable|exists:designations,id',
             'joining_date'   => 'nullable|date',
@@ -89,6 +97,8 @@ class StaffController extends Controller
             'status'         => 'required|in:active,resigned,terminated,on_leave',
             'notes'          => 'nullable|string|max:1000',
         ]);
+
+        $data['emp_id'] = $request->filled('emp_id') ? trim((string) $request->input('emp_id')) : null;
 
         try {
             $service = new UserCreationService($this->getSchoolId(), auth()->id());
@@ -142,6 +152,10 @@ class StaffController extends Controller
             'phone'          => 'nullable|string|max:20',
             'email'          => 'nullable|email|max:150',
             'address'        => 'nullable|string|max:500',
+            'emp_id'         => [
+                'nullable', 'string', 'max:50',
+                Rule::unique('staff', 'emp_id')->where('school_id', $staff->school_id)->whereNull('deleted_at')->ignore($staff->id),
+            ],
             'department_id'  => 'nullable|exists:departments,id',
             'designation_id' => 'nullable|exists:designations,id',
             'joining_date'   => 'nullable|date',
@@ -150,6 +164,8 @@ class StaffController extends Controller
             'status'         => 'required|in:active,resigned,terminated,on_leave',
             'notes'          => 'nullable|string|max:1000',
         ]);
+
+        $data['emp_id'] = $request->filled('emp_id') ? trim((string) $request->input('emp_id')) : null;
 
         $staff->update($data);
 
