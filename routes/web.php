@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\SchoolPublicController;
 use App\Http\Controllers\SchoolAdmin\AttendanceController;
 use App\Http\Controllers\SchoolAdmin\ExamController;
 use App\Http\Controllers\SchoolAdmin\AssessmentConfigController;
@@ -34,6 +35,7 @@ use App\Http\Controllers\SchoolAdmin\InventoryController;
 use App\Http\Controllers\SchoolAdmin\LibraryController;
 use App\Http\Controllers\SchoolAdmin\PayrollController;
 use App\Http\Controllers\SchoolAdmin\TimetableController;
+use App\Http\Controllers\SchoolAdmin\AIController;
 use App\Http\Controllers\SchoolAdmin\ClassController;
 use App\Http\Controllers\SchoolAdmin\DepartmentController;
 use App\Http\Controllers\SchoolAdmin\DesignationController;
@@ -871,6 +873,22 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{assignment}', [TeacherAssignmentController::class, 'destroy'])->name('destroy');
         });
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI feature endpoints (school-scoped)
+    |
+    | Every endpoint exposes exactly ONE feature. AIPermissionService performs
+    | the real per-feature gating; the route role gate is only a coarse fence so
+    | students and parents never reach the surface.
+    |--------------------------------------------------------------------------*/
+    Route::middleware(['auth', 'verified', 'role:super-admin|school-admin|principal|teacher|proprietor', 'school.approved', 'school.setup'])
+        ->prefix('school/ai')
+        ->name('school.ai.')
+        ->group(function () {
+            Route::get('status',                    [AIController::class, 'status'])->name('status');
+            Route::post('homepage/generate',        [AIController::class, 'generateHomepage'])->name('homepage.generate')->middleware('throttle:ai-generate');
+        });
 
     /*
     |--------------------------------------------------------------------------
