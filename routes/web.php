@@ -91,6 +91,7 @@ use App\Http\Controllers\SchoolAdmin\SierraLeoneSettingsController;
 use App\Http\Controllers\SchoolAdmin\SchoolIdentityController;
 use App\Http\Controllers\SchoolAdmin\ReportCardTemplateController;
 use App\Http\Controllers\ResultChangeRequestController;
+use App\Http\Controllers\SchoolApprovalController;
 use App\Http\Controllers\SchoolAdmin\TeacherAssignmentController;
 use App\Http\Controllers\AttendanceApprovalController;
 use App\Http\Controllers\PerformanceController;
@@ -259,12 +260,16 @@ Route::middleware('auth')->group(function () {
         return redirect()->route(RoleRegistry::dashboardRoute($primaryRole));
     })->name('dashboard');
 
+    // Registration approval screens (school must be approved before app access)
+    Route::get('/approval/pending',  [SchoolApprovalController::class, 'pending'])->name('approval.pending');
+    Route::get('/approval/rejected', [SchoolApprovalController::class, 'rejected'])->name('approval.rejected');
+
     /*
     |--------------------------------------------------------------------------
     | School Admin routes (school-admin, principal)
     |--------------------------------------------------------------------------
     */
-    Route::middleware(['role:super-admin|school-admin|principal|teacher|accountant|librarian', 'school.setup'])
+    Route::middleware(['role:super-admin|school-admin|principal|teacher|accountant|librarian', 'school.approved', 'school.setup'])
         ->prefix('school')
         ->name('school.')
         ->group(function () {
@@ -752,7 +757,7 @@ Route::middleware('auth')->group(function () {
     | School Admin routes (school-admin, principal)
     |--------------------------------------------------------------------------
     */
-    Route::prefix('school-admin')->name('school-admin.')->middleware(['auth', 'verified', 'role:super-admin|school-admin|principal'])->group(function () {
+    Route::prefix('school-admin')->name('school-admin.')->middleware(['auth', 'verified', 'role:super-admin|school-admin|principal', 'school.approved'])->group(function () {
         // Registry & Import Routes
         Route::prefix('registry')->name('registry.')->group(function () {
             Route::get('/', [RegistryController::class, 'index'])->name('index');
@@ -871,7 +876,7 @@ Route::middleware('auth')->group(function () {
     |--------------------------------------------------------------------------
     | Student & Parent portal routes
     |--------------------------------------------------------------------------*/
-    Route::middleware('role:student')->prefix('school/student')->name('student.')->group(function () {
+    Route::middleware(['role:student', 'school.approved'])->prefix('school/student')->name('student.')->group(function () {
         Route::get('dashboard',           [StudentPortalController::class, 'dashboard'])->name('dashboard');
         Route::get('subjects',            [StudentPortalController::class, 'subjects'])->name('subjects');
         Route::get('timetable',           [StudentPortalController::class, 'timetable'])->name('timetable');
@@ -892,7 +897,7 @@ Route::middleware('auth')->group(function () {
         Route::get('achievements',        [StudentPerformanceController::class, 'achievements'])->name('achievements');
     });
 
-    Route::middleware('role:parent')->prefix('school/parent')->name('parent.')->middleware('verified')->group(function () {
+    Route::middleware(['role:parent', 'school.approved'])->prefix('school/parent')->name('parent.')->middleware('verified')->group(function () {
         Route::get('dashboard',       [ParentPortalController::class, 'dashboard'])->name('dashboard');
         Route::get('attendance',      [ParentPortalController::class, 'attendance'])->name('attendance');
         Route::get('results',         [ParentPortalController::class, 'results'])->name('results');
@@ -910,7 +915,7 @@ Route::middleware('auth')->group(function () {
         Route::get('child-performance/{childId}', [ParentPerformanceController::class, 'childDetail'])->name('child-performance');
     });
 
-    Route::middleware('role:teacher')->prefix('school/teacher')->name('teacher.')->group(function () {
+    Route::middleware(['role:teacher', 'school.approved'])->prefix('school/teacher')->name('teacher.')->group(function () {
         Route::get('dashboard',            [TeacherPortalController::class, 'dashboard'])->name('dashboard');
         Route::get('academic',             [TeacherPortalController::class, 'academic'])->name('academic');
         Route::get('classes',              [TeacherPortalController::class, 'classes'])->name('classes');
@@ -948,7 +953,7 @@ Route::middleware('auth')->group(function () {
     |--------------------------------------------------------------------------
     | Accountant Portal routes
     |--------------------------------------------------------------------------*/
-    Route::middleware('role:accountant')->prefix('school/accountant')->name('accountant.')->group(function () {
+    Route::middleware(['role:accountant', 'school.approved'])->prefix('school/accountant')->name('accountant.')->group(function () {
         Route::get('dashboard',           [AccountantPortalController::class, 'dashboard'])->name('dashboard');
         Route::get('fees',                [AccountantPortalController::class, 'fees'])->name('fees');
         Route::get('fee-structure',       [AccountantPortalController::class, 'feeStructure'])->name('fee-structure');
@@ -973,7 +978,7 @@ Route::middleware('auth')->group(function () {
     | Principal Portal routes
     |--------------------------------------------------------------------------
     */
-    Route::middleware('role:principal')->prefix('school/principal')->name('principal.')->group(function () {
+    Route::middleware(['role:principal', 'school.approved'])->prefix('school/principal')->name('principal.')->group(function () {
         Route::get('dashboard',           [PrincipalPortalController::class, 'dashboard'])->name('dashboard');
         Route::get('academic',            [PrincipalPortalController::class, 'academic'])->name('academic');
         Route::get('students',            [PrincipalPortalController::class, 'students'])->name('students');
@@ -1005,7 +1010,7 @@ Route::middleware('auth')->group(function () {
     | Proprietor Portal routes
     |--------------------------------------------------------------------------
     */
-    Route::middleware('role:proprietor')->prefix('school/proprietor')->name('proprietor.')->group(function () {
+    Route::middleware(['role:proprietor', 'school.approved'])->prefix('school/proprietor')->name('proprietor.')->group(function () {
         Route::get('dashboard',           [ProprietorPortalController::class, 'dashboard'])->name('dashboard');
         Route::get('financial',           [ProprietorPortalController::class, 'financial'])->name('financial');
         Route::get('academic',            [ProprietorPortalController::class, 'academic'])->name('academic');
@@ -1027,7 +1032,7 @@ Route::middleware('auth')->group(function () {
     | Librarian Portal routes
     |--------------------------------------------------------------------------
     */
-    Route::middleware('role:librarian')->prefix('school/librarian')->name('librarian.')->group(function () {
+    Route::middleware(['role:librarian', 'school.approved'])->prefix('school/librarian')->name('librarian.')->group(function () {
         Route::get('dashboard',       [LibrarianPortalController::class, 'dashboard'])->name('dashboard');
         Route::get('books',           [LibrarianPortalController::class, 'books'])->name('books');
         Route::get('issues',          [LibrarianPortalController::class, 'issues'])->name('issues');
@@ -1041,7 +1046,7 @@ Route::middleware('auth')->group(function () {
     | Driver Portal routes
     |--------------------------------------------------------------------------
     */
-    Route::middleware('role:driver')->prefix('school/driver')->name('driver.')->group(function () {
+    Route::middleware(['role:driver', 'school.approved'])->prefix('school/driver')->name('driver.')->group(function () {
         Route::get('dashboard',       [DriverPortalController::class, 'dashboard'])->name('dashboard');
         Route::get('route',           [DriverPortalController::class, 'route'])->name('route');
         Route::get('students',        [DriverPortalController::class, 'students'])->name('students');
@@ -1055,7 +1060,7 @@ Route::middleware('auth')->group(function () {
     | Warden Portal routes
     |--------------------------------------------------------------------------
     */
-    Route::middleware('role:warden')->prefix('school/warden')->name('warden.')->group(function () {
+    Route::middleware(['role:warden', 'school.approved'])->prefix('school/warden')->name('warden.')->group(function () {
         Route::get('dashboard',       [WardenPortalController::class, 'dashboard'])->name('dashboard');
         Route::get('hostel',          [WardenPortalController::class, 'hostel'])->name('hostel');
         Route::get('rooms',           [WardenPortalController::class, 'rooms'])->name('rooms');
@@ -1070,7 +1075,7 @@ Route::middleware('auth')->group(function () {
     | Store Manager Portal routes
     |--------------------------------------------------------------------------
     */
-    Route::middleware('role:store-manager')->prefix('school/store-manager')->name('store-manager.')->group(function () {
+    Route::middleware(['role:store-manager', 'school.approved'])->prefix('school/store-manager')->name('store-manager.')->group(function () {
         Route::get('dashboard',       [StoreManagerPortalController::class, 'dashboard'])->name('dashboard');
         Route::get('items',           [StoreManagerPortalController::class, 'items'])->name('items');
         Route::get('purchases',       [StoreManagerPortalController::class, 'purchases'])->name('purchases');
@@ -1090,6 +1095,8 @@ Route::middleware('auth')->group(function () {
             Route::resource('schools', SchoolController::class);
             Route::patch('schools/{school}/suspend', [SchoolController::class, 'suspend'])->name('schools.suspend');
             Route::patch('schools/{school}/activate', [SchoolController::class, 'activate'])->name('schools.activate');
+            Route::patch('schools/{school}/approve', [SchoolController::class, 'approveRegistration'])->name('schools.approve');
+            Route::patch('schools/{school}/reject', [SchoolController::class, 'rejectRegistration'])->name('schools.reject');
             Route::get('/schools/create-with-admin', [SchoolWithAdminController::class, 'create'])->name('schools.create-with-admin');
             Route::post('/schools/create-with-admin', [SchoolWithAdminController::class, 'store'])->name('schools.store-with-admin');
 

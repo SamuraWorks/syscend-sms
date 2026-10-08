@@ -23,6 +23,7 @@ import {
     GripVertical,
     School,
     Building2,
+    Clock,
     Layers,
     CalendarDays,
     ClipboardCheck,
@@ -42,12 +43,13 @@ import {
 
 const STEPS = [
     { id: 'profile', label: 'School Profile', icon: School, required: true },
+    { id: 'school_operations', label: 'School Operations', icon: Clock, required: true },
     { id: 'academic_structure', label: 'Academic Structure', icon: Building2, required: true },
-    { id: 'streams', label: 'Streams & Sections', icon: Layers, required: false },
-    { id: 'academic_year', label: 'Academic Year & Terms', icon: CalendarDays, required: true },
+    { id: 'subjects', label: 'Subjects & Curriculum', icon: BookOpen, required: true },
+    { id: 'academic_year', label: 'Academic Calendar & Terms', icon: CalendarDays, required: true },
     { id: 'assessment', label: 'Assessment Setup', icon: ClipboardCheck, required: true },
-    { id: 'subjects', label: 'Subjects', icon: BookOpen, required: false },
     { id: 'grading', label: 'Grading & Promotion', icon: GraduationCap, required: true },
+    { id: 'streams', label: 'Streams & Sections', icon: Layers, required: false },
     { id: 'branding', label: 'Branding & Documents', icon: Palette, required: false },
     { id: 'ready', label: 'School Ready', icon: Rocket, required: false },
 ];
@@ -123,6 +125,7 @@ interface ProgressData {
     all_required: boolean;
     is_configured: boolean;
     current_step: string | null;
+    summary?: Record<string, any> | null;
 }
 
 const STEP_MAP: Record<string, number> = {};
@@ -225,22 +228,24 @@ export default function SetupWizardIndex() {
         switch (currentStep.id) {
             case 'profile':
                 return <ProfileStep data={stepData} onSaved={loadProgress} goNext={goNext} />;
+            case 'school_operations':
+                return <SchoolOperationsStep data={stepData} onSaved={loadProgress} goNext={goNext} />;
             case 'academic_structure':
                 return <AcademicStructureStep data={stepData} onSaved={loadProgress} goNext={goNext} />;
-            case 'streams':
-                return <StreamsStep data={stepData} onSaved={loadProgress} goNext={goNext} />;
+            case 'subjects':
+                return <SubjectsStep data={stepData} onSaved={loadProgress} goNext={goNext} />;
             case 'academic_year':
                 return <AcademicYearStep data={stepData} onSaved={loadProgress} goNext={goNext} />;
             case 'assessment':
                 return <AssessmentStep data={stepData} onSaved={loadProgress} goNext={goNext} />;
-            case 'subjects':
-                return <SubjectsStep data={stepData} onSaved={loadProgress} goNext={goNext} />;
             case 'grading':
                 return <GradingStep data={stepData} onSaved={loadProgress} goNext={goNext} />;
+            case 'streams':
+                return <StreamsStep data={stepData} onSaved={loadProgress} goNext={goNext} />;
             case 'branding':
                 return <BrandingStep data={stepData} onSaved={loadProgress} goNext={goNext} />;
             case 'ready':
-                return <ReadyStep allRequired={progress?.all_required ?? false} onComplete={handleComplete} saving={saving} />;
+                return <ReadyStep allRequired={progress?.all_required ?? false} summary={progress?.summary} onComplete={handleComplete} saving={saving} />;
             default:
                 return null;
         }
@@ -601,6 +606,101 @@ function ProfileStep({ data, onSaved, goNext }: StepProps) {
                 <Field label="Vision" error={errors.school_vision?.message}>
                     <Textarea {...register('school_vision')} rows={3} placeholder="School vision statement" />
                 </Field>
+            </div>
+
+            <SubmitButton saving={saving} />
+        </form>
+    );
+}
+
+function SchoolOperationsStep({ data, onSaved, goNext }: StepProps) {
+    const validDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const dayLabels: Record<string, string> = {
+        monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu',
+        friday: 'Fri', saturday: 'Sat', sunday: 'Sun',
+    };
+    const dayFull: Record<string, string> = {
+        monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday', thursday: 'Thursday',
+        friday: 'Friday', saturday: 'Saturday', sunday: 'Sunday',
+    };
+
+    const defaults = (data as any)?.defaults || {};
+    const existing = (data as any)?.data || {};
+    const storedDays = Array.isArray(existing.working_days)
+        ? existing.working_days
+        : (existing.working_days ? String(existing.working_days).split(',').map((d: string) => d.trim().toLowerCase()) : []);
+
+    const [workingDays, setWorkingDays] = useState<string[]>(
+        storedDays.length > 0 ? storedDays : (defaults.working_days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])
+    );
+    const [openingTime, setOpeningTime] = useState(existing.opening_time || defaults.opening_time || '07:30');
+    const [closingTime, setClosingTime] = useState(existing.closing_time || defaults.closing_time || '15:00');
+    const [saving, setSaving] = useState(false);
+
+    const toggleDay = (day: string) => {
+        setWorkingDays((prev) => prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]);
+    };
+
+    const onSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (workingDays.length === 0) { toast.error('Select at least one working day'); return; }
+        if (closingTime <= openingTime) { toast.error('Closing time must be after opening time'); return; }
+        setSaving(true);
+        try {
+            await postJson('/school/setup/school_operations', {
+                working_days: workingDays,
+                opening_time: openingTime,
+                closing_time: closingTime,
+            });
+            toast.success('School operations saved');
+            await onSaved();
+            goNext();
+        } catch (err: any) {
+            toast.error(err.message);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <form onSubmit={onSubmit} className="space-y-6">
+            <SectionHeader>Working Days</SectionHeader>
+            <p className="text-xs text-muted-foreground -mt-2">
+                Select the days classes and school activities operate. Used for timetables and attendance.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+                {validDays.map((day) => (
+                    <button
+                        key={day}
+                        type="button"
+                        onClick={() => toggleDay(day)}
+                        className={`rounded-lg border p-3 text-sm font-medium transition-colors ${
+                            workingDays.includes(day)
+                                ? 'border-primary bg-primary/10 text-primary'
+                                : 'text-muted-foreground hover:bg-muted'
+                        }`}
+                    >
+                        {dayLabels[day]}
+                    </button>
+                ))}
+            </div>
+
+            <SectionHeader>School Hours</SectionHeader>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Opening Time" required>
+                    <Input type="time" value={openingTime} onChange={(e) => setOpeningTime(e.target.value)} />
+                </Field>
+                <Field label="Closing Time" required>
+                    <Input type="time" value={closingTime} onChange={(e) => setClosingTime(e.target.value)} />
+                </Field>
+            </div>
+            <p className="text-xs text-muted-foreground -mt-2">
+                These hours define the school day. Timetable periods must fall within them and respect scheduled breaks.
+            </p>
+
+            <div className="rounded-lg border bg-muted/40 p-4 text-xs text-muted-foreground">
+                <Info className="w-3.5 h-3.5 inline mr-1 mb-0.5" />
+                Current selection: {workingDays.map((d) => dayFull[d] || d).join(', ') || 'None'} · {openingTime} – {closingTime}
             </div>
 
             <SubmitButton saving={saving} />
@@ -1003,6 +1103,7 @@ function AcademicYearStep({ data, onSaved, goNext }: StepProps) {
     const defaults = (data as any)?.defaults || {};
     const existing = (data as any)?.current_year;
     const existingTerms = (data as any)?.terms || [];
+    const template = (data as any)?.template;
 
     const [yearName, setYearName] = useState(existing?.name || defaults.year_name || '');
     const [startDate, setStartDate] = useState(existing?.start_date || defaults.start_date || '');
@@ -1045,6 +1146,15 @@ function AcademicYearStep({ data, onSaved, goNext }: StepProps) {
 
     return (
         <form onSubmit={onSubmit} className="space-y-6">
+            {template && (
+                <div className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
+                    <CalendarDays className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
+                    <span>
+                        Defaults pre-filled from the approved national calendar <strong>{template.name}</strong>
+                        {template.country === 'SL' ? ' (Sierra Leone)' : ''} with {template.terms?.length ?? 0} terms. Adjust if needed.
+                    </span>
+                </div>
+            )}
             <SectionHeader>Academic Year</SectionHeader>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Field label="Year Name" required>
@@ -1221,6 +1331,7 @@ function SubjectsStep({ data, onSaved, goNext }: StepProps) {
     const allClasses = (data as any)?.classes || [];
     const existing = (data as any)?.subjects || [];
     const departments = (data as any)?.departments || [];
+    const catalogue = (data as any)?.catalogue || [];
     const defaults = (data as any)?.defaults || {};
 
     const [subjects, setSubjects] = useState<any[]>(() => {
@@ -1265,6 +1376,27 @@ function SubjectsStep({ data, onSaved, goNext }: StepProps) {
         setSubjects((p) => p.map((s) => s._key === key ? { ...s, [field]: value } : s));
     };
 
+    const loadCatalogueForClass = () => {
+        const cls = allClasses.find((c: any) => String(c.id) === selectedClass);
+        if (!cls) return;
+        const rows = catalogue.filter(
+            (x: any) => x.school_level === cls.school_level && (x.section_group === null || x.section_group === 'core')
+        );
+        if (rows.length === 0) { toast.info('No national curriculum catalogue entries for this level'); return; }
+        const existingNames = new Set(
+            subjects.filter((s: any) => String(s.class_id) === selectedClass).map((s: any) => s.name.trim().toLowerCase())
+        );
+        const additions = rows
+            .filter((x: any) => !existingNames.has(x.name.trim().toLowerCase()))
+            .map((x: any) => ({
+                name: x.name, code: x.code || '', class_id: Number(selectedClass),
+                is_core: x.is_core, school_level: cls.school_level, department_id: null, _key: crypto.randomUUID(),
+            }));
+        if (additions.length === 0) { toast.info('National curriculum subjects already loaded for this class'); return; }
+        setSubjects((p) => [...p, ...additions]);
+        toast.success(`Loaded ${additions.length} subject(s) from the national curriculum`);
+    };
+
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const nonEmpty = subjects.filter((s) => s.name.trim());
@@ -1297,9 +1429,14 @@ function SubjectsStep({ data, onSaved, goNext }: StepProps) {
 
             <div className="flex items-center justify-between">
                 <SectionHeader>Subjects for {allClasses.find((c: any) => String(c.id) === selectedClass)?.name || 'Selected Class'}</SectionHeader>
-                <Button type="button" variant="outline" size="sm" onClick={addSubject} disabled={!selectedClass}>
-                    <Plus className="w-3.5 h-3.5 mr-1" /> Add Subject
-                </Button>
+                <div className="flex gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={loadCatalogueForClass} disabled={!selectedClass || catalogue.length === 0}>
+                        <BookOpen className="w-3.5 h-3.5 mr-1" /> From National Curriculum
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={addSubject} disabled={!selectedClass}>
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Add Subject
+                    </Button>
+                </div>
             </div>
 
             {filteredSubjects.length === 0 ? (
@@ -1570,7 +1707,24 @@ function BrandingStep({ data, onSaved, goNext }: StepProps) {
     );
 }
 
-function ReadyStep({ allRequired, onComplete, saving }: { allRequired: boolean; onComplete: () => void; saving: boolean }) {
+function ReadyStep({ allRequired, summary, onComplete, saving }: { allRequired: boolean; summary?: Record<string, any> | null; onComplete: () => void; saving: boolean }) {
+    const rows = summary
+        ? [
+              ['School', summary.school_name],
+              ['Academic Year', summary.academic_year],
+              ['Terms', summary.terms ? `${summary.terms}` : null],
+              ['Classes', summary.classes ? `${summary.classes}` : null],
+              ['Sections', summary.sections ? `${summary.sections}` : null],
+              ['Subjects', summary.subjects ? `${summary.subjects}` : null],
+              ['Periods', summary.periods ? `${summary.periods}` : null],
+              ['Working Days', Array.isArray(summary.working_days) && summary.working_days.length ? summary.working_days.map((d: string) => d[0].toUpperCase() + d.slice(1, 3)).join(', ') : null],
+              ['School Hours', summary.opening_time || summary.closing_time ? `${summary.opening_time} – ${summary.closing_time}` : null],
+              ['CA / Exam Weight', summary.ca_weight != null || summary.exam_weight != null ? `${summary.ca_weight}% / ${summary.exam_weight}%` : null],
+              ['Pass Mark', summary.pass_mark != null ? `${summary.pass_mark}%` : null],
+              ['Grading Bands', summary.grading_bands ? `${summary.grading_bands}` : null],
+          ].filter((row) => row[1] !== null && row[1] !== undefined) as [string, string][]
+        : [];
+
     return (
         <div className="text-center py-8 space-y-6">
             <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-950/30 flex items-center justify-center mx-auto">
@@ -1584,6 +1738,18 @@ function ReadyStep({ allRequired, onComplete, saving }: { allRequired: boolean; 
                         : 'Some optional steps are pending. You can complete them later from Settings, or launch now.'}
                 </p>
             </div>
+
+            {rows.length > 0 && (
+                <div className="max-w-xl mx-auto rounded-lg border divide-y text-left">
+                    {rows.map(([label, value]) => (
+                        <div key={label} className="flex items-center justify-between px-4 py-2 text-sm">
+                            <span className="text-muted-foreground">{label}</span>
+                            <span className="font-medium capitalize">{value}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             {allRequired ? (
                 <Button onClick={onComplete} disabled={saving} size="lg" className="bg-emerald-600 hover:bg-emerald-700">
                     {saving ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : <Rocket className="w-5 h-5 mr-2" />}

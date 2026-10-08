@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,            // Super Admin + Ministry Admin + District Officer
             MinistrySeeder::class,         // 15 districts of Sierra Leone
             SierraLeoneSetupSeeder::class, // grade scales, assessment types, academic terms
+            CurriculumSeeder::class,       // national subject catalogue for the onboarding wizard
+            AcademicCalendarTemplateSeeder::class, // national 3-term academic calendar template
         ]);
     }
 }

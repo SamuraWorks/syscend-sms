@@ -3,21 +3,27 @@
 namespace App\Http\Controllers\SchoolAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicCalendarTemplate;
 use App\Models\AcademicTerm;
 use App\Models\AcademicYear;
 use App\Models\AssessmentComponent;
 use App\Models\AssessmentType;
+use App\Models\CurriculumSubject;
 use App\Models\Department;
 use App\Models\GradeScale;
+use App\Models\SchedulePeriod;
 use App\Models\School;
 use App\Models\SchoolAssessmentConfig;
 use App\Models\SchoolClass;
 use App\Models\SchoolSetting;
 use App\Models\SchoolSetupProgress;
+use App\Models\SchoolTimeSetting;
 use App\Models\Section;
 use App\Models\Subject;
+use App\Models\SubjectOffering;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -26,14 +32,15 @@ class SetupWizardController extends Controller
 {
     private const STEPS = [
         'profile'             => ['label' => 'School Profile',              'required' => true,  'order' => 1],
-        'academic_structure'  => ['label' => 'Academic Structure',          'required' => true,  'order' => 2],
-        'streams'             => ['label' => 'Streams & Sections',          'required' => false, 'order' => 3],
-        'academic_year'       => ['label' => 'Academic Year & Terms',       'required' => true,  'order' => 4],
-        'assessment'          => ['label' => 'Assessment Setup',            'required' => true,  'order' => 5],
-        'subjects'            => ['label' => 'Subjects',                    'required' => false, 'order' => 6],
+        'school_operations'   => ['label' => 'School Operations',           'required' => true,  'order' => 2],
+        'academic_structure'  => ['label' => 'Academic Structure',          'required' => true,  'order' => 3],
+        'subjects'            => ['label' => 'Subjects & Curriculum',       'required' => true,  'order' => 4],
+        'academic_year'       => ['label' => 'Academic Calendar & Terms',   'required' => true,  'order' => 5],
+        'assessment'          => ['label' => 'Assessment Setup',            'required' => true,  'order' => 6],
         'grading'             => ['label' => 'Grading & Promotion',        'required' => true,  'order' => 7],
-        'branding'            => ['label' => 'Branding & Documents',       'required' => false, 'order' => 8],
-        'ready'               => ['label' => 'School Ready',               'required' => false, 'order' => 9],
+        'streams'             => ['label' => 'Streams & Sections',          'required' => false, 'order' => 8],
+        'branding'            => ['label' => 'Branding & Documents',       'required' => false, 'order' => 9],
+        'ready'               => ['label' => 'School Ready',               'required' => false, 'order' => 10],
     ];
 
     public function index()
@@ -66,7 +73,38 @@ class SetupWizardController extends Controller
             'all_required'     => $allRequiredDone,
             'is_configured'    => $school?->is_configured ?? false,
             'current_step'     => $this->getNextStep($sid),
+            'summary'          => $this->configurationSummary($sid),
         ]);
+    }
+
+    private function configurationSummary(int $sid): array
+    {
+        $school     = School::withoutGlobalScopes()->find($sid);
+        $currentYear = AcademicYear::where('school_id', $sid)->where('is_current', true)->first();
+        $timeSetting = SchoolTimeSetting::where('school_id', $sid)
+            ->when($currentYear, fn ($q) => $q->where('academic_year_id', $currentYear->id))
+            ->first();
+
+        return [
+            'school_name'   => $school?->name,
+            'classes'       => SchoolClass::where('school_id', $sid)->count(),
+            'sections'      => Section::where('school_id', $sid)->count(),
+            'subjects'      => Subject::where('school_id', $sid)->count(),
+            'periods'       => SchedulePeriod::where('school_id', $sid)->count(),
+            'academic_year' => $currentYear?->name,
+            'terms'         => $currentYear
+                ? AcademicTerm::where('school_id', $sid)->where('academic_year_id', $currentYear->id)->count()
+                : 0,
+            'working_days' => $timeSetting?->working_days
+                ? $timeSetting->working_days_array
+                : ($school?->working_days ? array_map('trim', explode(',', $school->working_days)) : []),
+            'opening_time' => $timeSetting?->opening_time?->format('H:i') ?? $school?->school_opening_time,
+            'closing_time' => $timeSetting?->closing_time?->format('H:i') ?? $school?->school_closing_time,
+            'ca_weight'    => $school?->ca_weight,
+            'exam_weight'  => $school?->exam_weight,
+            'pass_mark'    => SchoolSetting::get($sid, 'pass_mark', 50),
+            'grading_bands' => GradeScale::where('school_id', $sid)->count(),
+        ];
     }
 
     private function getNextStep(int $sid): ?string
@@ -81,12 +119,13 @@ class SetupWizardController extends Controller
     // ── Step dispatcher ────────────────────────────────────────────
     private const STEP_METHODS = [
         'profile'            => ['get' => 'getProfile',            'save' => 'saveProfile'],
+        'school_operations'  => ['get' => 'getSchoolOperations',   'save' => 'saveSchoolOperations'],
         'academic_structure' => ['get' => 'getAcademicStructure',  'save' => 'saveAcademicStructure'],
-        'streams'            => ['get' => 'getStreams',             'save' => 'saveStreams'],
+        'subjects'           => ['get' => 'getSubjects',           'save' => 'saveSubjects'],
         'academic_year'      => ['get' => 'getAcademicYear',       'save' => 'saveAcademicYear'],
         'assessment'         => ['get' => 'getAssessment',         'save' => 'saveAssessment'],
-        'subjects'           => ['get' => 'getSubjects',           'save' => 'saveSubjects'],
         'grading'            => ['get' => 'getGrading',            'save' => 'saveGrading'],
+        'streams'            => ['get' => 'getStreams',             'save' => 'saveStreams'],
         'branding'           => ['get' => 'getBranding',           'save' => 'saveBranding'],
     ];
 
@@ -186,6 +225,77 @@ class SetupWizardController extends Controller
         return response()->json(['success' => true, 'message' => 'School profile saved.']);
     }
 
+    // ── Step 2: School Operations ────────────────────────────────────
+    public function getSchoolOperations(): JsonResponse
+    {
+        $sid = $this->getSchoolId();
+        $school = School::withoutGlobalScopes()->find($sid);
+        $currentYear = AcademicYear::where('school_id', $sid)->where('is_current', true)->first();
+
+        $timeSetting = $currentYear
+            ? SchoolTimeSetting::where('school_id', $sid)->where('academic_year_id', $currentYear->id)->first()
+            : null;
+
+        $workingDays = $timeSetting?->working_days
+            ? $timeSetting->working_days_array
+            : ($school?->working_days ? array_map('trim', explode(',', $school->working_days)) : null);
+
+        return response()->json([
+            'data' => [
+                'working_days' => $workingDays ?? ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+                'opening_time' => $timeSetting?->opening_time?->format('H:i') ?? $school?->school_opening_time ?? '07:30',
+                'closing_time' => $timeSetting?->closing_time?->format('H:i') ?? $school?->school_closing_time ?? '15:00',
+            ],
+            'defaults' => [
+                'working_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+                'opening_time' => '07:30',
+                'closing_time' => '15:00',
+            ],
+        ]);
+    }
+
+    public function saveSchoolOperations(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'working_days'   => 'required|array|min:1',
+            'working_days.*' => 'string|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+            'opening_time'   => 'required|date_format:H:i',
+            'closing_time'   => 'required|date_format:H:i|after:opening_time',
+        ]);
+
+        $sid = $this->getSchoolId();
+
+        DB::transaction(function () use ($data, $sid) {
+            School::withoutGlobalScopes()->where('id', $sid)->update([
+                'working_days'        => implode(',', $data['working_days']),
+                'school_opening_time' => $data['opening_time'],
+                'school_closing_time' => $data['closing_time'],
+            ]);
+
+            $currentYear = AcademicYear::where('school_id', $sid)->where('is_current', true)->first();
+
+            if ($currentYear) {
+                SchoolTimeSetting::updateOrCreate(
+                    ['school_id' => $sid, 'academic_year_id' => $currentYear->id],
+                    [
+                        'opening_time' => $data['opening_time'],
+                        'closing_time' => $data['closing_time'],
+                        'working_days' => implode(',', $data['working_days']),
+                        'day_start'    => $data['opening_time'],
+                        'day_end'      => $data['closing_time'],
+                        'timezone'     => 'Africa/Freetown',
+                        'clock_format' => '12h',
+                        'is_active'    => true,
+                    ]
+                );
+            }
+        });
+
+        SchoolSetupProgress::markComplete($sid, 'school_operations', $data);
+
+        return response()->json(['success' => true, 'message' => 'School operations saved.']);
+    }
+
     // ── Step 2: Academic Structure ────────────────────────────────
     public function getAcademicStructure(): JsonResponse
     {
@@ -258,20 +368,21 @@ class SetupWizardController extends Controller
         return response()->json(['success' => true, 'message' => 'Academic structure saved.']);
     }
 
-    // ── Step 3: Streams & Sections ────────────────────────────────
+    // ── Step 8: Streams & Sections ────────────────────────────────
     public function getStreams(): JsonResponse
     {
         $sid = $this->getSchoolId();
         $departments = Department::where('school_id', $sid)->academic()->get();
         $sections = Section::where('school_id', $sid)->with('schoolClass:id,name')->get();
         $classes = SchoolClass::where('school_id', $sid)->where('school_level', 'senior_secondary')->get(['id', 'name']);
+        $hasSSS = SchoolClass::where('school_id', $sid)->where('school_level', 'senior_secondary')->exists();
 
         return response()->json([
             'departments' => $departments,
             'sections'    => $sections,
             'sss_classes' => $classes,
             'defaults'    => [
-                'departments' => ['Science', 'Arts', 'Commercial'],
+                'departments' => $hasSSS ? ['Science', 'Arts', 'Commercial'] : [],
                 'sections'    => ['A', 'B', 'C'],
             ],
         ]);
@@ -363,22 +474,71 @@ class SetupWizardController extends Controller
 
         $allYears = AcademicYear::where('school_id', $sid)->orderByDesc('start_date')->get();
 
-        $year = date('Y');
         return response()->json([
             'current_year' => $currentYear,
             'terms'        => $terms,
             'all_years'    => $allYears,
-            'defaults'     => [
-                'year_name'   => "$year/" . ($year + 1),
-                'start_date'  => "$year-09-01",
-                'end_date'    => ($year + 1) . "-07-31",
-                'terms'       => [
-                    ['name' => 'First Term',  'start_date' => "$year-09-08", 'end_date' => "$year-12-15"],
-                    ['name' => 'Second Term', 'start_date' => "$year-01-06", 'end_date' => "$year-03-31"],
-                    ['name' => 'Third Term',  'start_date' => "$year-04-14", 'end_date' => "$year-07-10"],
-                ],
-            ],
+            'template'     => $this->activeCalendarTemplate(),
+            'defaults'     => $this->academicYearDefaults(date('Y')),
         ]);
+    }
+
+    private function activeCalendarTemplate(): ?array
+    {
+        $template = AcademicCalendarTemplate::with('terms')
+            ->where('is_active', true)->orderBy('sort_order')->first();
+
+        if (! $template) return null;
+
+        return [
+            'id'               => $template->id,
+            'name'             => $template->name,
+            'country'          => $template->country,
+            'zone'             => $template->zone,
+            'year_start_month' => $template->year_start_month,
+            'year_start_day'   => $template->year_start_day,
+            'year_end_month'   => $template->year_end_month,
+            'year_end_day'     => $template->year_end_day,
+            'terms'            => $template->terms
+                ->sortBy('sort_order')->take(3)->map(fn ($term) => [
+                    'id'          => $term->id,
+                    'name'        => $term->name,
+                    'term_number' => $term->term_number,
+                    'start_month' => $term->start_month,
+                    'start_day'   => $term->start_day,
+                    'end_month'   => $term->end_month,
+                    'end_day'     => $term->end_day,
+                ])->values(),
+        ];
+    }
+
+    private function academicYearDefaults(int $year): array
+    {
+        $template = $this->activeCalendarTemplate();
+
+        if ($template) {
+            return [
+                'year_name'  => "$year/" . ($year + 1),
+                'start_date' => Carbon::create($year, $template['year_start_month'], $template['year_start_day'])->toDateString(),
+                'end_date'   => Carbon::create($year + 1, $template['year_end_month'], $template['year_end_day'])->toDateString(),
+                'terms'      => collect($template['terms'])->map(fn ($term) => [
+                    'name'       => $term['name'],
+                    'start_date' => Carbon::create($term['term_number'] <= 1 ? $year : $year + 1, $term['start_month'], $term['start_day'])->toDateString(),
+                    'end_date'   => Carbon::create($term['term_number'] <= 1 ? $year : $year + 1, $term['end_month'], $term['end_day'])->toDateString(),
+                ])->values(),
+            ];
+        }
+
+        return [
+            'year_name'  => "$year/" . ($year + 1),
+            'start_date' => "$year-09-01",
+            'end_date'   => ($year + 1) . "-07-31",
+            'terms'      => [
+                ['name' => 'First Term',  'start_date' => "$year-09-08", 'end_date' => "$year-12-15"],
+                ['name' => 'Second Term', 'start_date' => "$year-01-06", 'end_date' => "$year-03-31"],
+                ['name' => 'Third Term',  'start_date' => "$year-04-14", 'end_date' => "$year-07-10"],
+            ],
+        ];
     }
 
     public function saveAcademicYear(Request $request): JsonResponse
@@ -432,6 +592,27 @@ class SetupWizardController extends Controller
 
             $toDelete = array_diff($existingTermIds, $incomingTermIds);
             if ($toDelete) AcademicTerm::whereIn('id', $toDelete)->delete();
+
+            $hasSetting = SchoolTimeSetting::where('school_id', $sid)
+                ->where('academic_year_id', $year->id)->exists();
+
+            if (! $hasSetting) {
+                $school = School::withoutGlobalScopes()->find($sid);
+                if ($school?->working_days && $school?->school_opening_time && $school?->school_closing_time) {
+                    SchoolTimeSetting::create([
+                        'school_id'        => $sid,
+                        'academic_year_id' => $year->id,
+                        'opening_time'     => $school->school_opening_time,
+                        'closing_time'     => $school->school_closing_time,
+                        'working_days'     => $school->working_days,
+                        'day_start'        => $school->school_opening_time,
+                        'day_end'          => $school->school_closing_time,
+                        'timezone'         => 'Africa/Freetown',
+                        'clock_format'     => '12h',
+                        'is_active'        => true,
+                    ]);
+                }
+            }
         });
 
         SchoolSetupProgress::markComplete($sid, 'academic_year', $data);
@@ -439,7 +620,7 @@ class SetupWizardController extends Controller
         return response()->json(['success' => true, 'message' => 'Academic year and terms saved.']);
     }
 
-    // ── Step 5: Assessment Setup ──────────────────────────────────
+    // ── Step 6: Assessment Setup ──────────────────────────────────
     public function getAssessment(): JsonResponse
     {
         $sid = $this->getSchoolId();
@@ -545,18 +726,20 @@ class SetupWizardController extends Controller
         return response()->json(['success' => true, 'message' => 'Assessment setup saved.']);
     }
 
-    // ── Step 6: Subjects ──────────────────────────────────────────
+    // ── Step 4: Subjects & Curriculum ──────────────────────────────
     public function getSubjects(): JsonResponse
     {
         $sid = $this->getSchoolId();
         $classes = SchoolClass::where('school_id', $sid)->orderBy('level_order')->get(['id', 'name', 'school_level']);
         $subjects = Subject::where('school_id', $sid)->with('schoolClass:id,name')->get();
         $departments = Department::where('school_id', $sid)->academic()->get(['id', 'name']);
+        $catalogue = CurriculumSubject::orderBy('sort_order')->get(['school_level', 'section_group', 'name', 'code', 'is_core']);
 
         return response()->json([
             'classes'     => $classes,
             'subjects'    => $subjects,
             'departments' => $departments,
+            'catalogue'   => $catalogue,
             'defaults'    => $this->getSubjectDefaults(),
         ]);
     }
@@ -602,11 +785,33 @@ class SetupWizardController extends Controller
 
             $toDelete = array_diff($existingIds, $incomingIds);
             if ($toDelete) Subject::whereIn('id', $toDelete)->where('school_id', $sid)->delete();
+
+            $currentYear = AcademicYear::where('school_id', $sid)->where('is_current', true)->first();
+            if ($currentYear) {
+                foreach (Subject::where('school_id', $sid)->get() as $subject) {
+                    SubjectOffering::updateOrCreate(
+                        [
+                            'school_id'        => $sid,
+                            'academic_year_id' => $currentYear->id,
+                            'class_id'         => $subject->class_id,
+                            'section_id'       => null,
+                            'subject_code'     => $subject->code ?: Str::upper(Str::slug($subject->name, '_')),
+                        ],
+                        [
+                            'subject_id'   => $subject->id,
+                            'subject_name' => $subject->name,
+                            'subject_type' => $subject->is_core ? 'compulsory' : 'elective',
+                            'is_required'  => (bool) $subject->is_core,
+                            'is_active'    => true,
+                        ]
+                    );
+                }
+            }
         });
 
         SchoolSetupProgress::markComplete($sid, 'subjects', $data);
 
-        return response()->json(['success' => true, 'message' => 'Subjects saved.']);
+        return response()->json(['success' => true, 'message' => 'Subjects and curriculum saved.']);
     }
 
     // ── Step 7: Grading & Promotion ───────────────────────────────
@@ -615,26 +820,33 @@ class SetupWizardController extends Controller
         $sid = $this->getSchoolId();
         $school = School::withoutGlobalScopes()->find($sid);
         $gradeScales = GradeScale::where('school_id', $sid)->orderBy('min_marks')->get();
+        $defaultScale = $this->defaultGradeScale();
 
         return response()->json([
-            'grade_scales' => $gradeScales,
+            'grade_scales' => $gradeScales->isEmpty() ? $defaultScale : $gradeScales,
             'school_level' => $school?->school_level,
             'ca_weight'    => $school?->ca_weight,
             'exam_weight'  => $school?->exam_weight,
+            'pass_mark'    => SchoolSetting::get($sid, 'pass_mark', 50),
             'defaults'     => [
                 'ca_weight'    => 40,
                 'exam_weight'  => 60,
                 'pass_mark'    => 50,
-                'grade_scale'  => [
-                    ['grade' => 'A',  'gpa' => 4.0, 'min_marks' => 80, 'max_marks' => 100, 'remarks' => 'Excellent',  'sort_order' => 1],
-                    ['grade' => 'B',  'gpa' => 3.5, 'min_marks' => 70, 'max_marks' => 79.99, 'remarks' => 'Very Good', 'sort_order' => 2],
-                    ['grade' => 'C',  'gpa' => 3.0, 'min_marks' => 60, 'max_marks' => 69.99, 'remarks' => 'Good',      'sort_order' => 3],
-                    ['grade' => 'D',  'gpa' => 2.0, 'min_marks' => 50, 'max_marks' => 59.99, 'remarks' => 'Pass',      'sort_order' => 4],
-                    ['grade' => 'E',  'gpa' => 1.0, 'min_marks' => 40, 'max_marks' => 49.99, 'remarks' => 'Fair',      'sort_order' => 5],
-                    ['grade' => 'F',  'gpa' => 0.0, 'min_marks' => 0,  'max_marks' => 39.99, 'remarks' => 'Fail',      'sort_order' => 6],
-                ],
+                'grade_scale'  => $defaultScale,
             ],
         ]);
+    }
+
+    private function defaultGradeScale(): array
+    {
+        return [
+            ['grade' => 'A',  'gpa' => 4.0, 'min_marks' => 80, 'max_marks' => 100, 'remarks' => 'Excellent',  'sort_order' => 1],
+            ['grade' => 'B',  'gpa' => 3.5, 'min_marks' => 70, 'max_marks' => 79.99, 'remarks' => 'Very Good', 'sort_order' => 2],
+            ['grade' => 'C',  'gpa' => 3.0, 'min_marks' => 60, 'max_marks' => 69.99, 'remarks' => 'Good',      'sort_order' => 3],
+            ['grade' => 'D',  'gpa' => 2.0, 'min_marks' => 50, 'max_marks' => 59.99, 'remarks' => 'Pass',      'sort_order' => 4],
+            ['grade' => 'E',  'gpa' => 1.0, 'min_marks' => 40, 'max_marks' => 49.99, 'remarks' => 'Fair',      'sort_order' => 5],
+            ['grade' => 'F',  'gpa' => 0.0, 'min_marks' => 0,  'max_marks' => 39.99, 'remarks' => 'Fail',      'sort_order' => 6],
+        ];
     }
 
     public function saveGrading(Request $request): JsonResponse
@@ -685,7 +897,7 @@ class SetupWizardController extends Controller
         return response()->json(['success' => true, 'message' => 'Grading and promotion settings saved.']);
     }
 
-    // ── Step 8: Branding ──────────────────────────────────────────
+    // ── Step 9: Branding ──────────────────────────────────────────
     public function getBranding(): JsonResponse
     {
         $sid = $this->getSchoolId();
@@ -732,7 +944,7 @@ class SetupWizardController extends Controller
         return response()->json(['success' => true, 'message' => 'Branding saved.']);
     }
 
-    // ── Step 9: Complete ──────────────────────────────────────────
+    // ── Step 10: Complete ─────────────────────────────────────────
     public function complete(): JsonResponse
     {
         $sid = $this->getSchoolId();

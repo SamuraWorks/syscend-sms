@@ -30,6 +30,11 @@ export interface School {
     currency: string;
     language: string;
     status: 'active' | 'inactive' | 'suspended';
+    registration_status?: 'pending' | 'approved' | 'rejected';
+    registration_approved_at?: string | null;
+    registration_approved_by?: number | null;
+    registration_rejected_at?: string | null;
+    registration_rejection_reason?: string | null;
     users_count?: number;
     created_at: string;
     updated_at: string;

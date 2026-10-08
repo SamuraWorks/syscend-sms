@@ -29,6 +29,14 @@ class SchoolAdminOnboardingService
             $schoolData['status'] = 'active';
             $schoolData['is_configured'] = false;
 
+            // Self-service registrations await Syscend super-admin approval;
+            // schools created by a super admin are approved at creation.
+            $schoolData['registration_status'] = $createdBy ? 'approved' : 'pending';
+            if ($createdBy) {
+                $schoolData['registration_approved_at'] = now();
+                $schoolData['registration_approved_by'] = $createdBy;
+            }
+
             $school = School::create($schoolData);
 
             // 1b. Auto-provision a trial subscription when a package exists.

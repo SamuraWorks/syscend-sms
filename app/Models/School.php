@@ -20,6 +20,10 @@ class School extends Model
         'settings', 'status', 'is_configured', 'allowed_ips', 'current_subscription_id',
         'demo_request_id',
 
+        // Registration approval
+        'registration_status', 'registration_approved_at', 'registration_approved_by',
+        'registration_rejected_at', 'registration_rejection_reason',
+
         // MoE fields
         'district_id', 'school_type', 'ownership',
         'gps_latitude', 'gps_longitude', 'infrastructure_info',
@@ -63,6 +67,8 @@ class School extends Model
         'approved_at'         => 'datetime',
         'ca_weight'           => 'decimal:2',
         'exam_weight'         => 'decimal:2',
+        'registration_approved_at'  => 'datetime',
+        'registration_rejected_at'  => 'datetime',
     ];
 
     protected static function booted(): void
@@ -145,6 +151,28 @@ class School extends Model
         $modules = $sub->package->moduleSlugs();
         if (! empty($modules)) return in_array($slug, $modules, true);
         return in_array($slug, $sub->package->features ?? [], true);
+    }
+
+    // ── Registration approval ────────────────────────────────
+
+    public function isRegistrationApproved(): bool
+    {
+        return $this->registration_status === 'approved';
+    }
+
+    public function isRegistrationPending(): bool
+    {
+        return $this->registration_status === 'pending';
+    }
+
+    public function isRegistrationRejected(): bool
+    {
+        return $this->registration_status === 'rejected';
+    }
+
+    public function registrationApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'registration_approved_by');
     }
 
     // ── Accessors ──────────────────────────────────────────

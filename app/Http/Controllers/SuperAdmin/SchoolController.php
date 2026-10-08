@@ -19,6 +19,7 @@ class SchoolController extends Controller
             ->withCount('users')
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
+            ->when($request->registration, fn ($q) => $q->where('registration_status', $request->registration))
             ->latest()
             ->paginate(15)
             ->withQueryString();
@@ -41,11 +42,12 @@ class SchoolController extends Controller
                     'next'  => $schools->nextPageUrl(),
                 ],
             ],
-            'filters' => $request->only('search', 'status'),
+            'filters' => $request->only('search', 'status', 'registration'),
             'stats'   => [
                 'total'     => School::count(),
                 'active'    => School::where('status', 'active')->count(),
                 'suspended' => School::where('status', 'suspended')->count(),
+                'pending'   => School::where('registration_status', 'pending')->count(),
             ],
         ]);
     }
@@ -127,6 +129,50 @@ class SchoolController extends Controller
             ->log('School activated');
 
         return back()->with('success', "School \"{$school->name}\" activated.");
+    }
+
+    public function approveRegistration(Request $request, School $school): RedirectResponse
+    {
+        if ($school->isRegistrationApproved()) {
+            return back()->with('info', "School \"{$school->name}\" is already approved.");
+        }
+
+        $school->update([
+            'registration_status'           => 'approved',
+            'registration_approved_at'      => now(),
+            'registration_approved_by'      => $request->user()->id,
+            'registration_rejected_at'      => null,
+            'registration_rejection_reason' => null,
+        ]);
+
+        activity()
+            ->causedBy($request->user())
+            ->performedOn($school)
+            ->log('School registration approved');
+
+        return back()->with('success', "School \"{$school->name}\" registration approved.");
+    }
+
+    public function rejectRegistration(Request $request, School $school): RedirectResponse
+    {
+        $data = $request->validate([
+            'reason' => 'nullable|string|max:255',
+        ]);
+
+        $school->update([
+            'registration_status'           => 'rejected',
+            'registration_rejected_at'      => now(),
+            'registration_rejection_reason' => $data['reason'] ?? null,
+            'registration_approved_at'      => null,
+            'registration_approved_by'      => null,
+        ]);
+
+        activity()
+            ->causedBy($request->user())
+            ->performedOn($school)
+            ->log('School registration rejected');
+
+        return back()->with('success', "School \"{$school->name}\" registration rejected.");
     }
 
     public function destroy(School $school): RedirectResponse

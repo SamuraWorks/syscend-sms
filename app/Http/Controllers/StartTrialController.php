@@ -78,8 +78,14 @@ class StartTrialController extends Controller
             \Log::warning('Admin new-school notification email failed: ' . $e->getMessage());
         }
 
-        return redirect()
-            ->route('school.school-setup')
-            ->with('success', "Welcome to Syscend Campus, {$result['school']->name}! Your 14-day free trial is active — let's set up your school.");
+        $redirectTo = $result['school']->isRegistrationApproved()
+            ? route('school.school-setup')
+            : route('approval.pending');
+
+        $message = $result['school']->isRegistrationApproved()
+            ? "Welcome to Syscend Campus, {$result['school']->name}! Your 14-day free trial is active — let's set up your school."
+            : "Thanks for registering {$result['school']->name}! Your application is now awaiting approval from the Syscend team.";
+
+        return redirect()->to($redirectTo)->with('success', $message);
     }
 }

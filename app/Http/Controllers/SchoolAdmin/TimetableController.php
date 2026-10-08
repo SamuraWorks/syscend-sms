@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\SchoolAdmin;
 
 use App\Http\Controllers\Controller;
-use App\Models\{AcademicYear, SchedulePeriod, School, SchoolClass, Section, Staff, Subject, Timetable};
+use App\Models\{AcademicYear, SchedulePeriod, School, SchoolClass, SchoolTimeSetting, Section, Staff, Subject, Timetable};
 use Illuminate\Http\{JsonResponse, RedirectResponse, Request};
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -75,11 +76,13 @@ class TimetableController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $schoolId = $this->getSchoolId();
+
         $data = $request->validate([
-            'class_id'    => 'required|exists:classes,id',
-            'section_id'  => 'nullable|exists:sections,id',
-            'subject_id'  => 'required|exists:subjects,id',
-            'teacher_id'  => 'nullable|exists:staff,id',
+            'class_id'    => ['required', Rule::exists('classes', 'id')->where('school_id', $schoolId)],
+            'section_id'  => ['nullable', Rule::exists('sections', 'id')->where('school_id', $schoolId)],
+            'subject_id'  => ['required', Rule::exists('subjects', 'id')->where('school_id', $schoolId)],
+            'teacher_id'  => ['nullable', Rule::exists('staff', 'id')->where('school_id', $schoolId)],
             'day_of_week' => 'required|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             'start_time'  => 'required|date_format:H:i',
             'end_time'    => 'required|date_format:H:i|after:start_time',
@@ -87,9 +90,57 @@ class TimetableController extends Controller
             'notes'       => 'nullable|string|max:200',
         ]);
 
+        $currentYear = AcademicYear::where('school_id', $schoolId)->where('is_current', true)->first();
+        $timeSetting = $currentYear
+            ? SchoolTimeSetting::where('school_id', $schoolId)->where('academic_year_id', $currentYear->id)->first()
+            : null;
+        $school = School::find($schoolId);
+
+        $workingDays = $timeSetting?->working_days
+            ? $timeSetting->working_days_array
+            : ($school?->working_days
+                ? array_map('trim', explode(',', $school->working_days))
+                : ['monday', 'tuesday', 'wednesday', 'thursday', 'friday']);
+
+        if (! in_array($data['day_of_week'], $workingDays)) {
+            return back()->withErrors(['day_of_week' => ucfirst($data['day_of_week']) . ' is not a working day for this school.']);
+        }
+
+        $opening = $timeSetting?->opening_time?->format('H:i') ?? $school?->school_opening_time;
+        $closing = $timeSetting?->closing_time?->format('H:i') ?? $school?->school_closing_time;
+
+        if ($opening && $closing && ($data['start_time'] < $opening || $data['end_time'] > $closing)) {
+            return back()->withErrors(['start_time' => "Periods must fall within school hours ($opening – $closing)."]);
+        }
+
+        $breakOverlap = SchedulePeriod::where('school_id', $schoolId)
+            ->where('is_break', true)
+            ->where('is_active', true)
+            ->when($currentYear, fn ($q) => $q->where(
+                fn ($w) => $w->where('academic_year_id', $currentYear->id)->orWhereNull('academic_year_id')
+            ))
+            ->get()
+            ->contains(fn ($p) => $p->start_time->format('H:i') < $data['end_time'] && $p->end_time->format('H:i') > $data['start_time']);
+
+        if ($breakOverlap) {
+            return back()->withErrors(['start_time' => 'This time slot overlaps a scheduled break/pause.']);
+        }
+
+        // Class-level conflict — a class cannot hold two periods at once.
+        $classConflict = Timetable::where('school_id', $schoolId)
+            ->where('class_id', $data['class_id'])
+            ->where('day_of_week', $data['day_of_week'])
+            ->where('start_time', '<', $data['end_time'])
+            ->where('end_time', '>', $data['start_time'])
+            ->exists();
+
+        if ($classConflict) {
+            return back()->withErrors(['class_id' => 'This class already has a period during this time slot.']);
+        }
+
         // Teacher conflict check — detect any overlapping period for same teacher on same day
         if (!empty($data['teacher_id'])) {
-            $conflict = Timetable::where('school_id', $this->getSchoolId())
+            $conflict = Timetable::where('school_id', $schoolId)
                 ->where('teacher_id', $data['teacher_id'])
                 ->where('day_of_week', $data['day_of_week'])
                 ->where('start_time', '<', $data['end_time'])
@@ -105,13 +156,13 @@ class TimetableController extends Controller
         if (!empty($data['teacher_id']) && !empty($data['subject_id'])) {
             $subject = Subject::find($data['subject_id']);
             if ($subject) {
-                $offering = \App\Models\SubjectOffering::where('school_id', $this->getSchoolId())
+                $offering = \App\Models\SubjectOffering::where('school_id', $schoolId)
                     ->where('subject_id', $data['subject_id'])
                     ->where('class_id', $data['class_id'])
                     ->first();
 
                 if ($offering) {
-                    $isAssigned = \App\Models\TeacherSubjectAssignment::where('school_id', $this->getSchoolId())
+                    $isAssigned = \App\Models\TeacherSubjectAssignment::where('school_id', $schoolId)
                         ->where('staff_id', $data['teacher_id'])
                         ->where('subject_offering_id', $offering->id)
                         ->where('is_active', true)
@@ -126,13 +177,13 @@ class TimetableController extends Controller
 
         Timetable::updateOrCreate(
             [
-                'school_id'   => $this->getSchoolId(),
+                'school_id'   => $schoolId,
                 'class_id'    => $data['class_id'],
                 'section_id'  => $data['section_id'] ?? null,
                 'day_of_week' => $data['day_of_week'],
                 'start_time'  => $data['start_time'],
             ],
-            array_merge($data, ['school_id' => $this->getSchoolId()])
+            array_merge($data, ['school_id' => $schoolId])
         );
 
         return back()->with('success', 'Period saved.');

@@ -1,6 +1,6 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import { Plus, Search, School, MoreHorizontal, Pencil, Ban, CheckCircle, Trash2, Eye } from 'lucide-react';
+import { Plus, Search, School, MoreHorizontal, Pencil, Ban, CheckCircle, XCircle, Trash2, Eye } from 'lucide-react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,8 +17,8 @@ import type { PageProps, PaginatedResponse, School as SchoolType } from '@/Types
 
 interface SchoolsPageProps extends PageProps {
     schools: PaginatedResponse<SchoolType>;
-    filters: { search?: string; status?: string };
-    stats: { total: number; active: number; suspended: number };
+    filters: { search?: string; status?: string; registration?: string };
+    stats: { total: number; active: number; suspended: number; pending: number };
 }
 
 const statusBadge = (status: string) => {
@@ -29,6 +29,26 @@ const statusBadge = (status: string) => {
     };
     return (
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${map[status] ?? map.inactive}`}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+        </span>
+    );
+};
+
+const registrationBadge = (status?: SchoolType['registration_status']) => {
+    const map: Record<string, string> = {
+        approved: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400',
+        pending:  'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400',
+        rejected: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400',
+    };
+    if (!status) {
+        return (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                —
+            </span>
+        );
+    }
+    return (
+        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${map[status] ?? map.pending}`}>
             {status.charAt(0).toUpperCase() + status.slice(1)}
         </span>
     );
@@ -53,6 +73,21 @@ export default function SchoolsIndex() {
         }
     };
 
+    const approveSchool = (school: SchoolType) => {
+        if (confirm(`Approve "${school.name}"? They will be able to finish setup and use the platform.`)) {
+            router.patch(`/super-admin/schools/${school.id}/approve`);
+        }
+    };
+
+    const rejectSchool = (school: SchoolType) => {
+        const reason = prompt(
+            `Reject "${school.name}" registration? You can add an optional reason shown to the school admin:`,
+        );
+        if (reason !== null) {
+            router.patch(`/super-admin/schools/${school.id}/reject`, { reason });
+        }
+    };
+
     return (
         <AppLayout breadcrumbs={[{ label: 'Super Admin' }, { label: 'Schools' }]}>
             <Head title="Schools" />
@@ -71,11 +106,12 @@ export default function SchoolsIndex() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {[
                     { label: 'Total Schools',    value: stats.total,     color: 'text-slate-700 dark:text-slate-200' },
                     { label: 'Active',           value: stats.active,    color: 'text-emerald-600 dark:text-emerald-400' },
                     { label: 'Suspended',        value: stats.suspended, color: 'text-red-600 dark:text-red-400' },
+                    { label: 'Pending Approval', value: stats.pending,   color: 'text-amber-600 dark:text-amber-400' },
                 ].map((s) => (
                     <div key={s.label} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
                         <p className="text-xs text-slate-500 dark:text-slate-400">{s.label}</p>
@@ -113,6 +149,20 @@ export default function SchoolsIndex() {
                             <SelectItem value="suspended">Suspended</SelectItem>
                         </SelectContent>
                     </Select>
+                    <Select
+                        value={filters.registration ?? 'all'}
+                        onValueChange={(v) => applyFilters({ registration: v === 'all' ? '' : v })}
+                    >
+                        <SelectTrigger className="w-40 h-9">
+                            <SelectValue placeholder="All approvals" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All approvals</SelectItem>
+                            <SelectItem value="approved">Approved</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="rejected">Rejected</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 {/* Table */}
@@ -124,6 +174,7 @@ export default function SchoolsIndex() {
                             <TableHead>Location</TableHead>
                             <TableHead>Users</TableHead>
                             <TableHead>Status</TableHead>
+                            <TableHead>Approval</TableHead>
                             <TableHead>Created</TableHead>
                             <TableHead className="w-10" />
                         </TableRow>
@@ -131,7 +182,7 @@ export default function SchoolsIndex() {
                     <TableBody>
                         {schools.data.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7} className="text-center py-16 text-slate-400">
+                                <TableCell colSpan={8} className="text-center py-16 text-slate-400">
                                     <School className="w-10 h-10 mx-auto mb-3 opacity-30" />
                                     <p className="text-sm">No schools found</p>
                                 </TableCell>
@@ -163,6 +214,16 @@ export default function SchoolsIndex() {
                                     {school.users_count ?? 0}
                                 </TableCell>
                                 <TableCell>{statusBadge(school.status)}</TableCell>
+                                <TableCell>
+                                    <div className="flex flex-col gap-1">
+                                        {registrationBadge(school.registration_status)}
+                                        {school.registration_rejection_reason && (
+                                            <p className="text-[11px] text-red-500 dark:text-red-400 line-clamp-1" title={school.registration_rejection_reason}>
+                                                {school.registration_rejection_reason}
+                                            </p>
+                                        )}
+                                    </div>
+                                </TableCell>
                                 <TableCell className="text-xs text-slate-400">
                                     {new Date(school.created_at).toLocaleDateString()}
                                 </TableCell>
@@ -195,6 +256,19 @@ export default function SchoolsIndex() {
                                                 </DropdownMenuItem>
                                             )}
                                             <DropdownMenuSeparator />
+                                            {school.registration_status !== 'approved' && (
+                                                <>
+                                                    <DropdownMenuItem className="flex items-center gap-2 text-sm" onClick={() => approveSchool(school)}>
+                                                        <CheckCircle className="w-4 h-4 shrink-0 text-emerald-500" /> Approve Registration
+                                                    </DropdownMenuItem>
+                                                    {school.registration_status !== 'rejected' && (
+                                                        <DropdownMenuItem className="flex items-center gap-2 text-sm" onClick={() => rejectSchool(school)}>
+                                                            <XCircle className="w-4 h-4 shrink-0 text-red-500" /> Reject Registration
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    <DropdownMenuSeparator />
+                                                </>
+                                            )}
                                             <DropdownMenuItem
                                                 className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400"
                                                 onClick={() => confirmDelete(school)}

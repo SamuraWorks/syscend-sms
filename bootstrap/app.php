@@ -67,6 +67,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             '2fa'        => \App\Http\Middleware\Require2FA::class,
             'school.setup' => \App\Http\Middleware\EnsureSchoolIsConfigured::class,
+            'school.approved' => \App\Http\Middleware\EnsureSchoolApproved::class,
             'verified'   => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
             'webhook.orange' => \App\Http\Middleware\VerifyOrangeMoneyWebhook::class,
             'webhook.monime' => \App\Http\Middleware\VerifyMonimeWebhook::class,
