@@ -23,6 +23,10 @@
       "destination": "/api/assets.php"
     },
     {
+      "source": "/icons/(.*)",
+      "destination": "/api/assets.php"
+    },
+    {
       "source": "/(.*)",
       "destination": "/api/index.php"
     }

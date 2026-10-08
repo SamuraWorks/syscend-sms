@@ -74,10 +74,17 @@ createInertiaApp({
         const root = createRoot(el);
         root.render(
             <ErrorBoundary>
-                <App {...props} />
-                <WebPushBootstrap />
-                <InstallGate />
-                <Toaster richColors position="top-right" />
+                <App
+                    {...props}
+                    children={({ Component, props: pageProps, key }) => (
+                        <>
+                            <Component {...pageProps} key={key} />
+                            <WebPushBootstrap />
+                            <InstallGate />
+                            <Toaster richColors position="top-right" />
+                        </>
+                    )}
+                />
             </ErrorBoundary>,
         );
     },
