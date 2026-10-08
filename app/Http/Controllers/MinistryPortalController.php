@@ -91,26 +91,6 @@ class MinistryPortalController extends Controller
         ]);
     }
 
-    public function approveSchool(School $school)
-    {
-        $school->update([
-            'moe_approval_status' => 'approved',
-            'approved_at'         => now(),
-            'approved_by'         => auth()->id(),
-        ]);
-
-        return redirect()->back()->with('success', 'School approved.');
-    }
-
-    public function suspendSchool(School $school)
-    {
-        $school->update([
-            'moe_approval_status' => 'rejected',
-        ]);
-
-        return redirect()->back()->with('success', 'School suspended.');
-    }
-
     /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        DISTRICT MANAGEMENT
     â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */

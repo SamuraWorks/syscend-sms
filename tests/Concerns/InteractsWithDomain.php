@@ -84,6 +84,7 @@ trait InteractsWithDomain
             'currency_symbol'=> 'Le',
             'status'         => 'active',
             'is_configured'  => true,
+            'registration_status' => 'approved',
         ], $attributes));
     }
 

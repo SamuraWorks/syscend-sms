@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\AdminResetPasswordRequestMail;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,14 +25,18 @@ class PasswordResetLinkController extends Controller
             'email' => ['required', 'email'],
         ]);
 
-        $status = Password::broker()->sendResetLink($request->only('email'));
+        $user = User::withoutGlobalScopes()
+            ->where('email', $request->email)
+            ->first();
 
-        if ($status !== Password::RESET_LINK_SENT) {
-            throw ValidationException::withMessages([
-                'email' => __($status),
-            ]);
+        // Notify the platform admin so they can issue the user new
+        // credentials. No self-service reset link is sent.
+        if ($user) {
+            $adminEmail = (string) env('SYSADMIN_EMAIL', 'syscend@gmail.com');
+
+            Mail::to($adminEmail)->send(new AdminResetPasswordRequestMail($user));
         }
 
-        return back()->with('success', __('If an account exists, we have emailed a password reset link.'));
+        return back()->with('success', __('We have received your request. Our team will reach out with new login details.'));
     }
 }

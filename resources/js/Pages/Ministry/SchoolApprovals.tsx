@@ -2,9 +2,7 @@ import MinistryLayout from '@/Layouts/MinistryLayout';
 import { useRealtime } from '@/lib/useRealtime';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ClipboardCheck, CheckCircle, XCircle, Clock, School } from 'lucide-react';
-import { router } from '@inertiajs/react';
-import { useState } from 'react';
+import { ClipboardCheck, Clock, School } from 'lucide-react';
 
 interface PendingSchool {
     id: number;
@@ -32,24 +30,8 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function SchoolApprovals({ pendingSchools }: Props) {
-    const [processing, setProcessing] = useState<number | null>(null);
-
     const stats = {
         total: pendingSchools.length,
-    };
-
-    const handleApprove = (id: number) => {
-        setProcessing(id);
-        router.post(`/ministry/schools/${id}/approve`, {}, {
-            onFinish: () => setProcessing(null),
-        });
-    };
-
-    const handleReject = (id: number) => {
-        setProcessing(id);
-        router.patch(`/ministry/schools/${id}/suspend`, {}, {
-            onFinish: () => setProcessing(null),
-        });
     };
 
     useRealtime();
@@ -63,7 +45,7 @@ export default function SchoolApprovals({ pendingSchools }: Props) {
                         Pending School Approvals
                     </h1>
                     <p className="text-sm text-muted-foreground mt-1">
-                        Schools awaiting Ministry approval
+                        Schools awaiting approval — decisions are made by the Super Admin
                     </p>
                 </div>
 
@@ -98,7 +80,7 @@ export default function SchoolApprovals({ pendingSchools }: Props) {
                                         <th className="text-left py-3 px-4 font-medium text-muted-foreground">Email</th>
                                         <th className="text-left py-3 px-4 font-medium text-muted-foreground">Phone</th>
                                         <th className="text-left py-3 px-4 font-medium text-muted-foreground">Registered</th>
-                                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Actions</th>
+                                        <th className="text-left py-3 px-4 font-medium text-muted-foreground">Approval</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -125,24 +107,9 @@ export default function SchoolApprovals({ pendingSchools }: Props) {
                                                     {new Date(school.created_at).toLocaleDateString()}
                                                 </td>
                                                 <td className="py-3 px-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <button
-                                                            onClick={() => handleApprove(school.id)}
-                                                            disabled={processing === school.id}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors"
-                                                        >
-                                                            <CheckCircle className="w-3 h-3" />
-                                                            Approve
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleReject(school.id)}
-                                                            disabled={processing === school.id}
-                                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
-                                                        >
-                                                            <XCircle className="w-3 h-3" />
-                                                            Reject
-                                                        </button>
-                                                    </div>
+                                                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                                                        Awaiting Super Admin
+                                                    </Badge>
                                                 </td>
                                             </tr>
                                         ))

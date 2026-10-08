@@ -143,6 +143,9 @@ class SchoolController extends Controller
             'registration_approved_by'      => $request->user()->id,
             'registration_rejected_at'      => null,
             'registration_rejection_reason' => null,
+            'moe_approval_status'           => 'approved',
+            'approved_at'                   => now(),
+            'approved_by'                   => $request->user()->id,
         ]);
 
         activity()
@@ -165,6 +168,7 @@ class SchoolController extends Controller
             'registration_rejection_reason' => $data['reason'] ?? null,
             'registration_approved_at'      => null,
             'registration_approved_by'      => null,
+            'moe_approval_status'           => 'rejected',
         ]);
 
         activity()

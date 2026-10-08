@@ -7,6 +7,7 @@ use App\Models\StudentAlert;
 use App\Models\Staff;
 use App\Models\Guardian;
 use App\Models\User;
+use App\Services\PushService;
 use Illuminate\Support\Facades\Log;
 
 class NotificationService
@@ -127,6 +128,13 @@ class NotificationService
                     'type'   => $type,
                     'data'   => json_encode(array_merge(['title' => $title, 'message' => $message], $data)),
                 ]);
+
+                app(PushService::class)->sendToUser(
+                    $user,
+                    $title,
+                    $message,
+                    isset($data['url']) ? (string) $data['url'] : null,
+                );
             }
         } catch (\Exception $e) {
             Log::warning("Failed to dispatch notification to user {$user->id}", [

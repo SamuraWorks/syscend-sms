@@ -12,6 +12,8 @@ class AiUsageLog extends Model
 
     protected $table = 'ai_usage_logs';
 
+    public $timestamps = false;
+
     protected $fillable = [
         'school_id', 'user_id', 'feature', 'status', 'model',
         'input_tokens', 'output_tokens', 'total_tokens', 'latency_ms',

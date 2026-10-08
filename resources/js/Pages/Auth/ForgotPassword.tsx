@@ -79,8 +79,8 @@ export default function ForgotPassword() {
                             Forgot your password?
                         </CardTitle>
                         <CardDescription className="text-muted-foreground">
-                            Enter the email address you use to sign in and we&apos;ll send you a
-                            reset link if an account exists.
+                            Enter the email address you use to sign in. Our team will review your
+                            request and send you new login details.
                         </CardDescription>
                     </CardHeader>
 
@@ -109,7 +109,7 @@ export default function ForgotPassword() {
                                 className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-medium transition-colors mt-2"
                                 disabled={isSubmitting}
                             >
-                                {isSubmitting ? 'Sending link…' : 'Send reset link'}
+                                {isSubmitting ? 'Sending request…' : 'Request new login details'}
                             </Button>
                         </form>
                     </CardContent>

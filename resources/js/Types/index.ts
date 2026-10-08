@@ -126,6 +126,8 @@ export interface PageProps {
         parent_name?: string;
     };
     faviconUrl: string | null;
+    platformLogoUrl: string | null;
+    webPush?: { enabled: boolean; vapidPublicKey: string | null } | null;
     errors: Record<string, string>;
     import_errors?: string[];
     [key: string]: unknown;

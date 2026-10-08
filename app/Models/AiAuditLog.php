@@ -12,6 +12,8 @@ class AiAuditLog extends Model
 
     protected $table = 'ai_audit_logs';
 
+    public $timestamps = false;
+
     protected $fillable = [
         'school_id', 'user_id', 'feature', 'action',
         'subject_type', 'subject_id', 'input_summary',

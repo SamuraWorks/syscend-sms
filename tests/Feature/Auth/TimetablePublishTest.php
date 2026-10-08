@@ -138,8 +138,16 @@ class TimetablePublishTest extends TestCase
             'status'      => 'published',
         ]);
 
+        // A different class collides only on the teacher, so the teacher
+        // conflict rule (not the class conflict rule) must reject it.
+        $otherClass = SchoolClass::create([
+            'school_id'    => $this->school->id,
+            'name'         => 'JSS 2',
+            'numeric_name' => 2,
+        ]);
+
         $response = $this->post('/school/timetable', [
-            'class_id'    => $this->class->id,
+            'class_id'    => $otherClass->id,
             'subject_id'  => $this->subject->id,
             'teacher_id'  => $this->teacher->id,
             'day_of_week' => 'monday',

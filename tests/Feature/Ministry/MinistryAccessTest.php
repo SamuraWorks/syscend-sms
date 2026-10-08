@@ -4,6 +4,7 @@ namespace Tests\Feature\Ministry;
 
 use App\Services\RoleRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\Concerns\InteractsWithDomain;
 use Tests\TestCase;
 
@@ -35,31 +36,15 @@ class MinistryAccessTest extends TestCase
         $this->get(route('ministry.schools.approvals'))->assertOk();
     }
 
-    public function test_school_can_be_approved(): void
+    public function test_ministry_cannot_approve_or_reject_schools(): void
     {
         $school = $this->createSchool();
 
-        $this->post(route('ministry.schools.approve', $school))
-            ->assertRedirect()->assertSessionHas('success');
+        $this->assertFalse(Route::has('ministry.schools.approve'));
+        $this->assertFalse(Route::has('ministry.schools.suspend'));
 
-        $this->assertDatabaseHas('schools', [
-            'id'                 => $school->id,
-            'moe_approval_status' => 'approved',
-            'approved_by'        => auth()->id(),
-        ]);
-    }
-
-    public function test_school_can_be_suspended(): void
-    {
-        $school = $this->createSchool();
-
-        $this->patch(route('ministry.schools.suspend', $school))
-            ->assertRedirect()->assertSessionHas('success');
-
-        $this->assertDatabaseHas('schools', [
-            'id'                 => $school->id,
-            'moe_approval_status' => 'rejected',
-        ]);
+        $this->post('/ministry/schools/' . $school->id . '/approve')->assertNotFound();
+        $this->patch('/ministry/schools/' . $school->id . '/suspend')->assertNotFound();
     }
 
     public function test_districts_returns_ok(): void

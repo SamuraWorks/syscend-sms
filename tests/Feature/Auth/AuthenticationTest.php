@@ -2,13 +2,13 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Mail\AdminResetPasswordRequestMail;
 use App\Models\School;
 use App\Models\User;
 use App\Services\RoleRegistry;
-use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Tests\Concerns\InteractsWithDomain;
 use Tests\TestCase;
@@ -156,21 +156,23 @@ class AuthenticationTest extends TestCase
         ])->assertSessionHasErrors('current_password');
     }
 
-    public function test_forgot_password_sends_reset_link(): void
+    public function test_forgot_password_notifies_platform_admin(): void
     {
-        Notification::fake();
+        Mail::fake();
 
         $this->post('/forgot-password', ['email' => $this->admin->email])
             ->assertSessionHas('success');
 
-        Notification::assertSentTo($this->admin, ResetPassword::class);
-        $this->assertDatabaseCount('password_reset_tokens', 1);
+        Mail::assertSent(AdminResetPasswordRequestMail::class, function (AdminResetPasswordRequestMail $mail) {
+            return $mail->hasTo('syscend@gmail.com')
+                && $mail->user->is($this->admin);
+        });
+
+        $this->assertDatabaseCount('password_reset_tokens', 0);
     }
 
     public function test_password_can_be_reset_and_used_to_log_in(): void
     {
-        $this->post('/forgot-password', ['email' => $this->admin->email]);
-
         $token = Password::broker()->createToken($this->admin);
         $this->assertDatabaseCount('password_reset_tokens', 1);
 

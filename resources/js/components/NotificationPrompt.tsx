@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePage } from '@inertiajs/react';
 import { X, BellRing } from 'lucide-react';
+import { ensureWebPushSubscription } from '@/lib/webPush';
 import type { PageProps } from '@/Types';
 
 export default function NotificationPrompt() {
-    const { schoolBranding } = usePage<PageProps>().props;
+    const { schoolBranding, webPush } = usePage<PageProps>().props;
     const [visible, setVisible] = useState(false);
     const timerRef = useRef<number | null>(null);
 
@@ -34,7 +35,10 @@ export default function NotificationPrompt() {
 
     const enable = async () => {
         try {
-            await Notification.requestPermission();
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted' && webPush?.enabled && webPush.vapidPublicKey) {
+                await ensureWebPushSubscription(webPush.vapidPublicKey);
+            }
         } catch {
             /* ignore */
         }

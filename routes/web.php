@@ -83,6 +83,7 @@ use App\Http\Controllers\SuperAdmin\TwoFactorController;
 use App\Http\Controllers\SuperAdmin\SchoolWithAdminController;
 use App\Http\Controllers\SuperAdmin\NotificationController as SuperAdminNotificationController;
 use App\Http\Controllers\SuperAdmin\AuditLogController as SuperAdminAuditLogController;
+use App\Http\Controllers\WebPushController;
 use App\Http\Controllers\Registration\RegistrationLandingController;
 use App\Http\Controllers\Registration\StudentRegistrationController;
 use App\Http\Controllers\Registration\ParentRegistrationController;
@@ -1238,8 +1239,6 @@ Route::middleware('auth')->group(function () {
             // Schools Management
             Route::get('schools',                           [MinistryPortalController::class, 'schools'])->name('schools');
             Route::get('schools/approvals',                 [MinistryPortalController::class, 'schoolApprovals'])->name('schools.approvals');
-            Route::post('schools/{school}/approve',         [MinistryPortalController::class, 'approveSchool'])->name('schools.approve');
-            Route::patch('schools/{school}/suspend',        [MinistryPortalController::class, 'suspendSchool'])->name('schools.suspend');
 
             // District Management
             Route::get('districts',                         [MinistryPortalController::class, 'districts'])->name('districts');
@@ -1284,6 +1283,16 @@ Route::middleware('auth')->group(function () {
             Route::get('admin/audit',                       [MinistryPortalController::class, 'adminAudit'])->name('admin.audit');
             Route::get('admin/settings',                    [MinistryPortalController::class, 'adminSettings'])->name('admin.settings');
         });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Web Push subscription endpoints (all authenticated users)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth')->prefix('notifications/web-push')->name('web-push.')->group(function () {
+    Route::post('subscribe',   [WebPushController::class, 'subscribe'])->name('subscribe');
+    Route::delete('subscribe', [WebPushController::class, 'unsubscribe'])->name('unsubscribe');
 });
 
 // Public admission form (no auth)

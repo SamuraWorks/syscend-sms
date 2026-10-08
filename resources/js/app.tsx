@@ -1,9 +1,12 @@
 import '../css/app.css';
-import { Component, type ReactNode } from 'react';
-import { createInertiaApp } from '@inertiajs/react';
+import { Component, useEffect, type ReactNode } from 'react';
+import { createInertiaApp, usePage } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { Toaster } from '@/components/ui/sonner';
+import InstallGate from '@/components/InstallGate';
+import { ensureWebPushSubscription } from '@/lib/webPush';
+import type { PageProps } from '@/Types';
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null; stack: string | null }> {
     state = { error: null, stack: null };
@@ -45,6 +48,19 @@ if ('serviceWorker' in navigator && typeof window !== 'undefined') {
 
 const appName = document.title;
 
+// Keep browsers subscribed to web push while the user is signed in. Runs on
+// every authenticated mount; silently returns when no keys/permission exist.
+function WebPushBootstrap() {
+    const { auth, webPush } = usePage<PageProps>().props;
+
+    useEffect(() => {
+        if (!auth?.user || !webPush?.enabled || !webPush.vapidPublicKey) return;
+        ensureWebPushSubscription(webPush.vapidPublicKey);
+    }, [auth?.user, webPush]);
+
+    return null;
+}
+
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) =>
@@ -59,6 +75,8 @@ createInertiaApp({
         root.render(
             <ErrorBoundary>
                 <App {...props} />
+                <WebPushBootstrap />
+                <InstallGate />
                 <Toaster richColors position="top-right" />
             </ErrorBoundary>,
         );

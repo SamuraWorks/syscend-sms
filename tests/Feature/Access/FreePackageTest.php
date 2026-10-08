@@ -178,7 +178,7 @@ class FreePackageTest extends TestCase
             'admin_phone'  => '+232770000124',
             'password'     => 'Str0ngPassw0rd!',
             'password_confirmation' => 'Str0ngPassw0rd!',
-        ])->assertRedirect(route('school.school-setup'));
+        ])->assertRedirect(route('approval.pending'));
 
         $school = School::where('slug', 'greenfield-academy')->first();
         $this->assertNotNull($school);

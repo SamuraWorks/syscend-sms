@@ -17,6 +17,50 @@ class SchoolAndPackageTest extends TestCase
         $this->actingAsSuperAdmin();
     }
 
+    public function test_pending_school_registration_can_be_approved(): void
+    {
+        $school = $this->createSchool(['registration_status' => 'pending']);
+
+        $this->patch(route('super-admin.schools.approve', $school))
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $fresh = $school->fresh();
+        $this->assertSame('approved', $fresh->registration_status);
+        $this->assertNotNull($fresh->registration_approved_at);
+        $this->assertNotNull($fresh->registration_approved_by);
+        $this->assertSame('approved', $fresh->moe_approval_status);
+        $this->assertNotNull($fresh->approved_at);
+        $this->assertNull($fresh->registration_rejection_reason);
+    }
+
+    public function test_school_registration_can_be_rejected_with_reason(): void
+    {
+        $school = $this->createSchool(['registration_status' => 'pending']);
+
+        $this->patch(route('super-admin.schools.reject', $school), [
+            'reason' => 'Documents incomplete',
+        ])->assertRedirect()->assertSessionHas('success');
+
+        $fresh = $school->fresh();
+        $this->assertSame('rejected', $fresh->registration_status);
+        $this->assertNotNull($fresh->registration_rejected_at);
+        $this->assertSame('Documents incomplete', $fresh->registration_rejection_reason);
+        $this->assertSame('rejected', $fresh->moe_approval_status);
+        $this->assertNull($fresh->registration_approved_at);
+    }
+
+    public function test_approving_already_approved_school_is_a_no_op(): void
+    {
+        $school = $this->createSchool();
+
+        $this->patch(route('super-admin.schools.approve', $school))
+            ->assertRedirect()
+            ->assertSessionHas('info');
+
+        $this->assertSame('approved', $school->fresh()->registration_status);
+    }
+
     public function test_schools_index_returns_ok(): void
     {
         $school = $this->createSchool();

@@ -73,6 +73,14 @@ class HandleInertiaRequests extends Middleware
             ],
             'verified'           => fn () => session('verified'),
             'already_registered' => fn () => session('already_registered'),
+            'webPush' => [
+                'enabled'        => (bool) (config('services.webpush.vapid.public_key') && config('services.webpush.vapid.private_key')),
+                'vapidPublicKey' => config('services.webpush.vapid.public_key'),
+            ],
+            'platformLogoUrl' => fn () => once(function () {
+                $path = PlatformSetting::get('platform_logo');
+                return $path ? \Illuminate\Support\Facades\Storage::disk('public')->url($path) : null;
+            }),
             'faviconUrl' => fn () => once(function () use ($request) {
                 $user = $request->user();
 

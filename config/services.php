@@ -45,6 +45,24 @@ return [
     |
     */
 
+    'webpush' => [
+        'vapid' => [
+            'subject'     => env('VAPID_SUBJECT', 'mailto:syscend-campus@example.com'),
+            'public_key'  => env('VAPID_PUBLIC_KEY'),
+            'private_key' => env('VAPID_PRIVATE_KEY'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | SMS Gateway (Vonage / Twilio)
+    |--------------------------------------------------------------------------
+    |
+    | Default SMS credentials. Schools can override via school_settings table.
+    | Vonage (Nexmo) uses rest.nexmo.com; Twilio uses api.twilio.com.
+    |
+    */
+
     'sms' => [
         'default_provider' => env('SMS_PROVIDER', 'vonage'),
         'vonage' => [

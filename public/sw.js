@@ -26,6 +26,42 @@ self.addEventListener('activate', (event) => {
     );
 });
 
+self.addEventListener('push', (event) => {
+    if (!event.data) return;
+
+    let data = {};
+    try {
+        data = event.data.json();
+    } catch {
+        data = { title: 'Syscend Campus', message: event.data.text() };
+    }
+
+    const title = data.title || 'Syscend Campus';
+    const options = {
+        body: data.message || 'You have a new update.',
+        data: { url: data.url || '/' },
+        tag: data.tag || undefined,
+    };
+    event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const url = event.notification.data?.url || '/';
+    event.waitUntil(
+        self.clients
+            .matchAll({ type: 'window', includeUncontrolled: true })
+            .then((clients) => {
+                for (const client of clients) {
+                    if ('focus' in client && new URL(client.url).pathname === new URL(url, self.location.origin).pathname) {
+                        return client.focus();
+                    }
+                }
+                return self.clients.openWindow(url);
+            })
+    );
+});
+
 function shouldCache(url, request) {
     if (request.mode === 'navigate') return true;
     return (

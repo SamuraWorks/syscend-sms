@@ -1,1 +1,0 @@
-import{d as e,t}from"./schemas-DIb09q5d.js";function n(n){return e(t,n)}export{n as t};
