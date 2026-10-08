@@ -15,10 +15,37 @@ use Spatie\Permission\PermissionRegistrar;
  * - Database schema and migrations
  * - Spatie Permission roles/permissions
  * - System configuration required by the application
+ *
+ * The clear list is DERIVED from the live schema: every table except an
+ * explicit KEEP set is truncated. New tables (AI logs, subscriptions,
+ * subject offerings, ...) are therefore covered without touching this file.
  */
 class SyscendResetService
 {
+    /**
+     * System/platform tables that survive a reset (schema, RBAC definitions,
+     * platform config and subscription catalogs). Role ASSIGNMENTS
+     * (model_has_roles/model_has_permissions) are intentionally NOT preserved —
+     * the fresh super-admin gets a clean assignment.
+     */
+    protected array $preservedTables = [
+        'migrations',
+        'permissions',
+        'roles',
+        'role_has_permissions',
+        'platform_settings',
+        'packages',
+        'package_modules',
+        'coupons',
+        'districts',
+        'academic_calendar_templates',
+        'curriculum_subjects',
+    ];
+
     protected bool $dryRun = false;
+
+    /** True when session-level FK checks were disabled via session_replication_role. */
+    protected bool $replicaMode = false;
 
     protected array $stats = [
         'tables_cleared' => 0,
@@ -42,14 +69,30 @@ class SyscendResetService
         try {
             DB::beginTransaction();
 
-            // Step 1: Disable foreign key constraints (safe for PostgreSQL with session variable)
-            DB::statement('SET session_replication_role = replica;');
+            // Step 1: Disable foreign key constraints. Preferred path is the
+            // PostgreSQL session variable (fast, superuser). If the role lacks
+            // permission (e.g. restricted connection roles), fall back to
+            // per-table trigger disabling inside clearTable().
+            if (DB::connection()->getDriverName() === 'pgsql') {
+                try {
+                    DB::statement('SET session_replication_role = replica;');
+                    $this->replicaMode = true;
+                } catch (\Throwable) {
+                    $this->replicaMode = false;
+                }
+            }
 
             // Step 2: Clear application data tables in dependency order
             $this->clearApplicationData();
 
             // Step 3: Re-enable foreign key constraints
-            DB::statement('SET session_replication_role = DEFAULT;');
+            if ($this->replicaMode) {
+                try {
+                    DB::statement('SET session_replication_role = DEFAULT;');
+                } catch (\Throwable) {
+                    // nothing to roll back — session ends at connection close
+                }
+            }
 
             // Step 4: Recreate system permission/role structure if needed
             $this->ensurePermissionsExist();
@@ -89,31 +132,66 @@ class SyscendResetService
     }
 
     /**
-     * Get ordered list of tables to clear.
-     * Order follows dependency graph (dependent tables first).
+     * Get the list of tables to clear, derived from the live schema.
      *
-     * System tables intentionally NOT cleared (preserved across resets):
-     * - permissions, roles, role_has_permissions  (RBAC definitions)
-     * - model_has_permissions, model_has_roles    (role assignments; FK-safe via replica mode)
-     * - platform_settings                        (platform configuration)
-     * - packages, package_modules, coupons        (subscription & promo config)
-     * - districts                                 (Sierra Leone districts)
-     * - migrations                                (schema history)
+     * Foreign keys are disabled for the whole reset ('session_replication_role
+     * = replica'), so physical order does not matter on PostgreSQL. Returns
+     * every public table except the preserved system/platform set.
      */
     protected function getTablesToClear(): array
+    {
+        $tables = $this->schemaTables();
+
+        return array_values(array_diff($tables, $this->preservedTables));
+    }
+
+    /**
+     * List all application tables for the active connection.
+     */
+    protected function schemaTables(): array
+    {
+        $driver = DB::connection()->getDriverName();
+
+        return match ($driver) {
+            'pgsql' => array_map(
+                fn ($r) => $r->tablename,
+                DB::select("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+            ),
+            'mysql' => (function () {
+                $rows  = DB::select('SHOW TABLES');
+                $key   = array_keys((array) $rows[0])[0] ?? 'Tables_in_' . DB::getDatabaseName();
+
+                return array_map(fn ($r) => (array) $r[$key], $rows);
+            })(),
+            'sqlite' => array_map(
+                fn ($r) => $r->name,
+                DB::select("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
+            ),
+            default => $this->staticFallbackTables(),
+        };
+    }
+
+    /**
+     * Explicit dependency-ordered fallback for drivers without a schema
+     * introspection path (mirrors the original list before schema derivation).
+     */
+    protected function staticFallbackTables(): array
     {
         return [
             // ── Transient / auth state ────────────────────────────
             'sessions',
             'password_reset_tokens',
             'personal_access_tokens',
+            'remember_tokens',
             'jobs',
             'job_batches',
             'failed_jobs',
             'cache',
             'cache_locks',
 
-            // ── Audit logs ────────────────────────────────────────
+            // ── Audit & AI logs ───────────────────────────────────
+            'ai_audit_logs',
+            'ai_usage_logs',
             'activity_log',
             'user_audit_logs',
             'audit_logs',
@@ -133,6 +211,7 @@ class SyscendResetService
             'exams',
             'national_examinations',
             'grade_scales',
+            'subject_offerings',
 
             // ── Attendance ────────────────────────────────────────
             'attendance_corrections',
@@ -148,11 +227,14 @@ class SyscendResetService
             'online_classes',
 
             // ── Financial ─────────────────────────────────────────
+            'invoice_items',
+            'invoices',
             'fee_payments',
             'fee_structures',
             'fee_categories',
             'payrolls',
             'salary_structures',
+            'subscription_payments',
 
             // ── Documents ─────────────────────────────────────────
             'student_documents',
@@ -163,7 +245,7 @@ class SyscendResetService
             'staff',
             'guardians',
 
-            // ── Users (must come after people, before academic structure) ──
+            // ── Users (must come after people) ────────────────────
             'users',
 
             // ── Academic structure ────────────────────────────────
@@ -197,6 +279,7 @@ class SyscendResetService
             'hostel_allocations',
             'hostel_rooms',
             'hostels',
+            'hostel_beds',
 
             // ── Inventory & Assets ────────────────────────────────
             'inventory_issues',
@@ -268,18 +351,38 @@ class SyscendResetService
             return;
         }
 
-        if ($this->dryRun) {
-            $count = DB::table($tableName)->count();
-            if ($count > 0) {
-                $this->stats['records_deleted'] += $count;
-                $this->stats['tables_cleared']++;
+        $perTableTriggers = !$this->replicaMode && DB::connection()->getDriverName() === 'pgsql';
+
+        if ($perTableTriggers) {
+            try {
+                DB::statement("ALTER TABLE {$tableName} DISABLE TRIGGER ALL");
+            } catch (\Throwable) {
+                $perTableTriggers = false;
             }
-        } else {
-            $count = DB::table($tableName)->count();
-            if ($count > 0) {
-                DB::table($tableName)->truncate();
-                $this->stats['records_deleted'] += $count;
-                $this->stats['tables_cleared']++;
+        }
+
+        try {
+            if ($this->dryRun) {
+                $count = DB::table($tableName)->count();
+                if ($count > 0) {
+                    $this->stats['records_deleted'] += $count;
+                    $this->stats['tables_cleared']++;
+                }
+            } else {
+                $count = DB::table($tableName)->count();
+                if ($count > 0) {
+                    DB::table($tableName)->truncate();
+                    $this->stats['records_deleted'] += $count;
+                    $this->stats['tables_cleared']++;
+                }
+            }
+        } finally {
+            if ($perTableTriggers) {
+                try {
+                    DB::statement("ALTER TABLE {$tableName} ENABLE TRIGGER ALL");
+                } catch (\Throwable) {
+                    // best effort — trigger state resets on the next connection
+                }
             }
         }
     }
@@ -313,7 +416,12 @@ class SyscendResetService
     /**
      * Create the super-admin account.
      *
-     * @return string The generated temporary password
+     * Credentials come from environment variables (never committed to source):
+     *   SYSADMIN_EMAIL      default: syscend@gmail.com
+     *   SYSADMIN_PASSWORD   if unset, a random temporary password is generated
+     *   SYSADMIN_NAME       default: Syscend Campus
+     *
+     * @return string The temporary password in effect
      */
     protected function createSuperAdmin(): string
     {
@@ -321,15 +429,19 @@ class SyscendResetService
             return '[DRY-RUN-PASSWORD]';
         }
 
-        $password = \Illuminate\Support\Str::random(16);
+        $email      = $this->superAdminEmail();
+        $name       = (string) env('SYSADMIN_NAME', 'Syscend Campus');
+        $username   = (string) env('SYSADMIN_USERNAME', preg_split('/[@\s]+/', $email, -1, PREG_SPLIT_NO_EMPTY)[0] ?? 'admin');
+        $envPassword = env('SYSADMIN_PASSWORD');
+        $password   = is_string($envPassword) && $envPassword !== '' ? $envPassword : \Illuminate\Support\Str::random(20);
 
         $user = User::withoutGlobalScopes()->firstOrCreate(
-            ['email' => 'syscend@gmail.com'],
+            ['email' => $email],
             [
-                'name' => 'Syscend Campus',
+                'name' => $name,
                 'password' => bcrypt($password),
                 'phone' => null,
-                'username' => 'syscend',
+                'username' => $username,
                 'status' => 'active',
                 'school_id' => null,  // Platform-level super admin
                 'is_temporary_password' => true,
@@ -345,7 +457,21 @@ class SyscendResetService
             $user->syncRoles([$role]);
         }
 
+        // Reset the password to the resolved credential and force a change on next login.
+        $user->forceFill([
+            'password'              => bcrypt($password),
+            'is_temporary_password' => true,
+            'force_password_change' => true,
+        ])->save();
+
         return $password;
+    }
+
+    protected function superAdminEmail(): string
+    {
+        $email = (string) env('SYSADMIN_EMAIL', 'syscend@gmail.com');
+
+        return $email !== '' ? $email : 'syscend@gmail.com';
     }
 
     /**
@@ -373,7 +499,7 @@ class SyscendResetService
                 $verification['permissions_count'] = DB::table('permissions')->count();
 
                 $superAdmin = User::withoutGlobalScopes()
-                    ->where('email', 'syscend@gmail.com')
+                    ->where('email', $this->superAdminEmail())
                     ->first();
 
                 if ($superAdmin) {
@@ -386,7 +512,7 @@ class SyscendResetService
                 $verification['single_super_admin_only'] = (
                     $verification['users_count'] === 1
                     && $verification['super_admin_exists']
-                    && $verification['super_admin_email'] === 'syscend@gmail.com'
+                    && $verification['super_admin_email'] === $this->superAdminEmail()
                 );
 
                 // Check for orphaned records (potential FK violations)

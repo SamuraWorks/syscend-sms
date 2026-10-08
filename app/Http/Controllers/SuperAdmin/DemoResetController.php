@@ -11,11 +11,22 @@ class DemoResetController extends Controller
 {
     public function index()
     {
+        if (app()->environment('production') && env('ALLOW_DEMO_RESET') !== 'true') {
+            abort(404);
+        }
+
         return inertia('SuperAdmin/DemoReset', []);
     }
 
     public function execute(Request $request)
     {
+        // Server-side environment guard: the demo reset is a destructive,
+        // browser-accessible operation. It must never run against production
+        // unless ALLOW_DEMO_RESET=true has been set on the server explicitly.
+        if (app()->environment('production') && env('ALLOW_DEMO_RESET') !== 'true') {
+            abort(403, 'Demo reset is disabled in the production environment.');
+        }
+
         $request->validate([
             'confirm' => 'required|accepted',
         ]);

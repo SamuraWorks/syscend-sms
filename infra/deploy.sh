@@ -43,6 +43,13 @@ fi
 export DB_PASSWORD
 
 echo "==> [3b/7] Writing runtime env file (infra/.env.hetzner)"
+# Admin credentials are NEVER hardcoded. Generate a fresh random password on
+# first deploy unless the operator exports SYSADMIN_PASSWORD.
+if [ -z "${SYSADMIN_PASSWORD:-}" ]; then
+    SYSADMIN_PASSWORD=$(openssl rand -hex 24)
+    echo "   generated SYSADMIN_PASSWORD for this install (shown again in the summary below)"
+fi
+export SYSADMIN_PASSWORD
 cat > "$APP_DIR/infra/.env.hetzner" <<ENV
 APP_NAME=Syscend Campus
 APP_ENV=production
@@ -65,8 +72,9 @@ CACHE_STORE=file
 QUEUE_CONNECTION=sync
 FILESYSTEM_DISK=local
 MAIL_MAILER=log
-SEED_ADMIN_PASSWORD=Syscend#Admin2026
-SEED_ADMIN_EMAIL=syscend@gmail.com
+SYSADMIN_EMAIL=syscend@gmail.com
+SYSADMIN_PASSWORD=$SYSADMIN_PASSWORD
+ALLOW_DEMO_RESET=false
 VITE_APP_NAME=Syscend Campus
 ENV
 
@@ -85,7 +93,21 @@ for i in $(seq 1 90); do
 done
 
 docker compose -f "$COMPOSE_FILE" run --rm app php artisan migrate --force
-docker compose -f "$COMPOSE_FILE" run --rm app php artisan db:seed --force
+
+# Seed ONLY on first provision (empty roles table → fresh database). Every
+# deploy afterwards runs the idempotent AdminSeeder so the platform super admin
+# always exists with the operator-set password. The full DatabaseSeeder is
+# platform provisioning (packages, districts, curriculum, grade scales), never
+# demo data; re-running it on an existing database would duplicate those rows.
+SEEDED=$(docker compose -f "$COMPOSE_FILE" exec -T db psql -U syscend -d syscend_campus -tAc "SELECT COUNT(*) FROM roles" 2>/dev/null || echo "0")
+if [ "$SEEDED" = "0" ]; then
+    echo "   fresh database detected — running full platform seed"
+    docker compose -f "$COMPOSE_FILE" run --rm app php artisan db:seed --force
+else
+    echo "   existing database — running AdminSeeder only (idempotent, safe on redeploy)"
+    docker compose -f "$COMPOSE_FILE" run --rm app php artisan db:seed --class=Database\\Seeders\\AdminSeeder --force
+fi
+
 docker compose -f "$COMPOSE_FILE" run --rm app php artisan storage:link || true
 docker compose -f "$COMPOSE_FILE" run --rm app php artisan optimize:clear || true
 
@@ -103,9 +125,10 @@ cat <<EOF
   │                                                             │
   │  Super Admin login:                                         │
   │      email    : syscend@gmail.com                           │
-  │      password : Syscend#Admin2026                           │
+  │      password : $SYSADMIN_PASSWORD                          │
   │                                                             │
   │  NOTE: DB_PASSWORD was auto-generated for this server.      │
   │  Save it if you intend to reconnect externally.             │
+  │  The admin password above must be changed on first login.   │
   └────────────────────────────────────────────────────────────┘
 EOF

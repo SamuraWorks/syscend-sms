@@ -8,21 +8,25 @@ use Illuminate\Support\Facades\Cache;
 
 class SyscendResetCommand extends Command
 {
-    protected $signature = 'syscend:reset {--dry-run : Simulate reset without making changes}';
+    protected $signature = 'syscend:reset
+        {--dry-run : Simulate reset without making changes}
+        {--force-production : Allow a real reset when APP_ENV=production (server-side, explicit)}';
 
     protected $description = 'Reset Syscend Campus to a clean state with only the super-admin account';
 
     public function handle(): int
     {
-        // Production safety check
+        // Production safety check — a real reset in production requires an
+        // explicit override flag. There is NO interactive prompt path in prod.
         if ($this->laravel->environment('production') && !$this->option('dry-run')) {
-            if (!$this->confirm(
-                '⚠️  PRODUCTION ENVIRONMENT DETECTED. Are you absolutely sure you want to proceed?',
-                false
-            )) {
-                $this->error('Reset aborted.');
+            if (! $this->option('force-production')) {
+                $this->error('PRODUCTION ENVIRONMENT DETECTED.');
+                $this->error('Refusing to reset. Pass --force-production to override.');
                 return self::FAILURE;
             }
+
+            $this->warn('⚠️  PRODUCTION RESET OVERRIDE ACCEPTED (--force-production).');
+            $this->newLine();
         }
 
         $this->displayBanner();
@@ -181,7 +185,7 @@ class SyscendResetCommand extends Command
         $this->info('════════════════════════════════════════════════════════');
         $this->newLine();
 
-        $this->line('  Email:               syscend@gmail.com');
+        $this->line('  Email:               ' . env('SYSADMIN_EMAIL', 'syscend@gmail.com'));
         $this->line('  Name:                Syscend Campus');
         $this->line('  Temporary Password:  ' . $password);
         $this->newLine();
