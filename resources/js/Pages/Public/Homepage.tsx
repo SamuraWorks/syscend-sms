@@ -12,7 +12,6 @@ import MultiSchool from '@/components/landing/MultiSchool';
 import Roles from '@/components/landing/Roles';
 import VisionMission from '@/components/landing/VisionMission';
 import MinistryPortal from '@/components/landing/MinistryPortal';
-import Testimonials from '@/components/landing/Testimonials';
 import Pricing from '@/components/landing/Pricing';
 import Steps from '@/components/landing/Steps';
 import FAQ from '@/components/landing/FAQ';
@@ -36,7 +35,6 @@ export default function Homepage() {
                 <Reveal><Roles /></Reveal>
                 <Reveal><VisionMission /></Reveal>
                 <Reveal><MinistryPortal /></Reveal>
-                <Reveal><Testimonials /></Reveal>
                 <Reveal><Pricing /></Reveal>
                 <Reveal><Steps /></Reveal>
                 <Reveal><FAQ /></Reveal>

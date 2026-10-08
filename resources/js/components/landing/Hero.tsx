@@ -26,22 +26,22 @@ export default function Hero() {
                 {/* Security badge — the only small container allowed */}
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/95 backdrop-blur-sm">
                     <ShieldCheck className="size-3.5" aria-hidden="true" />
-                    Secure, cloud-ready school management
+                    Secure cloud school management for Sierra Leone
                 </span>
 
                 {/* Headline sits directly on the photograph — no background */}
                 <h1 className="mt-7 text-balance text-[2.7rem] font-extrabold leading-[1.05] tracking-[-0.03em] text-white sm:text-6xl lg:mt-9 lg:text-7xl lg:leading-[1.02]">
-                    Run your entire school{' '}
+                    Your whole school,{' '}
                     <br className="md:hidden" />
-                    on one integrated
-                    <br className="md:hidden" />
-                    platform.
+                    <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-200 bg-clip-text text-transparent">
+                        finally in sync.
+                    </span>
                 </h1>
 
                 <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-relaxed text-white/85 sm:text-lg lg:mt-8">
-                    Syscend Campus brings admissions, academics, finance, staff, communication, and
-                    student management into one connected system — built around how schools in
-                    Sierra Leone actually operate.
+                    Syscend Campus keeps admissions, attendance, results, fees, staff and parent
+                    communication in one secure, cloud-based system — built around how schools in
+                    Sierra Leone actually work.
                 </p>
 
                 <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row lg:mt-12">
@@ -49,7 +49,7 @@ export default function Hero() {
                         href="/start-trial"
                         className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-7 text-sm font-semibold text-slate-900 shadow-xl shadow-black/10 transition-colors hover:bg-slate-100 sm:w-auto"
                     >
-                        Get Started
+                        Start Free Trial
                         <ArrowRight className="size-4" aria-hidden="true" />
                     </Link>
                     <a
