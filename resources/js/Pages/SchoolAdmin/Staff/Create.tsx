@@ -17,11 +17,12 @@ interface Props {
     departments: Department[];
     designations: Designation[];
     next_emp_id?: string;
+    id_generation_enabled?: boolean;
 }
 
 const STEPS = ['Personal Info', 'Employment Details', 'Notes & Status'];
 
-export default function StaffCreate({ departments, designations, next_emp_id }: Props) {
+export default function StaffCreate({ departments, designations, next_emp_id, id_generation_enabled = true }: Props) {
     const [step, setStep] = useState(0);
 
     const { data, setData, post, processing, errors } = useForm({
@@ -186,16 +187,24 @@ export default function StaffCreate({ departments, designations, next_emp_id }: 
                             </CardHeader>
                             <CardContent className="space-y-5">
                                 <div className="space-y-1.5">
-                                    <Label>School Staff ID <span className="font-normal text-slate-400">(optional)</span></Label>
+                                    <Label>
+                                        School Staff ID
+                                        {!id_generation_enabled && <span className="text-red-500 ml-1">*</span>}
+                                    </Label>
                                     <Input
                                         className="font-mono"
                                         value={data.emp_id}
+                                        required={!id_generation_enabled}
                                         onChange={e => setData('emp_id', e.target.value)}
-                                        placeholder={next_emp_id ? `e.g. ${next_emp_id} — leave blank to auto-generate` : 'e.g. EMP-2026-0001'}
+                                        placeholder={id_generation_enabled
+                                            ? (next_emp_id ? `e.g. ${next_emp_id} — leave blank to auto-generate` : 'e.g. EMP-2026-0001')
+                                            : 'Enter the school-issued staff ID'}
                                     />
                                     {errors.emp_id && <p className="text-xs text-red-500">{errors.emp_id}</p>}
                                     <p className="text-xs text-slate-400">
-                                        The ID your school issues to this staff member. Leave blank to auto-generate from your school's format (if enabled).
+                                        {id_generation_enabled
+                                            ? "The ID your school issues to this staff member. Leave blank to auto-generate from your school's format."
+                                            : 'Auto-generation is off, so enter the school-issued ID. Must be unique within your school.'}
                                     </p>
                                 </div>
 

@@ -20,6 +20,7 @@ interface Props extends PageProps {
     houses:      { id: number; name: string; color: string | null }[];
     departments: { id: number; name: string }[];
     next_admission_no?: string;
+    id_generation_enabled?: boolean;
 }
 
 const schema = z.object({
@@ -65,7 +66,7 @@ type FormData = z.infer<typeof schema>;
 const STEPS = ['Personal Info', 'Class & Roll', 'Guardian Info'];
 
 export default function CreateStudent() {
-    const { classes, sections, houses = [], departments = [], next_admission_no } = usePage<Props>().props;
+    const { classes, sections, houses = [], departments = [], next_admission_no, id_generation_enabled = true } = usePage<Props>().props;
     const [step, setStep] = useState(0);
     const [showConfirm, setShowConfirm] = useState(false);
     const [photo, setPhoto] = useState<File | null>(null);
@@ -117,7 +118,7 @@ export default function CreateStudent() {
         return (
             <div className="space-y-1.5">
                 <Label className="text-sm font-medium">{label}{required && <span className="text-red-500 ml-1">*</span>}</Label>
-                <Input type={type} placeholder={placeholder} className="h-9" {...register(name as keyof FormData)} />
+                <Input type={type} placeholder={placeholder} className="h-10 sm:h-9" {...register(name as keyof FormData)} />
                 {err && <p className="text-xs text-red-500">{err.message as string}</p>}
             </div>
         );
@@ -167,7 +168,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Gender <span className="text-red-500">*</span></Label>
                                     <Select defaultValue="male" onValueChange={(v) => setValue('gender', v as 'male' | 'female' | 'other')}>
-                                        <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="male">Male</SelectItem>
                                             <SelectItem value="female">Female</SelectItem>
@@ -185,7 +186,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Category</Label>
                                     <Select defaultValue="general" onValueChange={(v) => setValue('category', v as 'general' | 'disabled' | 'quota')}>
-                                        <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="general">General</SelectItem>
                                             <SelectItem value="disabled">Disabled</SelectItem>
@@ -196,7 +197,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Status</Label>
                                     <Select defaultValue="active" onValueChange={(v) => setValue('status', v as 'active' | 'alumni' | 'transferred' | 'inactive')}>
-                                        <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="active">Active</SelectItem>
                                             <SelectItem value="inactive">Inactive</SelectItem>
@@ -212,7 +213,7 @@ export default function CreateStudent() {
                                     <Input
                                         type="file"
                                         accept="image/png,image/jpeg,image/webp"
-                                        className="h-9 file:mr-2 file:text-xs"
+                                        className="h-10 sm:h-9 file:mr-2 file:text-xs"
                                         onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
                                     />
                                     <p className="text-xs text-slate-400">JPG/PNG/WebP, max 2MB</p>
@@ -228,25 +229,31 @@ export default function CreateStudent() {
                             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <Field
                                     name="student_id"
-                                    label="School Student ID (optional)"
-                                    placeholder="ID given by the school"
+                                    label="Alt / National ID (optional)"
+                                    placeholder="National ID, if any"
                                 />
                                 <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">Admission No <span className="font-normal text-slate-400">(auto)</span></Label>
+                                    <Label className="text-sm font-medium">
+                                        School ID (Admission No)
+                                        {!id_generation_enabled && <span className="text-red-500 ml-1">*</span>}
+                                    </Label>
                                     <Input
-                                        className="h-9 font-mono"
+                                        className="h-10 sm:h-9 font-mono"
                                         placeholder={next_admission_no ?? 'Auto-generated'}
+                                        required={!id_generation_enabled}
                                         {...register('admission_no')}
                                     />
                                     <p className="text-xs text-slate-400">
-                                        Leave blank to auto-generate from your school's format. Must be unique within your school.
+                                        {id_generation_enabled
+                                            ? "Leave blank to auto-generate from your school's format. Must be unique within your school."
+                                            : 'Auto-generation is off, so enter the school-issued ID. Must be unique within your school.'}
                                     </p>
                                     {errors.admission_no && <p className="text-xs text-red-500">{errors.admission_no.message}</p>}
                                 </div>
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Class <span className="text-red-500">*</span></Label>
                                     <Select onValueChange={(v) => { setValue('class_id', Number(v)); setValue('section_id', null); setValue('department_id', undefined); }}>
-                                        <SelectTrigger className="h-9 w-full"><SelectValue placeholder="Select class" /></SelectTrigger>
+                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue placeholder="Select class" /></SelectTrigger>
                                         <SelectContent>
                                             {classes.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                                         </SelectContent>
@@ -256,7 +263,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Section</Label>
                                     <Select onValueChange={(v) => setValue('section_id', Number(v))} disabled={visibleSections.length === 0}>
-                                        <SelectTrigger className="h-9 w-full"><SelectValue placeholder={visibleSections.length === 0 ? 'Select class first' : 'Select section'} /></SelectTrigger>
+                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue placeholder={visibleSections.length === 0 ? 'Select class first' : 'Select section'} /></SelectTrigger>
                                         <SelectContent>
                                             {visibleSections.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
                                         </SelectContent>
@@ -265,7 +272,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">House</Label>
                                     <Select onValueChange={(v) => setValue('house_id', v === '_none' ? undefined : Number(v))} disabled={houses.length === 0}>
-                                        <SelectTrigger className="h-9 w-full"><SelectValue placeholder={houses.length === 0 ? 'No houses configured' : 'Select house'} /></SelectTrigger>
+                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue placeholder={houses.length === 0 ? 'No houses configured' : 'Select house'} /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="_none">None</SelectItem>
                                             {houses.map((h) => <SelectItem key={h.id} value={String(h.id)}>{h.name}</SelectItem>)}
@@ -278,7 +285,7 @@ export default function CreateStudent() {
                                         onValueChange={(v) => setValue('department_id', v === '_none' ? undefined : Number(v))}
                                         disabled={!isSss || departments.length === 0}
                                     >
-                                        <SelectTrigger className="h-9 w-full"><SelectValue placeholder={isSss ? (departments.length === 0 ? 'No departments' : 'Select department') : 'SSS classes only'} /></SelectTrigger>
+                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue placeholder={isSss ? (departments.length === 0 ? 'No departments' : 'Select department') : 'SSS classes only'} /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="_none">None</SelectItem>
                                             {departments.map((d) => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}
@@ -290,7 +297,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Admission Type</Label>
                                     <Select defaultValue="new" onValueChange={(v) => setValue('admission_type', v as 'new' | 'transfer' | 'returning')}>
-                                        <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="new">New</SelectItem>
                                             <SelectItem value="transfer">Transfer</SelectItem>
@@ -314,7 +321,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Relation <span className="text-red-500">*</span></Label>
                                     <Select defaultValue="Father" onValueChange={(v) => setValue('guardian.relation', v)}>
-                                        <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             {['Father','Mother','Guardian','Uncle','Aunt','Sibling'].map((r) => (
                                                 <SelectItem key={r} value={r}>{r}</SelectItem>
@@ -334,16 +341,16 @@ export default function CreateStudent() {
                     )}
 
                     {/* Nav buttons */}
-                    <div className="flex gap-3 justify-end mt-4">
+                    <div className="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                         {step > 0 && (
-                            <Button type="button" variant="outline" onClick={() => setStep(step - 1)}>Back</Button>
+                            <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setStep(step - 1)}>Back</Button>
                         )}
                         {step < STEPS.length - 1 ? (
-                            <Button type="button" className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => setStep(step + 1)}>
+                            <Button type="button" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white sm:w-auto" onClick={() => setStep(step + 1)}>
                                 Next — {STEPS[step + 1]}
                             </Button>
                         ) : (
-                            <Button type="button" disabled={isSubmitting} className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => setShowConfirm(true)}>
+                            <Button type="button" disabled={isSubmitting} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white sm:w-auto" onClick={() => setShowConfirm(true)}>
                                 {isSubmitting ? 'Admitting…' : 'Admit Student'}
                             </Button>
                         )}

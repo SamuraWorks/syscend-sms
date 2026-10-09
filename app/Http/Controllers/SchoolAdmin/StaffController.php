@@ -66,6 +66,7 @@ class StaffController extends Controller
             'departments'  => Department::orderBy('name')->get(['id', 'name']),
             'designations' => Designation::orderBy('name')->get(['id', 'department_id', 'name']),
             'next_emp_id'  => \App\Services\SchoolPersonIdService::nextPreview($this->getSchoolId(), 'staff'),
+            'id_generation_enabled' => \App\Services\SchoolPersonIdService::generationEnabled($this->getSchoolId()),
         ]);
     }
 
@@ -85,6 +86,7 @@ class StaffController extends Controller
             'email'          => 'nullable|email|max:150',
             'address'        => 'nullable|string|max:500',
             'emp_id'         => [
+                Rule::requiredIf(fn () => ! \App\Services\SchoolPersonIdService::generationEnabled($schoolId)),
                 'nullable', 'string', 'max:50',
                 Rule::unique('staff', 'emp_id')->where('school_id', $schoolId)->whereNull('deleted_at'),
             ],
@@ -127,6 +129,7 @@ class StaffController extends Controller
             'staff'        => $staff,
             'departments'  => Department::orderBy('name')->get(['id', 'name']),
             'designations' => Designation::orderBy('name')->get(['id', 'department_id', 'name']),
+            'id_generation_enabled' => \App\Services\SchoolPersonIdService::generationEnabled($staff->school_id),
         ]);
     }
 
@@ -144,6 +147,7 @@ class StaffController extends Controller
             'email'          => 'nullable|email|max:150',
             'address'        => 'nullable|string|max:500',
             'emp_id'         => [
+                Rule::requiredIf(fn () => ! \App\Services\SchoolPersonIdService::generationEnabled($staff->school_id) && blank($staff->emp_id)),
                 'nullable', 'string', 'max:50',
                 Rule::unique('staff', 'emp_id')->where('school_id', $staff->school_id)->whereNull('deleted_at')->ignore($staff->id),
             ],
@@ -156,7 +160,12 @@ class StaffController extends Controller
             'notes'          => 'nullable|string|max:1000',
         ]);
 
-        $data['emp_id'] = $request->filled('emp_id') ? trim((string) $request->input('emp_id')) : null;
+        if ($request->filled('emp_id')) {
+            $data['emp_id'] = trim((string) $request->input('emp_id'));
+        } else {
+            // Blank on update keeps the existing school-issued ID intact.
+            unset($data['emp_id']);
+        }
 
         $staff->update($data);
 

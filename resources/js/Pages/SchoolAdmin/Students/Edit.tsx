@@ -297,7 +297,7 @@ export default function EditStudent() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <Field name="admission_no"   label="Student ID" required />
+                            <Field name="admission_no"   label="School ID (Admission No)" required />
                             <Field name="student_id"     label="Alt / National ID (optional)" />
                             <Field name="roll_no"        label="Roll No" />
                             <Field name="admission_date" label="Admission Date" type="date" />

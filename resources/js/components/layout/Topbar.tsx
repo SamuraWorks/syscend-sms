@@ -109,6 +109,11 @@ export default function Topbar({ title, breadcrumbs }: TopbarProps) {
             )}
             {/* Left */}
             <div className="flex items-center gap-3 min-w-0">
+                {/* Mobile nav toggle */}
+                <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleSidebar} aria-label="Open menu">
+                    <Menu className="w-5 h-5" />
+                </Button>
+
                 {/* Mobile logo */}
                 <Link href="/" className="flex md:hidden items-center gap-2 min-w-0">
                     <span className="flex items-center justify-center h-8 w-8 shrink-0 overflow-hidden rounded-md bg-white p-0.5 ring-1 ring-black/10">
@@ -225,11 +230,6 @@ export default function Topbar({ title, breadcrumbs }: TopbarProps) {
                         </DropdownMenuGroup>
                     </DropdownMenuContent>
                 </DropdownMenu>
-
-                {/* Mobile nav toggle — top right */}
-                <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleSidebar} aria-label="Open menu">
-                    <Menu className="w-5 h-5" />
-                </Button>
             </div>
         </header>
     );

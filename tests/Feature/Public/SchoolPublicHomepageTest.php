@@ -74,7 +74,8 @@ class SchoolPublicHomepageTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'application/manifest+json')
             ->assertJsonPath('name', $school->name)
-            ->assertJsonPath('start_url', '/' . $school->slug)
+            ->assertJsonPath('start_url', '/dashboard')
+            ->assertJsonPath('id', '/' . $school->slug . '/app')
             ->assertJsonPath('theme_color', '#123456');
     }
 

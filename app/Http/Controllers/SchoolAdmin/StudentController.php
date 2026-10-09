@@ -84,6 +84,7 @@ class StudentController extends Controller
             'departments'      => Department::where('type', 'academic')->where('is_active', true)
                                     ->where('school_id', $schoolId)->orderBy('name')->get(['id', 'name']),
             'next_admission_no'=> StudentIdService::nextPreview($schoolId),
+            'id_generation_enabled' => StudentIdService::generationEnabled($schoolId),
         ]);
     }
 
@@ -111,9 +112,11 @@ class StudentController extends Controller
             'admission_type'  => ['nullable', Rule::in(['new', 'transfer', 'returning'])],
             'previous_school' => 'nullable|string|max:200',
             'roll_no'         => 'nullable|string|max:50',
-            // Student identifiers — admission_no is THE Student ID.
-            // Blank = auto-generate via the school's configured format.
+            // Student identifiers — admission_no is THE school-issued Student ID.
+            // Required unless the school enabled auto-generation, in which case a
+            // blank value is generated from the school's configured format.
             'admission_no'    => [
+                Rule::requiredIf(fn () => ! StudentIdService::generationEnabled($schoolId)),
                 'nullable', 'string', 'max:50',
                 Rule::unique('students', 'admission_no')
                     ->where('school_id', $schoolId)
@@ -226,6 +229,7 @@ class StudentController extends Controller
             'houses'      => House::where('is_active', true)->where('school_id', $student->school_id)->orderBy('name')->get(['id', 'name', 'color']),
             'departments' => Department::where('type', 'academic')->where('is_active', true)
                                 ->where('school_id', $student->school_id)->orderBy('name')->get(['id', 'name']),
+            'id_generation_enabled' => StudentIdService::generationEnabled($student->school_id),
         ]);
     }
 

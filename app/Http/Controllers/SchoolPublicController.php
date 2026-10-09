@@ -51,7 +51,8 @@ class SchoolPublicController extends Controller
         return $this->manifestResponse([
             'name'        => $school->name,
             'short_name'  => $school->short_name ?: $school->name,
-            'start_url'   => '/' . $school->slug,
+            'start_url'   => '/dashboard',
+            'id'          => '/' . $school->slug . '/app',
             'theme_color' => $school->primary_color ?? '#1e40af',
             'icon'        => $logo ?: $badge,
             'alt_icon'    => ($logo && $badge) ? $badge : null,
@@ -113,7 +114,7 @@ class SchoolPublicController extends Controller
         return response()->json([
             'name'             => $data['name'],
             'short_name'       => $data['short_name'],
-            'id'               => $data['start_url'],
+            'id'               => $data['id'] ?? $data['start_url'],
             'start_url'        => $data['start_url'],
             'scope'            => '/',
             'display'          => 'standalone',

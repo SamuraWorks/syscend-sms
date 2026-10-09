@@ -35,7 +35,7 @@ export default function SiteHeader() {
             <div
                 className="flex h-[72px] items-center justify-between px-8 lg:px-16"
             >
-                <Link href="/" aria-label="Syscend Campus home" className="hidden lg:inline-flex">
+                <Link href="/" aria-label="Syscend Campus home" className="inline-flex">
                     <Logo tone="dark" />
                 </Link>
 

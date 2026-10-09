@@ -15,9 +15,10 @@ interface Props {
     staff: Staff;
     departments: Department[];
     designations: Designation[];
+    id_generation_enabled?: boolean;
 }
 
-export default function StaffEdit({ staff, departments, designations }: Props) {
+export default function StaffEdit({ staff, departments, designations, id_generation_enabled = true }: Props) {
     const { data, setData, put, processing, errors } = useForm({
         first_name:     staff.first_name,
         last_name:      staff.last_name ?? '',
@@ -29,6 +30,7 @@ export default function StaffEdit({ staff, departments, designations }: Props) {
         phone:          staff.phone ?? '',
         email:          staff.email ?? '',
         address:        staff.address ?? '',
+        emp_id:         staff.emp_id ?? '',
         department_id:  staff.department_id ? String(staff.department_id) : '',
         designation_id: staff.designation_id ? String(staff.designation_id) : '',
         joining_date:   staff.joining_date ?? '',
@@ -131,6 +133,25 @@ export default function StaffEdit({ staff, departments, designations }: Props) {
                     <Card className="border-slate-200 dark:border-slate-800">
                         <CardHeader><CardTitle className="text-lg">Employment Details</CardTitle></CardHeader>
                         <CardContent className="space-y-5">
+                            <div className="space-y-1.5">
+                                <Label>
+                                    School Staff ID
+                                    {!id_generation_enabled && <span className="text-red-500 ml-1">*</span>}
+                                </Label>
+                                <Input
+                                    className="font-mono"
+                                    value={data.emp_id}
+                                    required={!id_generation_enabled}
+                                    onChange={e => setData('emp_id', e.target.value)}
+                                />
+                                {errors.emp_id && <p className="text-xs text-red-500">{errors.emp_id}</p>}
+                                <p className="text-xs text-slate-400">
+                                    {id_generation_enabled
+                                        ? "Leave blank to keep the existing ID. Must be unique within your school."
+                                        : 'The school-issued ID. Must be unique within your school.'}
+                                </p>
+                            </div>
+
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <Label>Department</Label>
