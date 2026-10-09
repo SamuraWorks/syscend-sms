@@ -3,7 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ChevronRight } from 'lucide-react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,13 +65,25 @@ type FormData = z.infer<typeof schema>;
 
 const STEPS = ['Personal Info', 'Class & Roll', 'Guardian Info'];
 
+// Fields validated before the wizard advances past each step. The root key is
+// used for nested paths (e.g. "guardian" covers guardian.name/relation).
+const STEP_FIELDS: string[][] = [
+    ['first_name', 'last_name', 'gender', 'date_of_birth', 'place_of_birth', 'blood_group', 'religion', 'nationality', 'phone', 'email', 'category', 'status', 'address'],
+    ['admission_no', 'student_id', 'class_id', 'section_id', 'house_id', 'department_id', 'roll_no', 'admission_date', 'admission_type', 'previous_school'],
+    ['guardian'],
+];
+
+const STEP_OF_FIELD: Record<string, number> = Object.fromEntries(
+    STEP_FIELDS.flatMap((fields, index) => fields.map((f) => [f, index])),
+);
+
 export default function CreateStudent() {
     const { classes, sections, houses = [], departments = [], next_admission_no, id_generation_enabled = true } = usePage<Props>().props;
     const [step, setStep] = useState(0);
     const [showConfirm, setShowConfirm] = useState(false);
     const [photo, setPhoto] = useState<File | null>(null);
 
-    const { register, handleSubmit, setValue, watch, setError, formState: { errors, isSubmitting } } =
+    const { register, handleSubmit, setValue, watch, setError, trigger, formState: { errors, isSubmitting } } =
         useForm<FormData>({
             resolver: zodResolver(schema) as unknown as Resolver<FormData>,
             defaultValues: { gender: 'male', category: 'general', status: 'active', nationality: 'Sierra Leonean', guardian: { relation: 'Father' } },
@@ -84,10 +96,45 @@ export default function CreateStudent() {
     const firstName = watch('first_name');
     const lastName = watch('last_name');
 
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [submitting, setSubmitting] = useState(false);
+
+    // Jump to the earliest wizard step that contains a validation error so the
+    // message is visible instead of silently failing on a hidden field.
+    const goToFirstError = (errs: Record<string, unknown>) => {
+        const roots = Object.keys(errs).map((k) => k.split('.')[0]);
+        const steps = roots.map((r) => STEP_OF_FIELD[r]).filter((n): n is number => n !== undefined);
+        if (steps.length > 0) setStep(Math.min(...steps));
+    };
+
+    const onInvalid = (errs: Record<string, unknown>) => {
+        setSubmitError('Please fix the highlighted fields before admitting the student.');
+        goToFirstError(errs);
+    };
+
+    const goNext = async () => {
+        setSubmitError(null);
+        const valid = await trigger(STEP_FIELDS[step] as never[], { shouldFocus: true });
+        if (valid) setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    };
+
+    // Validate the whole form before showing the confirmation dialog.
+    const requestAdmit = handleSubmit(
+        () => setShowConfirm(true),
+        (errs) => onInvalid(errs as Record<string, unknown>),
+    );
+
     const onSubmit = (data: FormData) => {
+        setSubmitError(null);
+        setSubmitting(true);
         const payload = { ...data, guardian: { ...data.guardian } };
-        const onError = (errs: Record<string, string>) =>
+        const onError = (errs: Record<string, string>) => {
+            setSubmitting(false);
+            setShowConfirm(false);
+            setSubmitError('The school could not admit this student. Please review the highlighted fields.');
             Object.entries(errs).forEach(([f, m]) => setError(f as keyof FormData, { message: m }));
+            goToFirstError(errs);
+        };
 
         if (photo) {
             const fd = new FormData();
@@ -107,6 +154,8 @@ export default function CreateStudent() {
             router.post('/school/students', payload, { onError });
         }
     };
+
+    const confirmAdmit = handleSubmit(onSubmit, (errs) => onInvalid(errs as Record<string, unknown>));
 
     const Field = ({ name, label, placeholder, type = 'text', required = false }: {
         name: string; label: string; placeholder?: string; type?: string; required?: boolean;
@@ -142,8 +191,16 @@ export default function CreateStudent() {
                     </div>
                 </div>
 
+                {/* Error summary — visible feedback when a step/submit is invalid */}
+                {submitError && (
+                    <div role="alert" className="mb-4 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-400">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>{submitError}</span>
+                    </div>
+                )}
+
                 {/* Step indicators */}
-                <div className="flex items-center gap-2 mb-6">
+                <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
                     {STEPS.map((s, i) => (
                         <div key={s} className="flex items-center gap-2">
                             <button
@@ -346,12 +403,12 @@ export default function CreateStudent() {
                             <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={() => setStep(step - 1)}>Back</Button>
                         )}
                         {step < STEPS.length - 1 ? (
-                            <Button type="button" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white sm:w-auto" onClick={() => setStep(step + 1)}>
+                            <Button type="button" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white sm:w-auto" onClick={goNext}>
                                 Next — {STEPS[step + 1]}
                             </Button>
                         ) : (
-                            <Button type="button" disabled={isSubmitting} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white sm:w-auto" onClick={() => setShowConfirm(true)}>
-                                {isSubmitting ? 'Admitting…' : 'Admit Student'}
+                            <Button type="button" disabled={isSubmitting || submitting} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white sm:w-auto" onClick={requestAdmit}>
+                                {isSubmitting || submitting ? 'Admitting…' : 'Admit Student'}
                             </Button>
                         )}
                     </div>
@@ -363,7 +420,7 @@ export default function CreateStudent() {
                     title="Confirm Student Admission"
                     description={`Admit ${firstName || 'this student'} ${lastName || ''}? No login is created automatically — the student and parent sign up themselves with the school portal.`}
                     confirmText="Admit Student"
-                    onConfirm={() => handleSubmit(onSubmit)()}
+                    onConfirm={confirmAdmit}
                 />
             </div>
         </AppLayout>

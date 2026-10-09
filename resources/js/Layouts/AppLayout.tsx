@@ -51,7 +51,7 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
             apple.setAttribute('sizes', '180x180');
             document.head.appendChild(apple);
         }
-        apple.href = schoolBranding?.logo_url || schoolBranding?.badge_url || platformLogoUrl || '/images/logo.png';
+        apple.href = schoolBranding?.badge_url || schoolBranding?.logo_url || platformLogoUrl || '/images/logo.png';
     }, [schoolBranding, platformLogoUrl]);
 
     // Dark mode sync

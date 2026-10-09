@@ -3,17 +3,29 @@
 namespace App\Services;
 
 use App\Models\{Department, Designation, ImportJob, Staff};
+use App\Support\Imports\TabularReader;
 use App\Support\StoredFile;
-use Illuminate\Support\{DB, Str};
-use PhpOffice\PhpSpreadsheet\IOFactory;
+use Illuminate\Support\Facades\DB;
 
 class StaffImportService
 {
+    private const EXPECTED_HEADERS = [
+        'emp_id',
+        'first_name',
+        'last_name',
+        'gender',
+        'date_of_birth',
+        'phone',
+        'email',
+        'department_name',
+        'designation_name',
+        'teacher_type',
+    ];
+
     private const ALLOWED_COLUMNS = [
         'emp_id',
         'first_name',
         'last_name',
-        'middle_name',
         'gender',
         'date_of_birth',
         'phone',
@@ -42,32 +54,13 @@ class StaffImportService
             throw new \RuntimeException("Import file not found: {$job->file_name}");
         }
 
-        $spreadsheet = IOFactory::load($filePath);
-        $sheet = $spreadsheet->getActiveSheet();
-        $rows = $sheet->toArray(null, true, true, true);
-
-        if (count($rows) < 2) {
-            throw new \RuntimeException('Import file contains no data rows.');
-        }
-
-        $headers = array_map(fn($h) => Str::slug(trim($h), '_'), array_values($rows[1]));
-
-        $dataRows = [];
-        foreach ($rows as $rowIndex => $row) {
-            if ($rowIndex <= 1) continue;
-
-            $values = array_slice(array_pad(array_values($row), count($headers), ''), 0, count($headers));
-            $rowKeyed = array_combine($headers, $values);
-            $rowKeyed['__row_number'] = $rowIndex;
-            $dataRows[] = $rowKeyed;
-        }
+        $rows = TabularReader::read($filePath, self::EXPECTED_HEADERS)['rows'];
 
         $job->update([
-            'total_rows' => count($dataRows),
-            'file_name'  => $job->file_name,
+            'total_rows' => count($rows),
         ]);
 
-        return $dataRows;
+        return $rows;
     }
 
     public function validateRows(ImportJob $job): array
@@ -205,8 +198,6 @@ class StaffImportService
         $validation = $this->validateRows($job);
 
         $validRows = $validation['valid'];
-        $batchSize = 50;
-        $batches = array_chunk($validRows, $batchSize);
 
         $summary = [
             'staff_created'   => 0,
@@ -216,16 +207,14 @@ class StaffImportService
 
         $job->update(['status' => 'importing']);
 
-        foreach ($batches as $batch) {
-            DB::transaction(function () use ($batch, &$summary) {
-                foreach ($batch as $row) {
-                    try {
-                        $this->processRow($row, $summary);
-                    } catch (\Throwable $e) {
-                        $summary['errors'][$row['__row_number']] = $e->getMessage();
-                    }
-                }
-            });
+        foreach ($validRows as $row) {
+            try {
+                DB::transaction(function () use ($row, &$summary) {
+                    $this->processRow($row, $summary);
+                });
+            } catch (\Throwable $e) {
+                $summary['errors'][$row['__row_number']] = $e->getMessage();
+            }
         }
 
         $job->update([
@@ -248,7 +237,6 @@ class StaffImportService
             'emp_id'          => $row['emp_id'],
             'first_name'      => $row['first_name'],
             'last_name'       => $row['last_name'],
-            'middle_name'     => $row['middle_name'] ?? null,
             'gender'          => $row['gender'],
             'date_of_birth'   => $row['date_of_birth'] ?? null,
             'phone'           => $row['phone'] ?? null,

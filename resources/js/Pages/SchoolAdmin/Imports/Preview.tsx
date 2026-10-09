@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { router, usePage, Head, Link } from '@inertiajs/react';
+import axios from 'axios';
 import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
-import { ArrowLeft, CheckCircle2, Loader2, AlertTriangle, XCircle, FileText } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Loader2, AlertTriangle, XCircle, FileText, Sparkles } from 'lucide-react';
 import type { PageProps } from '@/Types';
 
 interface ImportJob {
@@ -24,6 +25,31 @@ interface PreviewRow {
     [key: string]: any;
 }
 
+interface ColumnMapping {
+    source_column: string;
+    target_field: string | null;
+    confidence: number;
+    reason: string;
+}
+
+interface AiMapping {
+    import_type: string;
+    columns: string[];
+    mappings: ColumnMapping[];
+    unmatched_columns: string[];
+    missing_required_fields: string[];
+    summary: string;
+    meta?: Record<string, any>;
+}
+
+interface AiStatus {
+    feature: string;
+    label: string | null;
+    enabled: boolean;
+    has_credentials: boolean;
+    allowed: boolean;
+}
+
 interface Props {
     job: ImportJob;
     preview: {
@@ -32,6 +58,8 @@ interface Props {
         errors: string[];
         grouped: Record<string, any>;
     };
+    aiMapping?: AiMapping | null;
+    aiStatus?: AiStatus | null;
 }
 
 const TYPE_STYLE: Record<string, string> = {
@@ -42,12 +70,30 @@ const TYPE_STYLE: Record<string, string> = {
     curriculum: 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400',
 };
 
-export default function BulkImportPreview({ job, preview }: Props) {
+export default function BulkImportPreview({ job, preview, aiMapping, aiStatus }: Props) {
     const rows = preview?.rows ?? [];
     const errors = preview?.errors ?? [];
     const grouped = preview?.grouped ?? {};
     const { flash } = usePage<PageProps>().props;
     const [executing, setExecuting] = useState(false);
+    const [mapping, setMapping] = useState<AiMapping | null>(aiMapping ?? null);
+    const [aiLoading, setAiLoading] = useState(false);
+    const [aiError, setAiError] = useState<string | null>(null);
+
+    const aiAvailable = !!aiStatus?.enabled && !!aiStatus?.has_credentials && !!aiStatus?.allowed;
+
+    async function suggestMapping() {
+        setAiLoading(true);
+        setAiError(null);
+        try {
+            const { data } = await axios.post(`/school-admin/imports/${job.id}/analyze`);
+            setMapping(data as AiMapping);
+        } catch (err: any) {
+            setAiError(err?.response?.data?.error ?? 'Could not analyse this file. Please try again.');
+        } finally {
+            setAiLoading(false);
+        }
+    }
 
     function handleConfirm() {
         if (confirm(`Import ${job.valid_rows} rows? This cannot be undone.`)) {
@@ -121,6 +167,81 @@ export default function BulkImportPreview({ job, preview }: Props) {
                         </CardContent>
                     </Card>
                 </div>
+
+                {/* AI Column Mapping */}
+                {aiStatus && (
+                    <Card className="border-indigo-200 dark:border-indigo-900">
+                        <CardContent className="p-4 space-y-3">
+                            <div className="flex items-center justify-between flex-wrap gap-3">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="w-4 h-4 text-indigo-500" />
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-white">AI column mapping</p>
+                                        <p className="text-xs text-slate-500">Let AI match your file's columns to the import fields.</p>
+                                    </div>
+                                </div>
+                                {aiStatus.allowed && aiStatus.enabled && aiStatus.has_credentials ? (
+                                    <Button size="sm" variant="outline" onClick={suggestMapping} disabled={aiLoading} className="inline-flex items-center gap-1.5">
+                                        {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                                        {aiLoading ? 'Analyzing…' : mapping ? 'Re-analyze' : 'Suggest mapping'}
+                                    </Button>
+                                ) : (
+                                    <span className="text-xs text-slate-400">
+                                        {!aiStatus.enabled
+                                            ? 'AI features are disabled.'
+                                            : !aiStatus.has_credentials
+                                              ? 'AI is not configured.'
+                                              : 'Not available for your role.'}
+                                    </span>
+                                )}
+                            </div>
+
+                            {aiError && (
+                                <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700 dark:bg-red-950/30 dark:border-red-900 dark:text-red-400">{aiError}</div>
+                            )}
+
+                            {mapping && (
+                                <div className="space-y-2">
+                                    {mapping.summary && <p className="text-xs text-slate-500">{mapping.summary}</p>}
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow className="bg-slate-50 dark:bg-slate-900">
+                                                    <TableHead className="text-xs">Your column</TableHead>
+                                                    <TableHead className="text-xs">Maps to</TableHead>
+                                                    <TableHead className="text-xs">Confidence</TableHead>
+                                                    <TableHead className="text-xs">Why</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {mapping.mappings.map((m, i) => (
+                                                    <TableRow key={i}>
+                                                        <TableCell className="text-xs font-medium text-slate-700 dark:text-slate-300">{m.source_column}</TableCell>
+                                                        <TableCell className="text-xs">
+                                                            {m.target_field ? (
+                                                                <Badge className="border-0 bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400">{m.target_field}</Badge>
+                                                            ) : (
+                                                                <span className="text-slate-400">Unmatched</span>
+                                                            )}
+                                                        </TableCell>
+                                                        <TableCell className="text-xs text-slate-500">{Math.round((m.confidence ?? 0) * 100)}%</TableCell>
+                                                        <TableCell className="text-xs text-slate-500">{m.reason}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                    {mapping.missing_required_fields?.length > 0 && (
+                                        <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:border-amber-900 dark:text-amber-400">
+                                            Required fields not matched: {mapping.missing_required_fields.join(', ')}
+                                        </div>
+                                    )}
+                                    <p className="text-[11px] text-slate-400">Suggestions are saved for review and do not change the import.</p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Progress Bar */}
                 <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2.5">

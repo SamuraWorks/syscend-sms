@@ -21,7 +21,7 @@
                 $school = School::withoutGlobalScopes()->find($authUser->school_id);
                 if ($school) {
                     $manifestHref = '/' . $school->slug . '/manifest.webmanifest';
-                    $appleIconHref = $school->logo_url ?: $school->badge_url;
+                    $appleIconHref = $school->badge_url ?: $school->logo_url;
                 }
             }
             if (! $appleIconHref) {

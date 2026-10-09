@@ -5,6 +5,8 @@ namespace App\Http\Controllers\SchoolAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\ImportJob;
 use App\Models\School;
+use App\Services\AI\AIPermissionService;
+use App\Services\AI\AIService;
 use App\Services\AI\AIUnavailableException;
 use App\Services\AI\ImportColumnMapper;
 use App\Services\CurriculumImportService;
@@ -92,6 +94,13 @@ class ImportController extends Controller
 
         try {
             $service->parseFile($job);
+
+            // Timetable's parser validates in one pass; the other services
+            // separate parsing from validation, so run validation here to
+            // surface row-level errors the moment the file is uploaded.
+            if (method_exists($service, 'validateRows')) {
+                $service->validateRows($job);
+            }
         } catch (\Throwable $e) {
             report($e);
             $job->update([
@@ -144,6 +153,8 @@ class ImportController extends Controller
             'job'         => $job->fresh(),
             'preview'     => $preview,
             'importType'  => $job->import_type,
+            'aiMapping'   => $job->import_options['column_mapping'] ?? null,
+            'aiStatus'    => app(AIService::class)->status(AIPermissionService::FEATURE_IMPORT_COLUMN_MAPPING),
         ]);
     }
 
@@ -204,14 +215,14 @@ class ImportController extends Controller
         $this->buildSampleSheet($spreadsheet, $headers, $samples);
 
         $filename = "{$type}_import_template.xlsx";
-        $tempPath = storage_path("app/private/{$filename}");
-        \Illuminate\Support\Facades\File::ensureDirectoryExists(dirname($tempPath));
         $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
-        $writer->save($tempPath);
 
-        return response()->download($tempPath, $filename, [
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
             'Cache-Control' => 'no-cache, no-store, must-revalidate',
-        ])->deleteFileAfterSend(true);
+            'Content-Type'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     private function buildInstructionSheet(Spreadsheet &$spreadsheet, string $type, array $instructions): void

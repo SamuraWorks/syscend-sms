@@ -225,10 +225,26 @@ class StudentPortalController extends Controller
             }])
             ->get();
 
-        $subjects = $enrollments->map(function ($enrollment) use ($user) {
-            $offering = $enrollment->subjectOffering;
-            if (! $offering) return null;
+        // Compulsory offerings for the student's class are shown even when no
+        // explicit enrollment row exists, so imported/created subjects appear.
+        $enrolledOfferings = $enrollments->pluck('subjectOffering')->filter();
 
+        $classOfferings = collect();
+        if ($currentYear) {
+            $classOfferings = \App\Models\SubjectOffering::query()
+                ->where('school_id', $user->school_id)
+                ->where('academic_year_id', $currentYear->id)
+                ->where('class_id', $student->class_id)
+                ->where('is_active', true)
+                ->where('subject_type', 'compulsory')
+                ->whereNotIn('id', $enrolledOfferings->pluck('id')->all())
+                ->with(['subject:id,name,code', 'section:id,name'])
+                ->when($student->section_id, fn ($q) => $q->where(fn ($qq) => $qq->whereNull('section_id')->orWhere('section_id', $student->section_id)))
+                ->orderBy('sort_order')
+                ->get();
+        }
+
+        $subjects = $enrolledOfferings->concat($classOfferings)->unique('id')->values()->map(function ($offering) use ($user) {
             $teacherAssignment = \App\Models\TeacherSubjectAssignment::where('school_id', $user->school_id)
                 ->where('subject_offering_id', $offering->id)
                 ->where('is_active', true)

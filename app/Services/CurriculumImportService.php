@@ -3,12 +3,17 @@
 namespace App\Services;
 
 use App\Models\{AcademicYear, Department, ImportJob, SchoolClass, Section, Subject, SubjectOffering};
+use App\Support\Imports\TabularReader;
 use App\Support\StoredFile;
-use Illuminate\Support\{Collection, DB, Str};
-use PhpOffice\PhpSpreadsheet\IOFactory;
+use Illuminate\Support\Facades\DB;
 
 class CurriculumImportService
 {
+    private const EXPECTED_HEADERS = [
+        'academic_year', 'level', 'class_name', 'stream', 'department', 'subject_code',
+        'subject_name', 'subject_type', 'selection_group', 'is_required', 'min_selection', 'max_selection',
+    ];
+
     private const VALID_SUBJECT_TYPES = ['compulsory', 'elective', 'selective'];
 
     private const HEADER_MAP = [
@@ -60,43 +65,7 @@ class CurriculumImportService
             throw new \RuntimeException("Import file not found: {$job->file_name}");
         }
 
-        $spreadsheet = IOFactory::load($filePath);
-        $dataRows = [];
-
-        foreach ($spreadsheet->getAllSheets() as $sheet) {
-            $rows = $sheet->toArray(null, true, true, true);
-
-            if (count($rows) < 2) {
-                continue;
-            }
-
-            $headers = array_map(function ($h) {
-                $slug = Str::slug(trim($h), '_');
-                return self::HEADER_MAP[$slug] ?? $slug;
-            }, array_values($rows[1]));
-
-            foreach ($rows as $rowIndex => $row) {
-                if ($rowIndex <= 1) {
-                    continue;
-                }
-
-                $mapped = array_map(fn($v) => trim((string) ($v ?? '')), array_values($row));
-                $mapped = array_slice(array_pad($mapped, count($headers), ''), 0, count($headers));
-                $rowKeyed = array_combine($headers, $mapped);
-
-                if (empty($rowKeyed['subject_code']) && empty($rowKeyed['subject_name'])) {
-                    continue;
-                }
-
-                $rowKeyed['__row_number'] = $rowIndex;
-                $rowKeyed['__sheet'] = $sheet->getTitle();
-                $dataRows[] = $rowKeyed;
-            }
-        }
-
-        if (empty($dataRows)) {
-            throw new \RuntimeException('Import file contains no data rows.');
-        }
+        $dataRows = TabularReader::read($filePath, self::EXPECTED_HEADERS, self::HEADER_MAP)['rows'];
 
         $job->update([
             'total_rows' => count($dataRows),
@@ -417,13 +386,13 @@ class CurriculumImportService
 
         $autoCreate = $job->import_options['auto_create_classes'] ?? false;
 
-        DB::transaction(function () use ($job, $validRows, &$summary, $autoCreate) {
-            $classCache = [];
-            $sectionCache = [];
-            $deptCache = [];
+        $classCache = [];
+        $sectionCache = [];
+        $deptCache = [];
 
-            foreach ($validRows as $row) {
-                try {
+        foreach ($validRows as $row) {
+            try {
+                DB::transaction(function () use ($row, $autoCreate, &$classCache, &$sectionCache, &$deptCache, &$summary) {
                     $classId = $this->resolveClassId($row, $autoCreate, $classCache, $summary);
                     $sectionId = $this->resolveSectionId($row, $classId, $autoCreate, $sectionCache, $summary);
                     $deptId = $this->resolveDepartmentId($row, $autoCreate, $deptCache, $summary);
@@ -441,7 +410,7 @@ class CurriculumImportService
                         ])->id;
                     }
 
-                    $offering = SubjectOffering::create([
+                    SubjectOffering::create([
                         'school_id'         => $this->schoolId,
                         'academic_year_id'  => $row['__academic_year_id'],
                         'class_id'          => $classId,
@@ -472,12 +441,11 @@ class CurriculumImportService
                     }
                     $summary['per_class'][$classLabel]['streams'][$streamLabel]++;
                     $summary['per_class'][$classLabel]['total']++;
-
-                } catch (\Throwable $e) {
-                    $summary['errors'][$row['__row_number']] = $e->getMessage();
-                }
+                });
+            } catch (\Throwable $e) {
+                $summary['errors'][$row['__row_number']] = $e->getMessage();
             }
-        });
+        }
 
         $job->update([
             'status'         => 'completed',

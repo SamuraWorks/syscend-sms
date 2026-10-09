@@ -3,14 +3,17 @@
 namespace App\Services;
 
 use App\Models\{Guardian, ImportJob, Student};
+use App\Support\Imports\TabularReader;
 use App\Support\StoredFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ParentImportService
 {
     private const VALID_RELATIONS = ['father', 'mother', 'guardian', 'uncle', 'aunt', 'sibling', 'other'];
+
+    private const EXPECTED_HEADERS = [
+        'student_id', 'parent_full_name', 'relationship', 'email', 'phone', 'alt_phone', 'address', 'primary_contact',
+    ];
 
     /**
      * Canonical column => accepted aliases (legacy headers included).
@@ -43,40 +46,29 @@ class ParentImportService
             throw new \RuntimeException("Import file not found: {$job->file_name}");
         }
 
-        $spreadsheet = IOFactory::load($filePath);
-        $sheet = $spreadsheet->getActiveSheet();
-        $rows = $sheet->toArray(null, true, true, true);
-
-        if (count($rows) < 2) {
-            throw new \RuntimeException('Import file contains no data rows.');
-        }
-
-        $rawHeaders = array_map(fn($h) => Str::slug(trim((string) $h), '_'), array_values($rows[1]));
-
-        $headers = array_map(function ($h) {
-            foreach (self::COLUMN_ALIASES as $canonical => $aliases) {
-                if (in_array($h, $aliases, true)) {
-                    return $canonical;
-                }
-            }
-            return $h;
-        }, $rawHeaders);
-
-        $dataRows = [];
-        foreach ($rows as $rowIndex => $row) {
-            if ($rowIndex <= 1) continue;
-
-            $values = array_slice(array_pad(array_values($row), count($headers), ''), 0, count($headers));
-            $rowKeyed = array_combine($headers, $values);
-            $rowKeyed['__row_number'] = $rowIndex;
-            $dataRows[] = $rowKeyed;
-        }
+        $rows = TabularReader::read($filePath, self::EXPECTED_HEADERS, self::aliasMap())['rows'];
 
         $job->update([
-            'total_rows' => count($dataRows),
+            'total_rows' => count($rows),
         ]);
 
-        return $dataRows;
+        return $rows;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function aliasMap(): array
+    {
+        $map = [];
+
+        foreach (self::COLUMN_ALIASES as $canonical => $aliases) {
+            foreach ($aliases as $alias) {
+                $map[$alias] = $canonical;
+            }
+        }
+
+        return $map;
     }
 
     public function validateRows(ImportJob $job): array
@@ -222,8 +214,6 @@ class ParentImportService
         $validation = $this->validateRows($job);
 
         $validRows = $validation['valid'];
-        $batchSize = 50;
-        $batches = array_chunk($validRows, $batchSize);
 
         $summary = [
             'parents_created'       => 0,
@@ -237,17 +227,15 @@ class ParentImportService
 
         $resolver = null;
 
-        foreach ($batches as $batch) {
-            DB::transaction(function () use ($batch, &$summary, &$resolver) {
-                foreach ($batch as $row) {
-                    try {
-                        $resolver ??= new ParentIdentityResolver($this->schoolId);
-                        $this->processRow($row, $summary, $resolver);
-                    } catch (\Throwable $e) {
-                        $summary['errors'][$row['__row_number']] = $e->getMessage();
-                    }
-                }
-            });
+        foreach ($validRows as $row) {
+            try {
+                $resolver ??= new ParentIdentityResolver($this->schoolId);
+                DB::transaction(function () use ($row, &$summary, $resolver) {
+                    $this->processRow($row, $summary, $resolver);
+                });
+            } catch (\Throwable $e) {
+                $summary['errors'][$row['__row_number']] = $e->getMessage();
+            }
         }
 
         $linkedTotal = $summary['links_created'];

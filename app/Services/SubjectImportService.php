@@ -3,13 +3,16 @@
 namespace App\Services;
 
 use App\Models\{AcademicYear, Department, ImportJob, SchoolClass, Subject, SubjectOffering};
+use App\Support\Imports\TabularReader;
 use App\Support\StoredFile;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class SubjectImportService
 {
+    private const EXPECTED_HEADERS = [
+        'class_name', 'name', 'code', 'type', 'full_marks', 'pass_marks', 'department_name', 'is_core',
+    ];
+
     private const ALLOWED_COLUMNS = [
         'class_name', 'name', 'code', 'type', 'full_marks', 'pass_marks', 'department_name', 'is_core',
     ];
@@ -31,31 +34,13 @@ class SubjectImportService
             throw new \RuntimeException("Import file not found: {$job->file_name}");
         }
 
-        $spreadsheet = IOFactory::load($filePath);
-        $sheet = $spreadsheet->getActiveSheet();
-        $rows = $sheet->toArray(null, true, true, true);
-
-        if (count($rows) < 2) {
-            throw new \RuntimeException('Import file contains no data rows.');
-        }
-
-        $headers = array_map(fn($h) => Str::slug(trim($h), '_'), array_values($rows[1]));
-
-        $dataRows = [];
-        foreach ($rows as $rowIndex => $row) {
-            if ($rowIndex <= 1) continue;
-
-            $values = array_slice(array_pad(array_values($row), count($headers), ''), 0, count($headers));
-            $rowKeyed = array_combine($headers, $values);
-            $rowKeyed['__row_number'] = $rowIndex;
-            $dataRows[] = $rowKeyed;
-        }
+        $rows = TabularReader::read($filePath, self::EXPECTED_HEADERS)['rows'];
 
         $job->update([
-            'total_rows' => count($dataRows),
+            'total_rows' => count($rows),
         ]);
 
-        return $dataRows;
+        return $rows;
     }
 
     public function validateRows(ImportJob $job): array
@@ -211,16 +196,14 @@ class SubjectImportService
 
         $job->update(['status' => 'importing']);
 
-        foreach (array_chunk($validRows, 50) as $batch) {
-            DB::transaction(function () use ($batch, &$summary) {
-                foreach ($batch as $row) {
-                    try {
-                        $this->processRow($row, $summary);
-                    } catch (\Throwable $e) {
-                        $summary['errors'][$row['__row_number']] = $e->getMessage();
-                    }
-                }
-            });
+        foreach ($validRows as $row) {
+            try {
+                DB::transaction(function () use ($row, &$summary) {
+                    $this->processRow($row, $summary);
+                });
+            } catch (\Throwable $e) {
+                $summary['errors'][$row['__row_number']] = $e->getMessage();
+            }
         }
 
         $job->update([

@@ -3,12 +3,19 @@
 namespace App\Services;
 
 use App\Models\{AcademicYear, SchoolClass, Section, Staff, Subject, Timetable};
+use App\Support\Imports\TabularReader;
 use App\Support\StoredFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\{Collection, Str};
 
 class TimetableImportService
 {
+    private const EXPECTED_HEADERS = [
+        'academic_year', 'day', 'start_time', 'end_time',
+        'class_name', 'section_name', 'subject_name', 'teacher_name',
+        'room', 'lesson_type',
+    ];
+
     private const ALLOWED_COLUMNS = [
         'academic_year', 'day', 'start_time', 'end_time',
         'class_name', 'section_name', 'subject_name', 'teacher_name',
@@ -27,27 +34,24 @@ class TimetableImportService
     public function parseFile($job): void
     {
         $filePath = StoredFile::localPath($job->file_path, 'private');
-        $rows = $this->readRows($filePath);
-
-        $header = array_map(fn ($h) => Str::slug(Str::lower(trim((string) $h)), '_'), $rows[0] ?? []);
-        $dataRows = array_slice($rows, 1);
+        $rows = TabularReader::read($filePath, self::EXPECTED_HEADERS)['rows'];
 
         $validRows = [];
         $errorRows = [];
 
-        foreach ($dataRows as $idx => $row) {
-            $record = $this->recordFromRow($header, $row);
-            $errors = $this->validateRow($record, $idx + 2);
+        foreach ($rows as $row) {
+            $record = $this->onlyColumns($row);
+            $errors = $this->validateRow($record, (int) $row['__row_number']);
 
             if (empty($errors)) {
                 $validRows[] = $record;
             } else {
-                $errorRows[] = ['row' => $idx + 2, 'errors' => $errors, 'data' => $record];
+                $errorRows[] = ['row' => $row['__row_number'], 'errors' => $errors, 'data' => $record];
             }
         }
 
         $job->update([
-            'total_rows'       => count($dataRows),
+            'total_rows'       => count($rows),
             'valid_rows'       => count($validRows),
             'error_rows'       => count($errorRows),
             'validation_errors' => $errorRows,
@@ -72,24 +76,26 @@ class TimetableImportService
     public function executeImport($job): array
     {
         $filePath = StoredFile::localPath($job->file_path, 'private');
-        $rows = $this->readRows($filePath);
-        $header = array_map(fn ($h) => Str::slug(Str::lower(trim((string) $h)), '_'), $rows[0] ?? []);
-        $dataRows = array_slice($rows, 1);
+        $rows = TabularReader::read($filePath, self::EXPECTED_HEADERS)['rows'];
 
         $imported = 0;
         $skipReasons = [];
 
-        DB::transaction(function () use ($dataRows, $header, &$imported, &$skipReasons) {
-            foreach ($dataRows as $idx => $row) {
-                $record = $this->recordFromRow($header, $row);
-                $reason = $this->importRow($record);
-                if ($reason === null) {
-                    $imported++;
-                } else {
-                    $skipReasons[$idx + 2] = $reason;
-                }
+        foreach ($rows as $row) {
+            $record = $this->onlyColumns($row);
+
+            try {
+                $reason = DB::transaction(fn () => $this->importRow($record));
+            } catch (\Throwable $e) {
+                $reason = $e->getMessage();
             }
-        });
+
+            if ($reason === null) {
+                $imported++;
+            } else {
+                $skipReasons[$row['__row_number']] = $reason;
+            }
+        }
 
         $job->update([
             'imported_rows' => $imported,
@@ -103,6 +109,18 @@ class TimetableImportService
         ]);
 
         return ['imported' => $imported, 'skipped' => count($skipReasons)];
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, string>
+     */
+    private function onlyColumns(array $row): array
+    {
+        return array_diff_key(
+            $row,
+            array_flip(array_filter(array_keys($row), fn ($key) => str_starts_with((string) $key, '__')))
+        );
     }
 
     /**
@@ -198,13 +216,6 @@ class TimetableImportService
         return null;
     }
 
-    private function recordFromRow(array $header, array $row): array
-    {
-        $values = array_slice(array_pad(array_values($row), count($header), ''), 0, count($header));
-
-        return array_combine($header, $values);
-    }
-
     private function validateRow(array $record, int $rowNum): array
     {
         $errors = [];
@@ -235,33 +246,6 @@ class TimetableImportService
         }
 
         return $errors;
-    }
-
-    /**
-     * Read the uploaded spreadsheet into header+data row arrays.
-     * Supports CSV and real Excel files (the official template is XLSX).
-     */
-    private function readRows(string $path): array
-    {
-        $ext = Str::lower(pathinfo($path, PATHINFO_EXTENSION));
-
-        if (in_array($ext, ['xlsx', 'xlsm', 'xls'])) {
-            return $this->readSpreadsheet($path);
-        }
-
-        return $this->readCsv($path);
-    }
-
-    private function readSpreadsheet(string $path): array
-    {
-        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
-        $sheet = $spreadsheet->getActiveSheet();
-
-        // formatData=false keeps raw values; we normalise times ourselves.
-        $rows = $sheet->toArray(null, true, false, false);
-        $spreadsheet->disconnectWorksheets();
-
-        return array_map(fn ($row) => array_map(fn ($cell) => $this->cellToString($cell), $row), $rows);
     }
 
     /** Normalise spreadsheet cells to plain strings (times become H:i). */
@@ -310,17 +294,5 @@ class TimetableImportService
         }
 
         return null;
-    }
-
-    private function readCsv(string $path): array
-    {
-        $rows = [];
-        if (($handle = fopen($path, 'r')) !== false) {
-            while (($row = fgetcsv($handle)) !== false) {
-                $rows[] = $row;
-            }
-            fclose($handle);
-        }
-        return $rows;
     }
 }

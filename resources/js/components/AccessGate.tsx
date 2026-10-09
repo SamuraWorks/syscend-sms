@@ -35,10 +35,12 @@ export default function AccessGate() {
     const [permission, setPermission] = useState<NotificationPermission | null>(null);
     const [notifAcknowledged, setNotifAcknowledged] = useState(false);
 
-    const appName = schoolBranding?.name || 'Syscend Campus';
+    const appName = user?.school_id
+        ? (schoolBranding?.name || 'Syscend Campus')
+        : (user?.roles?.includes('super-admin') ? 'Syscend Admin' : 'Syscend Campus');
     const logo = user?.school_id
-        ? (schoolBranding?.badge_url || schoolBranding?.logo_url)
-        : platformLogoUrl;
+        ? (schoolBranding?.badge_url || schoolBranding?.logo_url || platformLogoUrl || '/images/logo.png')
+        : (platformLogoUrl || '/images/logo.png');
 
     useEffect(() => {
         setMounted(true);

@@ -122,16 +122,23 @@ class TeacherPortalController extends Controller
 
         $assignedSubjects = Timetable::where('school_id', $schoolId)
             ->where('teacher_id', $teacher->id)
-            ->where('status', 'published')
             ->with('subject:id,name')
             ->get()
             ->pluck('subject')
-            ->unique('id')
-            ->values();
+            ->filter();
+
+        $assignmentSubjects = TeacherSubjectAssignment::where('school_id', $schoolId)
+            ->where('staff_id', $teacher->id)
+            ->where('is_active', true)
+            ->with('subjectOffering.subject:id,name')
+            ->get()
+            ->pluck('subjectOffering.subject')
+            ->filter();
+
+        $assignedSubjects = $assignedSubjects->concat($assignmentSubjects)->unique('id')->values();
 
         $assignedClasses = Timetable::where('school_id', $schoolId)
             ->where('teacher_id', $teacher->id)
-            ->where('status', 'published')
             ->with(['schoolClass:id,name', 'section:id,name'])
             ->get()
             ->map(fn ($t) => ['class' => $t->schoolClass?->name, 'section' => $t->section?->name])
@@ -195,7 +202,6 @@ class TeacherPortalController extends Controller
         $timetableToday = Timetable::where('school_id', $schoolId)
             ->where('teacher_id', $teacher->id)
             ->where('day_of_week', strtolower($now->format('l')))
-            ->where('status', 'published')
             ->with(['subject:id,name', 'schoolClass:id,name', 'section:id,name'])
             ->orderBy('start_time')
             ->get()
@@ -286,7 +292,6 @@ class TeacherPortalController extends Controller
 
         $assignedSubjects = Timetable::where('school_id', $schoolId)
             ->where('teacher_id', $teacher->id)
-            ->where('status', 'published')
             ->with('subject:id,name,code')
             ->get()
             ->pluck('subject')
@@ -312,7 +317,6 @@ class TeacherPortalController extends Controller
 
         $teachingLoad = Timetable::where('school_id', $schoolId)
             ->where('teacher_id', $teacher->id)
-            ->where('status', 'published')
             ->with(['subject:id,name', 'schoolClass:id,name', 'section:id,name'])
             ->get()
             ->groupBy(fn ($t) => $t->schoolClass?->name . ' - ' . $t->section?->name)
@@ -394,7 +398,6 @@ class TeacherPortalController extends Controller
 
         $classSections = Timetable::where('school_id', $schoolId)
             ->where('teacher_id', $teacher->id)
-            ->where('status', 'published')
             ->with(['schoolClass:id,name', 'section:id,name', 'subject:id,name'])
             ->get()
             ->toBase()

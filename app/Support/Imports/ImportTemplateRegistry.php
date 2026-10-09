@@ -121,12 +121,11 @@ class ImportTemplateRegistry
                 'date_of_birth must be in YYYY-MM-DD format (e.g. 2010-05-15).',
                 'email must be a valid email address if provided.',
             ],
-            'headers' => ['student_id_no', 'first_name', 'last_name', 'middle_name', 'gender', 'date_of_birth', 'class_name', 'section_name', 'phone', 'email', 'parent_name', 'parent_phone', 'parent_email', 'parent_occupation', 'parent_address'],
+            'headers' => ['student_id_no', 'first_name', 'last_name', 'gender', 'date_of_birth', 'class_name', 'section_name', 'phone', 'email', 'parent_name', 'parent_phone', 'parent_email', 'parent_occupation', 'parent_address'],
             'columns' => [
                 ['name' => 'student_id_no',      'required' => false, 'valid' => 'Any unique text',            'description' => 'Unique student ID. Leave blank to auto-generate.',                    'example' => 'STU001'],
                 ['name' => 'first_name',          'required' => true,  'valid' => 'Text',                       'description' => 'Student first name.',                                                  'example' => 'John'],
                 ['name' => 'last_name',           'required' => true,  'valid' => 'Text',                       'description' => 'Student last name / surname.',                                         'example' => 'Kamara'],
-                ['name' => 'middle_name',         'required' => false, 'valid' => 'Text',                       'description' => 'Middle name (optional).',                                              'example' => ''],
                 ['name' => 'gender',              'required' => true,  'valid' => 'male OR female',             'description' => 'Must be exactly "male" or "female" (lowercase).',                      'example' => 'male'],
                 ['name' => 'date_of_birth',       'required' => false, 'valid' => 'YYYY-MM-DD',                'description' => 'Date of birth. Example: 15 May 2010 = 2010-05-15.',                    'example' => '2010-05-15'],
                 ['name' => 'class_name',          'required' => true,  'valid' => 'Must match existing class',  'description' => 'Must exactly match a class name in the system (case-insensitive).',     'example' => 'JSS 1'],
@@ -145,10 +144,10 @@ class ImportTemplateRegistry
     private static function studentSamples(): array
     {
         return [
-            ['STU001', 'John', 'Kamara', '', 'male', '2010-05-15', 'JSS 1', 'A', '+23276123456', '', 'Mary Kamara', '+23276123457', '', 'Teacher', 'Freetown'],
-            ['STU002', 'Fatima', 'Bangura', 'Amina', 'female', '2011-08-22', 'JSS 1', 'A', '+23276123458', 'fatima@example.com', 'Ibrahim Bangura', '+23276123459', 'ibrahim@example.com', 'Engineer', 'Bo'],
-            ['STU003', 'Ibrahim', 'Sesay', '', 'male', '2009-01-10', 'JSS 2', 'B', '', '', '', '', '', '', ''],
-            ['', 'Aisha', 'Mansaray', '', 'female', '2012-03-05', 'JSS 1', '', '+23276123460', '', 'Fatima Mansaray', '+23276123461', '', 'Nurse', 'Freetown'],
+            ['STU001', 'John', 'Kamara', 'male', '2010-05-15', 'JSS 1', 'A', '+23276123456', '', 'Mary Kamara', '+23276123457', '', 'Teacher', 'Freetown'],
+            ['STU002', 'Fatima', 'Bangura', 'female', '2011-08-22', 'JSS 1', 'A', '+23276123458', 'fatima@example.com', 'Ibrahim Bangura', '+23276123459', 'ibrahim@example.com', 'Engineer', 'Bo'],
+            ['STU003', 'Ibrahim', 'Sesay', 'male', '2009-01-10', 'JSS 2', 'B', '', '', '', '', '', '', ''],
+            ['', 'Aisha', 'Mansaray', 'female', '2012-03-05', 'JSS 1', '', '+23276123460', '', 'Fatima Mansaray', '+23276123461', '', 'Nurse', 'Freetown'],
         ];
     }
 
@@ -163,12 +162,11 @@ class ImportTemplateRegistry
                 'department_name and designation_name are optional but must match existing records if provided.',
                 'email must be valid if provided.',
             ],
-            'headers' => ['emp_id', 'first_name', 'last_name', 'middle_name', 'gender', 'date_of_birth', 'phone', 'email', 'department_name', 'designation_name', 'teacher_type'],
+            'headers' => ['emp_id', 'first_name', 'last_name', 'gender', 'date_of_birth', 'phone', 'email', 'department_name', 'designation_name', 'teacher_type'],
             'columns' => [
-                ['name' => 'emp_id',            'required' => true,  'valid' => 'Any unique text',            'description' => 'Unique employee ID. Must not duplicate existing records.',              'example' => 'TCH001'],
-                ['name' => 'first_name',        'required' => true,  'valid' => 'Text',                       'description' => 'Staff first name.',                                                   'example' => 'Sarah'],
-                ['name' => 'last_name',         'required' => true,  'valid' => 'Text',                       'description' => 'Staff last name / surname.',                                          'example' => 'Conteh'],
-                ['name' => 'middle_name',       'required' => false, 'valid' => 'Text',                       'description' => 'Middle name (optional).',                                             'example' => ''],
+                ['name' => 'emp_id',            'required' => true,  'valid' => 'Any unique text',            'description' => 'Unique staff ID.',                                                     'example' => 'TCH001'],
+                ['name' => 'first_name',         'required' => true,  'valid' => 'Text',                       'description' => 'Staff first name.',                                                   'example' => 'Sarah'],
+                ['name' => 'last_name',          'required' => true,  'valid' => 'Text',                       'description' => 'Staff last name / surname.',                                          'example' => 'Conteh'],
                 ['name' => 'gender',            'required' => true,  'valid' => 'male OR female',             'description' => 'Must be exactly "male" or "female" (lowercase).',                      'example' => 'female'],
                 ['name' => 'date_of_birth',     'required' => false, 'valid' => 'YYYY-MM-DD',                'description' => 'Date of birth.',                                                      'example' => '1990-03-20'],
                 ['name' => 'phone',             'required' => false, 'valid' => 'Phone number',              'description' => 'Phone number.',                                                       'example' => '+23276123458'],
@@ -183,10 +181,10 @@ class ImportTemplateRegistry
     private static function staffSamples(): array
     {
         return [
-            ['TCH001', 'Sarah', 'Conteh', '', 'female', '1990-03-20', '+23276123458', '', 'Mathematics', 'Senior Teacher', 'subject_teacher'],
-            ['TCH002', 'James', 'Koroma', 'Samuel', 'male', '1985-07-11', '+23276123459', 'james@example.com', 'English', 'Form Master', 'form_master'],
-            ['TCH003', 'Grace', 'Williams', '', 'female', '1992-11-01', '', '', 'Science', 'Lab Technician', 'non_teaching'],
-            ['TCH004', 'Mohamed', 'Turay', '', 'male', '1988-05-30', '+23276123460', '', 'Mathematics', 'Head of Department', 'both'],
+            ['TCH001', 'Sarah', 'Conteh', 'female', '1990-03-20', '+23276123458', '', 'Mathematics', 'Senior Teacher', 'subject_teacher'],
+            ['TCH002', 'James', 'Koroma', 'male', '1985-07-11', '+23276123459', 'james@example.com', 'English', 'Form Master', 'form_master'],
+            ['TCH003', 'Grace', 'Williams', 'female', '1992-11-01', '', '', 'Science', 'Lab Technician', 'non_teaching'],
+            ['TCH004', 'Mohamed', 'Turay', 'male', '1988-05-30', '+23276123460', '', 'Mathematics', 'Head of Department', 'both'],
         ];
     }
 

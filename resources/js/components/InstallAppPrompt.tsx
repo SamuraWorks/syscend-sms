@@ -8,7 +8,7 @@ const DISMISS_KEY = 'syscend_install_prompt_dismissed_v1';
 const MANUAL_EVENT = 'syscend:install-app';
 
 export default function InstallAppPrompt() {
-    const { schoolBranding, platformLogoUrl } = usePage<PageProps>().props;
+    const { auth, schoolBranding, platformLogoUrl } = usePage<PageProps>().props;
     const [canInstall, setCanInstall] = useState(false);
     const [visible, setVisible] = useState(false);
     const [installed, setInstalled] = useState<boolean | null>(null);
@@ -16,8 +16,13 @@ export default function InstallAppPrompt() {
     const alreadyInstalled = installed === true;
     const ios = typeof window !== 'undefined' && isIOS();
 
-    const appName = schoolBranding?.name || 'Syscend Campus';
-    const logo = schoolBranding?.logo_url || schoolBranding?.badge_url || platformLogoUrl;
+    const user = auth?.user;
+    const appName = user?.school_id
+        ? (schoolBranding?.name || 'Syscend Campus')
+        : (user?.roles?.includes('super-admin') ? 'Syscend Admin' : 'Syscend Campus');
+    const logo = user?.school_id
+        ? (schoolBranding?.badge_url || schoolBranding?.logo_url || platformLogoUrl || '/images/logo.png')
+        : (platformLogoUrl || '/images/logo.png');
 
     const dismiss = useCallback(() => {
         setVisible(false);

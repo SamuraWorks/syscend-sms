@@ -3,14 +3,20 @@
 namespace App\Services;
 
 use App\Models\{Guardian, ImportJob, SchoolClass, Section, Student};
+use App\Support\Imports\TabularReader;
 use App\Support\StoredFile;
-use Illuminate\Support\{DB, Str};
-use PhpOffice\PhpSpreadsheet\IOFactory;
+use Illuminate\Support\Facades\DB;
 
 class StudentImportService
 {
+    private const EXPECTED_HEADERS = [
+        'student_id_no', 'first_name', 'last_name', 'gender', 'date_of_birth',
+        'class_name', 'section_name', 'phone', 'email',
+        'parent_name', 'parent_phone', 'parent_email', 'parent_occupation', 'parent_address',
+    ];
+
     private const ALLOWED_COLUMNS = [
-        'student_id_no', 'first_name', 'last_name', 'middle_name', 'gender',
+        'student_id_no', 'first_name', 'last_name', 'gender',
         'date_of_birth', 'class_name', 'section_name', 'phone', 'email',
         'parent_name', 'parent_phone', 'parent_email', 'parent_occupation', 'parent_address',
     ];
@@ -32,31 +38,13 @@ class StudentImportService
             throw new \RuntimeException("Import file not found: {$job->file_name}");
         }
 
-        $spreadsheet = IOFactory::load($filePath);
-        $sheet = $spreadsheet->getActiveSheet();
-        $rows = $sheet->toArray(null, true, true, true);
-
-        if (count($rows) < 2) {
-            throw new \RuntimeException('Import file contains no data rows.');
-        }
-
-        $headers = array_map(fn($h) => Str::slug(trim($h), '_'), array_values($rows[1]));
-
-        $dataRows = [];
-        foreach ($rows as $rowIndex => $row) {
-            if ($rowIndex <= 1) continue;
-
-            $values = array_slice(array_pad(array_values($row), count($headers), ''), 0, count($headers));
-            $rowKeyed = array_combine($headers, $values);
-            $rowKeyed['__row_number'] = $rowIndex;
-            $dataRows[] = $rowKeyed;
-        }
+        $rows = TabularReader::read($filePath, self::EXPECTED_HEADERS)['rows'];
 
         $job->update([
-            'total_rows' => count($dataRows),
+            'total_rows' => count($rows),
         ]);
 
-        return $dataRows;
+        return $rows;
     }
 
     public function validateRows(ImportJob $job): array
@@ -66,9 +54,11 @@ class StudentImportService
         $errors = [];
 
         $existingStudentIds = Student::where('school_id', $this->schoolId)
-            ->pluck('student_id')
+            ->whereNotNull('admission_no')
+            ->pluck('admission_no')
             ->map(fn($id) => strtolower($id))
             ->toArray();
+
 
         $existingClasses = SchoolClass::where('school_id', $this->schoolId)
             ->get()
@@ -184,8 +174,6 @@ class StudentImportService
     {
         $validation = $this->validateRows($job);
         $validRows = $validation['valid'];
-        $batchSize = 50;
-        $batches = array_chunk($validRows, $batchSize);
 
         $summary = [
             'students_created'  => 0,
@@ -199,16 +187,14 @@ class StudentImportService
 
         $resolver = new \App\Services\ParentIdentityResolver($this->schoolId);
 
-        foreach ($batches as $batch) {
-            DB::transaction(function () use ($batch, &$summary, $resolver) {
-                foreach ($batch as $row) {
-                    try {
-                        $this->processRow($row, $summary, $resolver);
-                    } catch (\Throwable $e) {
-                        $summary['errors'][$row['__row_number']] = $e->getMessage();
-                    }
-                }
-            });
+        foreach ($validRows as $row) {
+            try {
+                DB::transaction(function () use ($row, &$summary, $resolver) {
+                    $this->processRow($row, $summary, $resolver);
+                });
+            } catch (\Throwable $e) {
+                $summary['errors'][$row['__row_number']] = $e->getMessage();
+            }
         }
 
         $job->update([
@@ -223,14 +209,7 @@ class StudentImportService
 
     private function processRow(array $row, array &$summary, \App\Services\ParentIdentityResolver $resolver): void
     {
-        $studentId = trim($row['student_id_no'] ?? '');
-        if ($studentId === '') {
-            $studentId = strtoupper(
-                date('Y') .
-                substr($this->getSchoolCode(), 0, 3) .
-                str_pad($summary['students_created'] + 1, 4, '0', STR_PAD_LEFT)
-            );
-        }
+        $admissionNo = trim($row['student_id_no'] ?? '');
 
         $guardianId = null;
         $parentName = trim($row['parent_name'] ?? '');
@@ -288,10 +267,9 @@ class StudentImportService
         Student::create([
             'school_id'             => $this->schoolId,
             'user_id'               => null,
-            'student_id'            => $studentId,
+            'admission_no'          => $admissionNo !== '' ? $admissionNo : null,
             'first_name'            => $row['first_name'],
             'last_name'             => $row['last_name'],
-            'middle_name'           => $row['middle_name'] ?? null,
             'gender'                => $row['__gender'],
             'date_of_birth'         => $row['date_of_birth'] ?? null,
             'class_id'              => $row['__class_id'],
@@ -305,10 +283,5 @@ class StudentImportService
         ]);
 
         $summary['students_created']++;
-    }
-
-    private function getSchoolCode(): string
-    {
-        return \App\Models\School::where('id', $this->schoolId)->value('code') ?? 'SCH';
     }
 }
