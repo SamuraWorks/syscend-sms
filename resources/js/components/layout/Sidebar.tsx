@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { useUIStore } from '@/Stores/useUIStore';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { requestInstallPrompt } from '@/components/InstallAppPrompt';
+import { isStandalone } from '@/lib/pwa';
 import type { PageProps } from '@/Types';
 
 interface NavItem {
@@ -700,7 +701,7 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
 }
 
 export default function Sidebar() {
-    const { auth, schoolBranding } = usePage<PageProps>().props;
+    const { auth, schoolBranding, schoolSetupComplete } = usePage<PageProps>().props;
     const { sidebarCollapsed, toggleCollapsed } = useUIStore();
     const activeRole = auth?.user?.activeRole ?? auth?.user?.role ?? '';
     const branding = schoolBranding as Record<string, any> | null;
@@ -712,6 +713,21 @@ export default function Sidebar() {
         window.addEventListener('resize', check);
         return () => window.removeEventListener('resize', check);
     }, []);
+
+    const [standalone, setStandalone] = useState(false);
+    useEffect(() => {
+        setStandalone(isStandalone());
+    }, []);
+
+    // Schools only get the download option once setup is complete; platform
+    // staff (super admin, ministry) always can.
+    const isSchoolUser = !!auth?.user?.school_id;
+    const showDownload = (!isSchoolUser || schoolSetupComplete !== false) && !standalone;
+
+    const openInstallPrompt = () => {
+        useUIStore.getState().setSidebarOpen(false);
+        requestInstallPrompt();
+    };
 
     // On mobile, always show expanded sidebar
     const collapsed = sidebarCollapsed && !isMobile;
@@ -769,19 +785,21 @@ export default function Sidebar() {
 
                 {/* Download app — works even before the browser fires the
                     install prompt (shows iOS/home-screen instructions too) */}
-                <div className="px-2 pb-2">
-                    <button
-                        type="button"
-                        onClick={requestInstallPrompt}
-                        className={cn(
-                            'flex w-full items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-secondary-foreground hover:bg-accent hover:text-foreground transition-colors',
-                            collapsed && 'md:justify-center md:px-0',
-                        )}
-                    >
-                        <Smartphone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                        {!collapsed && <span>Download App</span>}
-                    </button>
-                </div>
+                {showDownload && (
+                    <div className="px-2 pb-2">
+                        <button
+                            type="button"
+                            onClick={openInstallPrompt}
+                            className={cn(
+                                'flex w-full items-center gap-2.5 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-secondary-foreground hover:bg-accent hover:text-foreground transition-colors',
+                                collapsed && 'md:justify-center md:px-0',
+                            )}
+                        >
+                            <Smartphone className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                            {!collapsed && <span>Download App</span>}
+                        </button>
+                    </div>
+                )}
 
                 {/* Collapse toggle — hidden on mobile */}
                 <button

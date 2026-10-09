@@ -6,7 +6,6 @@ import Topbar from '@/components/layout/Topbar';
 import LicenseBanner from '@/components/layout/LicenseBanner';
 import PageProgress from '@/components/layout/PageProgress';
 import InstallAppPrompt from '@/components/InstallAppPrompt';
-import NotificationPrompt from '@/components/NotificationPrompt';
 import { useAuthStore } from '@/Stores/useAuthStore';
 import { useUIStore } from '@/Stores/useUIStore';
 import { cn } from '@/lib/utils';
@@ -19,7 +18,7 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children, title, breadcrumbs }: AppLayoutProps) {
-    const { flash, faviconUrl, schoolBranding } = usePage<PageProps>().props;
+    const { flash, faviconUrl, schoolBranding, platformLogoUrl } = usePage<PageProps>().props;
     const theme = useAuthStore((s) => s.theme);
     const { sidebarOpen } = useUIStore();
 
@@ -52,8 +51,8 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
             apple.setAttribute('sizes', '180x180');
             document.head.appendChild(apple);
         }
-        apple.href = schoolBranding?.logo_url || '/images/logo.png';
-    }, [schoolBranding]);
+        apple.href = schoolBranding?.logo_url || schoolBranding?.badge_url || platformLogoUrl || '/images/logo.png';
+    }, [schoolBranding, platformLogoUrl]);
 
     // Dark mode sync
     useEffect(() => {
@@ -124,7 +123,6 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
             </div>
 
             <InstallAppPrompt />
-            <NotificationPrompt />
         </div>
     );
 }

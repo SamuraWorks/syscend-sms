@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
-import { Plus, Pencil, Trash2, BookOpen, ToggleLeft, ToggleRight, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, BookOpen, ToggleLeft, ToggleRight, Search, Upload } from 'lucide-react';
 import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import ImportUploadDialog from '@/components/ImportUploadDialog';
 import type { PageProps, SchoolClass, Subject, Department, PaginatedResponse } from '@/Types';
 
 interface Props extends PageProps {
@@ -52,6 +53,7 @@ export default function SubjectsIndex() {
     const { subjects, classes, departments, flash, errors: serverErrors } = usePage<Props>().props;
 
     const [open, setOpen] = useState(false);
+    const [importOpen, setImportOpen] = useState(false);
     const [editing, setEditing] = useState<Subject | null>(null);
     const [deleteDialog, setDeleteDialog] = useState<Subject | null>(null);
     const [search, setSearch] = useState(new URLSearchParams(window.location.search).get('search') ?? '');
@@ -155,9 +157,14 @@ export default function SubjectsIndex() {
                     <h1 className="text-xl font-bold text-slate-900 dark:text-white">Subjects</h1>
                     <p className="text-sm text-slate-500 mt-0.5">{subjects.meta.total} subject{subjects.meta.total !== 1 ? 's' : ''} configured</p>
                 </div>
-                <Button onClick={openCreate} className="bg-indigo-600 hover:bg-indigo-700 text-white inline-flex items-center gap-2">
-                    <Plus className="w-4 h-4" /> Add Subject
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={() => setImportOpen(true)} className="inline-flex items-center gap-2">
+                        <Upload className="w-4 h-4" /> Import Subjects
+                    </Button>
+                    <Button onClick={openCreate} className="bg-indigo-600 hover:bg-indigo-700 text-white inline-flex items-center gap-2">
+                        <Plus className="w-4 h-4" /> Add Subject
+                    </Button>
+                </div>
             </div>
 
             {flash?.success && (
@@ -404,6 +411,8 @@ export default function SubjectsIndex() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <ImportUploadDialog open={importOpen} onOpenChange={setImportOpen} type="subjects" label="Subjects" />
         </AppLayout>
     );
 }

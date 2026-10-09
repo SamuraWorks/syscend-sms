@@ -36,7 +36,16 @@ class SchoolSetupProgress extends Model
 
     public static function allRequiredDone(int $schoolId): bool
     {
-        $required = ['profile', 'academic_structure', 'academic_year', 'assessment', 'grading'];
+        // Must mirror SetupWizardController::STEPS (required = true).
+        $required = [
+            'profile',
+            'school_operations',
+            'academic_structure',
+            'subjects',
+            'academic_year',
+            'assessment',
+            'grading',
+        ];
         $completed = static::getCompletedSteps($schoolId);
         return empty(array_diff($required, $completed));
     }

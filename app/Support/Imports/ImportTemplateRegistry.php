@@ -11,7 +11,7 @@ namespace App\Support\Imports;
  */
 class ImportTemplateRegistry
 {
-    public const TYPES = ['students', 'parents', 'staff', 'curriculum', 'timetables'];
+    public const TYPES = ['students', 'parents', 'staff', 'subjects', 'curriculum', 'timetables'];
 
     public static function supports(string $type): bool
     {
@@ -45,6 +45,7 @@ class ImportTemplateRegistry
             'students'   => self::studentInstructions(),
             'staff'      => self::staffInstructions(),
             'parents'    => self::parentInstructions(),
+            'subjects'   => self::subjectInstructions(),
             'curriculum' => self::curriculumInstructions(),
             'timetables' => self::timetableInstructions(),
             default      => throw new \InvalidArgumentException("Unknown import type [{$type}]."),
@@ -60,10 +61,50 @@ class ImportTemplateRegistry
             'students'   => self::studentSamples(),
             'staff'      => self::staffSamples(),
             'parents'    => self::parentSamples(),
+            'subjects'   => self::subjectSamples(),
             'curriculum' => self::curriculumSamples(),
             'timetables' => self::timetableSamples(),
             default      => throw new \InvalidArgumentException("Unknown import type [{$type}]."),
         };
+    }
+
+    private static function subjectInstructions(): array
+    {
+        return [
+            'description' => 'Fill in the Sample Data sheet with your subjects. Each row creates one subject for a class. Classes and departments must already exist in the system.',
+            'rules' => [
+                'class_name and name are REQUIRED.',
+                'class_name must match an existing class in your school exactly (case-insensitive).',
+                'type must be either "theory" or "practical" (lowercase). Default: theory.',
+                'code is optional but must be unique within your school if provided.',
+                'department_name is optional and only allowed for Senior Secondary (SSS) classes.',
+                'full_marks and pass_marks are optional whole numbers.',
+                'is_core must be "yes" or "no". Default: yes.',
+                'A subject is also added to the current curriculum automatically.',
+            ],
+            'headers' => ['class_name', 'name', 'code', 'type', 'full_marks', 'pass_marks', 'department_name', 'is_core'],
+            'columns' => [
+                ['name' => 'class_name',       'required' => true,  'valid' => 'Must match existing class',  'description' => 'Class the subject belongs to. Must exist in the system.',            'example' => 'JSS 1'],
+                ['name' => 'name',             'required' => true,  'valid' => 'Text',                       'description' => 'Subject name.',                                                      'example' => 'Mathematics'],
+                ['name' => 'code',            'required' => false, 'valid' => 'Any unique text',            'description' => 'Subject code. Must not duplicate an existing code in your school.',  'example' => 'MATH'],
+                ['name' => 'type',            'required' => false, 'valid' => 'theory OR practical',        'description' => 'Type of subject. Default: theory.',                                  'example' => 'theory'],
+                ['name' => 'full_marks',       'required' => false, 'valid' => 'Whole number',               'description' => 'Maximum marks for the subject.',                                     'example' => '100'],
+                ['name' => 'pass_marks',       'required' => false, 'valid' => 'Whole number',               'description' => 'Minimum marks required to pass.',                                    'example' => '33'],
+                ['name' => 'department_name',  'required' => false, 'valid' => 'Must match existing dept',   'description' => 'Department (only for Senior Secondary / SSS subjects).',            'example' => 'Science'],
+                ['name' => 'is_core',          'required' => false, 'valid' => 'yes OR no',                  'description' => 'Whether the subject is a core subject. Default: yes.',              'example' => 'yes'],
+            ],
+        ];
+    }
+
+    private static function subjectSamples(): array
+    {
+        return [
+            ['JSS 1', 'Mathematics', 'MATH', 'theory', '100', '33', '', 'yes'],
+            ['JSS 1', 'Basic Science', 'BSCI', 'theory', '100', '33', '', 'yes'],
+            ['JSS 2', 'Agricultural Science', 'AGRI', 'practical', '100', '40', '', 'no'],
+            ['SSS 1', 'Physics', 'PHY', 'theory', '100', '40', 'Science', 'yes'],
+            ['JSS 1', 'French', '', 'theory', '', '', '', 'no'],
+        ];
     }
 
     private static function studentInstructions(): array

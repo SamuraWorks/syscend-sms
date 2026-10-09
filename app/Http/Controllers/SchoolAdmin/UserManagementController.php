@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\{Department, Designation, SchoolClass, Section, Staff, Student, User, UserAuditLog};
 use App\Services\{PasswordGeneratorService, RoleRegistry, UserCreationService};
 use Illuminate\Http\{RedirectResponse, Request};
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\{DB, Log};
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
@@ -351,17 +351,29 @@ class UserManagementController extends Controller
             'roles.*' => ['required', 'string', \Illuminate\Validation\Rule::in(RoleRegistry::SCHOOL_MANAGEABLE_ROLES)],
         ]);
 
-        $service = new UserCreationService($this->getSchoolId(), auth()->id());
-        $service->updateRoles($user, $data['roles']);
-        $this->ensureStaffRecordsForRoles($user, $data['roles']);
+        try {
+            $service = new UserCreationService($this->getSchoolId(), auth()->id());
+            $service->updateRoles($user, $data['roles']);
+            $this->ensureStaffRecordsForRoles($user, $data['roles']);
 
-        UserAuditLog::log(
-            $this->getSchoolId(),
-            $user->id,
-            auth()->id(),
-            'roles_updated',
-            'Roles changed to: ' . implode(', ', $data['roles'])
-        );
+            UserAuditLog::log(
+                $this->getSchoolId(),
+                $user->id,
+                auth()->id(),
+                'roles_updated',
+                'Roles changed to: ' . implode(', ', $data['roles'])
+            );
+        } catch (\Throwable $e) {
+            Log::error('Role assignment failed', [
+                'user_id'   => $user->id,
+                'school_id' => $this->getSchoolId(),
+                'actor_id'  => auth()->id(),
+                'roles'     => $data['roles'],
+                'exception' => $e,
+            ]);
+
+            return back()->with('error', 'Could not update roles: ' . $e->getMessage());
+        }
 
         return back()->with('success', 'Roles updated.');
     }

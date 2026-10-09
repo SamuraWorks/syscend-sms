@@ -4,7 +4,7 @@ import { createInertiaApp, usePage } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { Toaster } from '@/components/ui/sonner';
-import InstallGate from '@/components/InstallGate';
+import AccessGate from '@/components/AccessGate';
 import { ensureWebPushSubscription } from '@/lib/webPush';
 import type { PageProps } from '@/Types';
 
@@ -80,7 +80,7 @@ createInertiaApp({
                         <>
                             <Component {...pageProps} key={key} />
                             <WebPushBootstrap />
-                            <InstallGate />
+                            <AccessGate />
                             <Toaster richColors position="top-right" />
                         </>
                     )}

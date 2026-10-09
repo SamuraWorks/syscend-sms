@@ -338,14 +338,20 @@ Route::middleware('auth')->group(function () {
             // ── Active Role Switching ──
             Route::post('switch-role', function (\Illuminate\Http\Request $request) {
                 $user = $request->user();
-                $roles = $user->getRoleNames()->toArray();
-                $requested = $request->input('role');
+                $roles = $user->getRoleNames()->all();
+                $requested = (string) $request->input('role');
 
-                if (in_array($requested, $roles)) {
-                    session(['active_role' => $requested]);
+                if (! in_array($requested, $roles, true)) {
+                    return back()->with('error', 'You do not have that role.');
                 }
 
-                return back();
+                session(['active_role' => $requested]);
+
+                $dashboard = RoleRegistry::dashboardRoute($requested);
+
+                return \Illuminate\Support\Facades\Route::has($dashboard)
+                    ? redirect()->route($dashboard)
+                    : back();
             })->name('switch-role');
 
             // ── School Time Settings — admin only ──

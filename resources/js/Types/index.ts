@@ -127,6 +127,7 @@ export interface PageProps {
     };
     faviconUrl: string | null;
     platformLogoUrl: string | null;
+    schoolSetupComplete?: boolean;
     webPush?: { enabled: boolean; vapidPublicKey: string | null } | null;
     errors: Record<string, string>;
     import_errors?: string[];

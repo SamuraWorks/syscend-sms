@@ -14,6 +14,7 @@ const TYPE_CONFIG: Record<string, { label: string; icon: typeof GraduationCap; c
     students: { label: 'Students', icon: GraduationCap, color: 'text-blue-600', bg: 'hover:border-blue-400 dark:hover:border-blue-600', desc: 'Import student records from CSV or Excel' },
     parents: { label: 'Parents', icon: Users, color: 'text-green-600', bg: 'hover:border-green-400 dark:hover:border-green-600', desc: 'Import parent/guardian records' },
     staff: { label: 'Staff', icon: Users, color: 'text-purple-600', bg: 'hover:border-purple-400 dark:hover:border-purple-600', desc: 'Import teacher and staff records' },
+    subjects: { label: 'Subjects', icon: BookOpen, color: 'text-teal-600', bg: 'hover:border-teal-400 dark:hover:border-teal-600', desc: 'Import subject records for your classes' },
     curriculum: { label: 'Curriculum', icon: BookOpen, color: 'text-orange-600', bg: 'hover:border-orange-400 dark:hover:border-orange-600', desc: 'Import classes, subjects, and assignments' },
     timetables: { label: 'Timetables', icon: FileSpreadsheet, color: 'text-amber-600', bg: 'hover:border-amber-400 dark:hover:border-amber-600', desc: 'Import timetable schedules' },
 };

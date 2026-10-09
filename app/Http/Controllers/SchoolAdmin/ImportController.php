@@ -11,6 +11,7 @@ use App\Services\CurriculumImportService;
 use App\Services\ParentImportService;
 use App\Services\StaffImportService;
 use App\Services\StudentImportService;
+use App\Services\SubjectImportService;
 use App\Services\TimetableImportService;
 use App\Support\Imports\ImportTemplateRegistry;
 use Illuminate\Http\JsonResponse;
@@ -357,7 +358,7 @@ class ImportController extends Controller
         return response()->json($result);
     }
 
-    private function getImportService(string $type): StudentImportService|StaffImportService|ParentImportService|CurriculumImportService|TimetableImportService
+    private function getImportService(string $type): StudentImportService|StaffImportService|ParentImportService|CurriculumImportService|TimetableImportService|SubjectImportService
     {
         $schoolId = $this->getSchoolId();
 
@@ -365,6 +366,7 @@ class ImportController extends Controller
             'students'   => new StudentImportService($schoolId),
             'parents'    => new ParentImportService($schoolId),
             'staff'      => new StaffImportService($schoolId),
+            'subjects'   => new SubjectImportService($schoolId),
             'curriculum' => new CurriculumImportService($schoolId),
             'timetables' => new TimetableImportService($schoolId),
             default      => abort(404),

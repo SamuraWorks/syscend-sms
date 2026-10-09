@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\PlatformSetting;
 use App\Models\School;
 use App\Models\SchoolSetting;
+use App\Models\SchoolSetupProgress;
 use App\Services\RoleRegistry;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -135,6 +136,14 @@ class HandleInertiaRequests extends Middleware
                     'package_name'     => $sub->package?->name,
                     'currency_symbol'  => $school->currency_symbol,
                 ];
+            }),
+            'schoolSetupComplete' => fn () => once(function () use ($request) {
+                $user = $request->user();
+                if (! $user || ! $user->school_id) {
+                    return true;
+                }
+
+                return SchoolSetupProgress::allRequiredDone($user->school_id);
             }),
             'schoolConfig' => fn () => once(function () use ($request) {
                 $user = $request->user();

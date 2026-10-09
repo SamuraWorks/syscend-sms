@@ -38,6 +38,7 @@ const TYPE_STYLE: Record<string, string> = {
     students: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400',
     parents: 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400',
     staff: 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400',
+    subjects: 'bg-teal-100 text-teal-700 dark:bg-teal-950/50 dark:text-teal-400',
     curriculum: 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400',
 };
 
