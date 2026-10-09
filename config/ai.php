@@ -2,6 +2,7 @@
 
 use App\Services\AI\Prompts\AnnouncementPrompt;
 use App\Services\AI\Prompts\HomepagePrompt;
+use App\Services\AI\Prompts\ImportColumnMappingPrompt;
 use App\Services\AI\Prompts\LessonPlanPrompt;
 
 return [
@@ -30,12 +31,18 @@ return [
     | Provider selection
     |--------------------------------------------------------------------------
     |
-    | The provider abstraction allows a second provider to be introduced later
-    | without touching feature controllers. Only 'openai' ships today.
+    | `provider_chain` is tried in order; providers without credentials are
+    | skipped, so Gemini is used first and OpenAI is the fallback. Set
+    | AI_PROVIDER_CHAIN to a comma-separated list to change the order.
     |
     */
 
-    'provider' => env('AI_PROVIDER', 'openai'),
+    'provider'       => env('AI_PROVIDER') ?: 'gemini',
+
+    'provider_chain' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', env('AI_PROVIDER_CHAIN') ?: 'gemini,openai')
+    ))),
 
     'providers' => [
         'openai' => [
@@ -49,6 +56,18 @@ return [
                 'attempts'    => (int) env('OPENAI_RETRY_ATTEMPTS', 2),
                 'backoff_ms'  => (int) env('OPENAI_RETRY_BACKOFF_MS', 800),
                 'max_token_ms' => (int) env('OPENAI_RETRY_RATE_LIMIT_MS', 2000),
+            ],
+        ],
+
+        'gemini' => [
+            'api_key'    => env('GEMINI_API_KEY'),
+            'base_url'   => rtrim(env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'), '/'),
+            'model'      => env('GEMINI_MODEL', 'gemini-2.0-flash'),
+            'timeout'    => (int) env('GEMINI_TIMEOUT', 90),
+            'max_tokens' => (int) env('GEMINI_MAX_TOKENS', 2048),
+            'retries'    => [
+                'attempts'    => (int) env('GEMINI_RETRY_ATTEMPTS', 2),
+                'backoff_ms'  => (int) env('GEMINI_RETRY_BACKOFF_MS', 800),
             ],
         ],
     ],
@@ -119,6 +138,21 @@ return [
             'limits'          => [
                 'per_school_per_day' => (int) env('OPENAI_LESSON_PLAN_SCHOOL_DAILY_LIMIT', 20),
                 'per_user_per_day'   => (int) env('OPENAI_LESSON_PLAN_USER_DAILY_LIMIT', 10),
+            ],
+        ],
+
+        'import_column_mapping' => [
+            'label'           => 'Import Column Mapping',
+            'temperature'     => 0.1,
+            'max_tokens'      => 2048,
+            'timeout'         => 90,
+            'enabled'         => (bool) env('OPENAI_IMPORT_MAPPING_ENABLED', true),
+            'prompt'          => ImportColumnMappingPrompt::class,
+            'allowed_roles'   => ['school-admin', 'principal'],
+            'cache_ttl'       => 0,
+            'limits'          => [
+                'per_school_per_day' => (int) env('OPENAI_IMPORT_MAPPING_SCHOOL_DAILY_LIMIT', 50),
+                'per_user_per_day'   => (int) env('OPENAI_IMPORT_MAPPING_USER_DAILY_LIMIT', 20),
             ],
         ],
     ],

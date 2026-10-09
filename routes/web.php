@@ -776,6 +776,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/create/{type}', [ImportController::class, 'create'])->name('create');
             Route::get('/template/{type}', [ImportController::class, 'downloadTemplate'])->name('template');
             Route::post('/upload/{type}', [ImportController::class, 'upload'])->name('upload');
+            Route::post('/{job}/analyze', [ImportController::class, 'analyzeStructure'])->name('analyze');
             Route::get('/preview/{job}', [ImportController::class, 'preview'])->name('preview');
             Route::post('/execute/{job}', [ImportController::class, 'execute'])->name('execute');
         });

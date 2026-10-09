@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Scopes\SchoolScope;
 use App\Traits\BelongsToSchool;
 use Illuminate\Database\Eloquent\{Model, SoftDeletes};
 use Illuminate\Database\Eloquent\Relations\{BelongsTo};
@@ -35,4 +36,15 @@ class ImportJob extends Model
     public function user(): BelongsTo { return $this->belongsTo(User::class); }
     public function scopeForType($query, string $type) { return $query->where('import_type', $type); }
     public function scopeRecent($query) { return $query->latest()->limit(20); }
+
+    /**
+     * Resolve route-bound jobs across schools so the controller can answer with
+     * an explicit 403 instead of the global scope masking it as a 404.
+     * Ownership is still enforced by the controller after binding.
+     */
+    public function resolveRouteBindingQuery($query, $value, $field = null)
+    {
+        return $query->withoutGlobalScope(SchoolScope::class)
+            ->where($field ?? $this->getRouteKeyName(), $value);
+    }
 }

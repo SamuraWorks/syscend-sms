@@ -41,13 +41,13 @@ class AIFeatureTest extends TestCase
         $this->getJson(route('school.ai.status'))
             ->assertOk()
             ->assertJsonPath('globally_enabled', true)
-            ->assertJsonPath('provider', 'openai')
+            ->assertJsonPath('provider', 'gemini')
             ->assertJsonPath('features.0.feature', 'homepage')
             ->assertJsonPath('features.0.label', 'School Homepage')
             ->assertJsonPath('features.0.enabled', true)
             ->assertJsonPath('features.0.has_credentials', true)
             ->assertJsonPath('features.0.allowed', true)
-            ->assertJsonCount(3, 'features');
+            ->assertJsonCount(4, 'features');
     }
 
     public function test_homepage_generate_returns_a_draft_and_records_usage(): void

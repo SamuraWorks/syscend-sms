@@ -17,14 +17,14 @@ class NotificationController extends Controller
     public function index(Request $request)
     {
         $filters = $this->filters($request);
-        $items = $this->service->feed($request->user(), $filters);
+        $page = $this->service->page($request->user(), $filters);
 
         return Inertia::render('SuperAdmin/Notifications/Index', [
-            'notifications'  => $items,
-            'unread_count'   => $this->service->unreadCount($request->user()),
-            'type_counts'    => $this->service->typeCounts($request->user()),
-            'severity_counts' => $this->service->severityCounts($request->user()),
-            'filters'        => $filters,
+            'notifications'   => $page['notifications'],
+            'unread_count'    => $page['unread_count'],
+            'type_counts'     => $page['type_counts'],
+            'severity_counts' => $page['severity_counts'],
+            'filters'         => $filters,
         ]);
     }
 

@@ -1,3 +1,21 @@
+/** Reject if a promise has not settled within `ms` — guards against a
+ *  `navigator.serviceWorker.ready` that never resolves when no worker is active. */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('Timed out waiting for service worker')), ms);
+        promise.then(
+            (value) => {
+                clearTimeout(timer);
+                resolve(value);
+            },
+            (error) => {
+                clearTimeout(timer);
+                reject(error);
+            },
+        );
+    });
+}
+
 function bufferToBase64(buffer: ArrayBuffer): string {
     const bytes = new Uint8Array(buffer);
     let binary = '';
@@ -22,7 +40,7 @@ export async function ensureWebPushSubscription(vapidPublicKey: string | null | 
     if (Notification.permission !== 'granted') return false;
 
     try {
-        const registration = await navigator.serviceWorker.ready;
+        const registration = await withTimeout(navigator.serviceWorker.ready, 8000);
         let subscription = await registration.pushManager.getSubscription();
 
         if (!subscription) {

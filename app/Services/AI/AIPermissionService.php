@@ -15,6 +15,7 @@ class AIPermissionService
     public const FEATURE_HOMEPAGE   = 'homepage';
     public const FEATURE_ANNOUNCEMENT = 'announcement';
     public const FEATURE_LESSON_PLAN  = 'lesson_plan';
+    public const FEATURE_IMPORT_COLUMN_MAPPING = 'import_column_mapping';
 
     public function canUse(User $user, string $feature): bool
     {

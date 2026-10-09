@@ -1,6 +1,5 @@
 import { ShieldCheck, ArrowRight } from 'lucide-react';
 import { Link } from '@inertiajs/react';
-import Logo from '@/components/landing/Logo';
 
 export default function Hero() {
     return (
@@ -18,11 +17,6 @@ export default function Hero() {
             </div>
 
             <div className="relative z-10 mx-auto w-full max-w-5xl px-5 pb-20 pt-28 text-center sm:px-8 lg:pb-28 lg:pt-32">
-                {/* Existing Syscend logo, directly over the photograph */}
-                <div className="mb-8 flex justify-center">
-                    <Logo tone="light" />
-                </div>
-
                 {/* Security badge — the only small container allowed */}
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.22em] text-white/95 backdrop-blur-sm">
                     <ShieldCheck className="size-3.5" aria-hidden="true" />

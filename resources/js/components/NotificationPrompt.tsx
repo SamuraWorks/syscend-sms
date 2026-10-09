@@ -36,8 +36,10 @@ export default function NotificationPrompt() {
     const enable = async () => {
         try {
             const permission = await Notification.requestPermission();
+            setVisible(false);
             if (permission === 'granted' && webPush?.enabled && webPush.vapidPublicKey) {
-                await ensureWebPushSubscription(webPush.vapidPublicKey);
+                // Do not block dismissal on the subscription round-trip.
+                void ensureWebPushSubscription(webPush.vapidPublicKey);
             }
         } catch {
             /* ignore */

@@ -10,6 +10,7 @@ use App\Models\SubscriptionPayment;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * Builds the platform-wide notification feed for super-admins.
@@ -32,6 +33,15 @@ class PlatformNotificationService
     private const PER_SOURCE_LIMIT = 25;
 
     /**
+     * How long the unread badge count is cached per user. The badge is polled
+     * every 15s and building it means ~10 source queries, so this collapses the
+     * poll load. The feed itself is never cached across requests (source
+     * changes must surface immediately); only this derived number is. Read /
+     * dismiss bust it immediately via forgetFeed().
+     */
+    private const UNREAD_CACHE_TTL_SECONDS = 60;
+
+    /**
      * Severity ordering used for sorting: most severe first.
      */
     private const SEVERITY_RANK = ['critical' => 0, 'warning' => 1, 'info' => 2];
@@ -42,6 +52,63 @@ class PlatformNotificationService
      * @param  array<string, mixed>  $filters  type / severity / status
      */
     public function feed(User $user, array $filters = []): Collection
+    {
+        return $this->applyFilters($this->buildFeed($user), $filters);
+    }
+
+    /**
+     * Build the feed and every derived count from a single source sweep, so a
+     * page render costs one sweep instead of one per count.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return array{notifications: Collection, unread_count: int, type_counts: array<string, int>, severity_counts: array<string, int>}
+     */
+    public function page(User $user, array $filters = []): array
+    {
+        $all = $this->buildFeed($user);
+        $active = $this->applyFilters($all, []);
+
+        return [
+            'notifications'   => $this->applyFilters($all, $filters),
+            'unread_count'    => $active->where('is_read', false)->count(),
+            'type_counts'     => $active->groupBy('type')->map->count()->all(),
+            'severity_counts' => $active->groupBy('severity')->map->count()->all(),
+        ];
+    }
+
+    /**
+     * Apply the type / severity / status filters to a built feed.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    private function applyFilters(Collection $items, array $filters): Collection
+    {
+        // Dismissed items stay retrievable but never clutter the default view.
+        if (($filters['status'] ?? 'active') === 'active') {
+            $items = $items->reject(fn (array $i) => $i['is_dismissed'])->values();
+        }
+
+        if (($filters['status'] ?? 'active') === 'unread') {
+            $items = $items
+                ->reject(fn (array $i) => $i['is_dismissed'] || $i['is_read'])
+                ->values();
+        }
+
+        if (! empty($filters['type']) && $filters['type'] !== 'all') {
+            $items = $items->where('type', $filters['type'])->values();
+        }
+
+        if (! empty($filters['severity']) && $filters['severity'] !== 'all') {
+            $items = $items->where('severity', $filters['severity'])->values();
+        }
+
+        return $items->values();
+    }
+
+    /**
+     * Pull every source, merge, attach per-user read state and sort.
+     */
+    private function buildFeed(User $user): Collection
     {
         $items = $this->collect()
             ->merge($this->demoRequests())
@@ -64,25 +131,6 @@ class PlatformNotificationService
             return $item;
         });
 
-        // Dismissed items stay retrievable but never clutter the default view.
-        if (($filters['status'] ?? 'active') === 'active') {
-            $items = $items->reject(fn (array $i) => $i['is_dismissed'])->values();
-        }
-
-        if (($filters['status'] ?? 'active') === 'unread') {
-            $items = $items
-                ->reject(fn (array $i) => $i['is_dismissed'] || $i['is_read'])
-                ->values();
-        }
-
-        if (! empty($filters['type']) && $filters['type'] !== 'all') {
-            $items = $items->where('type', $filters['type'])->values();
-        }
-
-        if (! empty($filters['severity']) && $filters['severity'] !== 'all') {
-            $items = $items->where('severity', $filters['severity'])->values();
-        }
-
         return $items
             ->sortBy([
                 fn ($a, $b) => self::SEVERITY_RANK[$a['severity']] <=> self::SEVERITY_RANK[$b['severity']],
@@ -92,11 +140,24 @@ class PlatformNotificationService
     }
 
     /**
-     * Number of notifications the user has not read.
+     * Drop the cached unread count for a user after a state change they made.
+     */
+    private function forgetFeed(User $user): void
+    {
+        Cache::forget("platform-notifications:unread:{$user->getKey()}");
+    }
+
+    /**
+     * Number of notifications the user has not read. Cached briefly because the
+     * header badge polls it; read / dismiss invalidate it via forgetFeed().
      */
     public function unreadCount(User $user): int
     {
-        return $this->feed($user)->where('is_read', false)->count();
+        return (int) Cache::remember(
+            "platform-notifications:unread:{$user->getKey()}",
+            now()->addSeconds(self::UNREAD_CACHE_TTL_SECONDS),
+            fn () => $this->feed($user)->where('is_read', false)->count(),
+        );
     }
 
     /**
@@ -135,6 +196,8 @@ class PlatformNotificationService
             ['user_id' => $user->id, 'notification_key' => $key],
             ['read_at' => now()],
         );
+
+        $this->forgetFeed($user);
     }
 
     /**
@@ -150,6 +213,8 @@ class PlatformNotificationService
                 ['read_at' => now()],
             );
         }
+
+        $this->forgetFeed($user);
     }
 
     /**
@@ -161,6 +226,8 @@ class PlatformNotificationService
             ['user_id' => $user->id, 'notification_key' => $key],
             ['read_at' => now(), 'dismissed_at' => now()],
         );
+
+        $this->forgetFeed($user);
     }
 
     /**
@@ -172,6 +239,8 @@ class PlatformNotificationService
             ['user_id' => $user->id, 'notification_key' => $key],
             ['read_at' => null, 'dismissed_at' => null],
         );
+
+        $this->forgetFeed($user);
     }
 
     /**
