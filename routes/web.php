@@ -878,6 +878,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/', [TeacherAssignmentController::class, 'store'])->name('store');
             Route::post('/bulk', [TeacherAssignmentController::class, 'bulkStore'])->name('bulk');
             Route::post('/form-master', [TeacherAssignmentController::class, 'assignFormMaster'])->name('form-master');
+            Route::delete('/form-master/class/{class}', [TeacherAssignmentController::class, 'removeFormMasterClass'])->name('form-master.class.remove');
             Route::delete('/form-master/{section}', [TeacherAssignmentController::class, 'removeFormMaster'])->name('form-master.remove');
             Route::delete('/{assignment}', [TeacherAssignmentController::class, 'destroy'])->name('destroy');
         });

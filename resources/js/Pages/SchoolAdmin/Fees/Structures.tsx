@@ -48,7 +48,7 @@ export default function FeeStructures({ structures, classes, categories, filters
         router.get('/school/fees/structures', { ...filters, [key]: value || undefined }, { preserveScroll: true });
     }
 
-    function openCreate() { reset(); setEditing(null); setOpen(true); }
+    function openCreate() { reset(); setData('academic_year', currentYear || emptyForm.academic_year); setEditing(null); setOpen(true); }
     function openEdit(s: FeeStructure) {
         setData({
             class_id: String(s.class_id), fee_category_id: String(s.fee_category_id),
@@ -76,7 +76,7 @@ export default function FeeStructures({ structures, classes, categories, filters
     return (
         <AppLayout title="Fee Structures">
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                         <Link href="/school/fees/payments" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white">
                             <ArrowLeft className="w-4 h-4" /> Fees
@@ -87,7 +87,7 @@ export default function FeeStructures({ structures, classes, categories, filters
                             <p className="text-sm text-slate-500">{structures.meta?.total ?? 0} structures configured</p>
                         </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                         <Link href="/school/fees/categories">
                             <Button variant="outline" className="inline-flex items-center gap-2"><Settings2 className="w-4 h-4" /> Categories</Button>
                         </Link>
@@ -102,23 +102,23 @@ export default function FeeStructures({ structures, classes, categories, filters
                 )}
 
                 {/* Filters */}
-                <div className="flex gap-3 flex-wrap">
+                <div className="flex flex-col sm:flex-row gap-3 sm:flex-wrap">
                     <Select value={filters.class_id ?? ''} onValueChange={v => applyFilter('class_id', v)}>
-                        <SelectTrigger className="w-40"><SelectValue placeholder="All Classes" /></SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-40"><SelectValue placeholder="All Classes" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="">All Classes</SelectItem>
                             {classes.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                     <Select value={filters.category_id ?? ''} onValueChange={v => applyFilter('category_id', v)}>
-                        <SelectTrigger className="w-44"><SelectValue placeholder="All Categories" /></SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="All Categories" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="">All Categories</SelectItem>
                             {categories.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                     <Input
-                        className="w-36"
+                        className="w-full sm:w-36"
                         placeholder="Year e.g. 2025-2026"
                         defaultValue={filters.academic_year ?? ''}
                         onBlur={e => applyFilter('academic_year', e.target.value)}
@@ -186,11 +186,11 @@ export default function FeeStructures({ structures, classes, categories, filters
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader><DialogTitle>{editing ? 'Edit Structure' : 'Add Fee Structure'}</DialogTitle></DialogHeader>
                     <form onSubmit={handleSubmit} className="space-y-4 mt-2">
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="space-y-1.5">
                                 <Label>Class <span className="text-red-500">*</span></Label>
                                 <Select value={data.class_id} onValueChange={v => setData('class_id', v)}>
-                                    <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
+                                    <SelectTrigger className="w-full"><SelectValue placeholder="Select class" /></SelectTrigger>
                                     <SelectContent>
                                         {classes.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                                     </SelectContent>
@@ -200,7 +200,7 @@ export default function FeeStructures({ structures, classes, categories, filters
                             <div className="space-y-1.5">
                                 <Label>Category <span className="text-red-500">*</span></Label>
                                 <Select value={data.fee_category_id} onValueChange={v => setData('fee_category_id', v)}>
-                                    <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                                    <SelectTrigger className="w-full"><SelectValue placeholder="Select category" /></SelectTrigger>
                                     <SelectContent>
                                         {categories.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                                     </SelectContent>
@@ -208,22 +208,22 @@ export default function FeeStructures({ structures, classes, categories, filters
                                 {errors.fee_category_id && <p className="text-xs text-red-500">{errors.fee_category_id}</p>}
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="space-y-1.5">
                                 <Label>Academic Year <span className="text-red-500">*</span></Label>
                                 <Input value={data.academic_year} onChange={e => setData('academic_year', e.target.value)} placeholder="2025-2026" />
                             </div>
                             <div className="space-y-1.5">
-                                <Label>Amount (৳) <span className="text-red-500">*</span></Label>
+                                <Label>Amount (Le) <span className="text-red-500">*</span></Label>
                                 <Input type="number" min="0" step="0.01" value={data.amount} onChange={e => setData('amount', e.target.value)} placeholder="0.00" />
                                 {errors.amount && <p className="text-xs text-red-500">{errors.amount}</p>}
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="space-y-1.5">
                                 <Label>Frequency <span className="text-red-500">*</span></Label>
                                 <Select value={data.frequency} onValueChange={v => setData('frequency', v)}>
-                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="monthly">Monthly</SelectItem>
                                         <SelectItem value="quarterly">Quarterly</SelectItem>

@@ -16,7 +16,7 @@ class SchoolClass extends Model
 
     protected $fillable = [
         'school_id', 'name', 'short_name', 'numeric_name', 'capacity',
-        'class_teacher_id', 'school_level', 'level_order', 'department_id',
+        'class_teacher_id', 'form_master_id', 'school_level', 'level_order', 'department_id',
         'description', 'is_active',
     ];
 
@@ -47,6 +47,11 @@ class SchoolClass extends Model
     public function classTeacher(): BelongsTo
     {
         return $this->belongsTo(Staff::class, 'class_teacher_id');
+    }
+
+    public function formMaster(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class, 'form_master_id');
     }
 
     public function levelLabel(): string

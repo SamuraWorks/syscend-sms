@@ -68,6 +68,7 @@ interface Assignment {
 
 interface FormMasterEntry {
     id: number;
+    scope: 'section' | 'class';
     name: string;
     class_id: number;
     form_master_id: number;
@@ -104,6 +105,7 @@ export default function AssignmentsIndex() {
     const [expandedClasses, setExpandedClasses] = useState<Set<number>>(new Set());
 
     const currentYear = academicYears.find(y => y.is_current) ?? academicYears[0];
+    const totalSections = classes.reduce((n, cls) => n + (cls.sections?.length ?? 0), 0);
 
     const filteredOfferings = selectedClassId
         ? offerings.filter(o => o.class_id === Number(selectedClassId))
@@ -169,10 +171,11 @@ export default function AssignmentsIndex() {
 
     function handleAssignFormMaster() {
         if (!selectedSectionId || !selectedStaffId) return;
-        router.post('/school-admin/assignments/form-master', {
-            section_id: selectedSectionId,
-            staff_id: selectedStaffId,
-        }, {
+        const [scope, id] = selectedSectionId.split(':');
+        const payload = scope === 'class'
+            ? { class_id: id, staff_id: selectedStaffId }
+            : { section_id: id, staff_id: selectedStaffId };
+        router.post('/school-admin/assignments/form-master', payload, {
             onSuccess: () => {
                 setFormMasterDialogOpen(false);
                 setSelectedSectionId('');
@@ -181,9 +184,11 @@ export default function AssignmentsIndex() {
         });
     }
 
-    function handleRemoveFormMaster(sectionId: number) {
-        if (!confirm('Remove form master from this section?')) return;
-        router.delete(`/school-admin/assignments/form-master/${sectionId}`);
+    function handleRemoveFormMaster(entry: FormMasterEntry) {
+        if (!confirm(`Remove form master from this ${entry.scope === 'class' ? 'class' : 'section'}?`)) return;
+        router.delete(entry.scope === 'class'
+            ? `/school-admin/assignments/form-master/class/${entry.id}`
+            : `/school-admin/assignments/form-master/${entry.id}`);
     }
 
     function getTeachersForOffering(offeringId: number) {
@@ -416,12 +421,15 @@ export default function AssignmentsIndex() {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                         {classes.flatMap(cls =>
-                                            (cls.sections.length > 0 ? cls.sections : [{ id: 0, name: 'No Section', class_id: cls.id }]).map(section => {
-                                                const fm = formMasters.find(f => f.id === section.id);
+                                            (cls.sections.length > 0
+                                                ? cls.sections.map(s => ({ id: s.id, name: s.name, scope: 'section' as const }))
+                                                : [{ id: cls.id, name: 'Whole class', scope: 'class' as const }]
+                                            ).map(row => {
+                                                const fm = formMasters.find(f => f.scope === row.scope && f.id === row.id);
                                                 return (
-                                                    <tr key={`${cls.id}-${section.id}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                                    <tr key={`${cls.id}-${row.scope}-${row.id}`} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                                                         <td className="px-4 py-2.5 font-medium text-slate-900 dark:text-white">{cls.name}</td>
-                                                        <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400">{section.name}</td>
+                                                        <td className="px-4 py-2.5 text-slate-600 dark:text-slate-400">{row.name}</td>
                                                         <td className="px-4 py-2.5">
                                                             {fm?.form_master ? (
                                                                 <span className="inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded-full text-xs font-medium">
@@ -434,12 +442,12 @@ export default function AssignmentsIndex() {
                                                         <td className="px-4 py-2.5 text-slate-500 text-xs">{fm?.form_master?.emp_id ?? '—'}</td>
                                                         <td className="px-4 py-2.5">
                                                             {fm ? (
-                                                                <Button variant="ghost" size="sm" className="h-7 text-xs text-red-500 hover:text-red-700" onClick={() => handleRemoveFormMaster(fm.id)}>
+                                                                <Button variant="ghost" size="sm" className="h-7 text-xs text-red-500 hover:text-red-700" onClick={() => handleRemoveFormMaster(fm)}>
                                                                     <Trash2 className="w-3 h-3 mr-1" /> Remove
                                                                 </Button>
                                                             ) : (
                                                                 <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => {
-                                                                    setSelectedSectionId(String(section.id));
+                                                                    setSelectedSectionId(`${row.scope}:${row.id}`);
                                                                     setFormMasterDialogOpen(true);
                                                                 }}>
                                                                     <Plus className="w-3 h-3 mr-1" /> Assign
@@ -489,6 +497,11 @@ export default function AssignmentsIndex() {
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {offerings.length === 0 && (
+                                <p className="text-xs text-amber-600 mt-1.5">
+                                    No subjects found. Add school subjects first — they are projected into the curriculum automatically.
+                                </p>
+                            )}
                         </div>
                         <div>
                             <Label>Teacher</Label>
@@ -564,19 +577,32 @@ export default function AssignmentsIndex() {
                     </DialogHeader>
                     <div className="space-y-4">
                         <div>
-                            <Label>Section</Label>
+                            <Label>Class / Section</Label>
                             <Select value={selectedSectionId || undefined} onValueChange={setSelectedSectionId}>
-                                <SelectTrigger className="w-full"><SelectValue placeholder="Select section" /></SelectTrigger>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="Select class or section" /></SelectTrigger>
                                 <SelectContent>
                                     {classes.flatMap(cls =>
-                                        cls.sections.map(s => (
-                                            <SelectItem key={s.id} value={String(s.id)}>
-                                                {cls.name} — {s.name}
+                                        (cls.sections.length > 0
+                                            ? cls.sections.map(s => ({ value: `section:${s.id}`, label: `${cls.name} — ${s.name}` }))
+                                            : [{ value: `class:${cls.id}`, label: `${cls.name} — Whole class` }]
+                                        ).map(opt => (
+                                            <SelectItem key={opt.value} value={opt.value}>
+                                                {opt.label}
                                             </SelectItem>
                                         ))
                                     )}
                                 </SelectContent>
                             </Select>
+                            {classes.length === 0 && (
+                                <p className="text-xs text-amber-600 mt-1.5">
+                                    No classes configured. Add classes first to assign a form master.
+                                </p>
+                            )}
+                            {classes.length > 0 && totalSections === 0 && (
+                                <p className="text-xs text-slate-500 mt-1.5">
+                                    Classes have no sections, so form masters are assigned to the whole class.
+                                </p>
+                            )}
                         </div>
                         <div>
                             <Label>Teacher</Label>
