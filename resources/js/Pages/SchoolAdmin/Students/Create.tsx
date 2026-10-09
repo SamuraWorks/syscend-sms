@@ -167,7 +167,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Gender <span className="text-red-500">*</span></Label>
                                     <Select defaultValue="male" onValueChange={(v) => setValue('gender', v as 'male' | 'female' | 'other')}>
-                                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="male">Male</SelectItem>
                                             <SelectItem value="female">Female</SelectItem>
@@ -185,7 +185,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Category</Label>
                                     <Select defaultValue="general" onValueChange={(v) => setValue('category', v as 'general' | 'disabled' | 'quota')}>
-                                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="general">General</SelectItem>
                                             <SelectItem value="disabled">Disabled</SelectItem>
@@ -196,7 +196,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Status</Label>
                                     <Select defaultValue="active" onValueChange={(v) => setValue('status', v as 'active' | 'alumni' | 'transferred' | 'inactive')}>
-                                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="active">Active</SelectItem>
                                             <SelectItem value="inactive">Inactive</SelectItem>
@@ -246,7 +246,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Class <span className="text-red-500">*</span></Label>
                                     <Select onValueChange={(v) => { setValue('class_id', Number(v)); setValue('section_id', null); setValue('department_id', undefined); }}>
-                                        <SelectTrigger className="h-9"><SelectValue placeholder="Select class" /></SelectTrigger>
+                                        <SelectTrigger className="h-9 w-full"><SelectValue placeholder="Select class" /></SelectTrigger>
                                         <SelectContent>
                                             {classes.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                                         </SelectContent>
@@ -256,7 +256,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Section</Label>
                                     <Select onValueChange={(v) => setValue('section_id', Number(v))} disabled={visibleSections.length === 0}>
-                                        <SelectTrigger className="h-9"><SelectValue placeholder={visibleSections.length === 0 ? 'Select class first' : 'Select section'} /></SelectTrigger>
+                                        <SelectTrigger className="h-9 w-full"><SelectValue placeholder={visibleSections.length === 0 ? 'Select class first' : 'Select section'} /></SelectTrigger>
                                         <SelectContent>
                                             {visibleSections.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
                                         </SelectContent>
@@ -265,7 +265,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">House</Label>
                                     <Select onValueChange={(v) => setValue('house_id', v === '_none' ? undefined : Number(v))} disabled={houses.length === 0}>
-                                        <SelectTrigger className="h-9"><SelectValue placeholder={houses.length === 0 ? 'No houses configured' : 'Select house'} /></SelectTrigger>
+                                        <SelectTrigger className="h-9 w-full"><SelectValue placeholder={houses.length === 0 ? 'No houses configured' : 'Select house'} /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="_none">None</SelectItem>
                                             {houses.map((h) => <SelectItem key={h.id} value={String(h.id)}>{h.name}</SelectItem>)}
@@ -278,7 +278,7 @@ export default function CreateStudent() {
                                         onValueChange={(v) => setValue('department_id', v === '_none' ? undefined : Number(v))}
                                         disabled={!isSss || departments.length === 0}
                                     >
-                                        <SelectTrigger className="h-9"><SelectValue placeholder={isSss ? (departments.length === 0 ? 'No departments' : 'Select department') : 'SSS classes only'} /></SelectTrigger>
+                                        <SelectTrigger className="h-9 w-full"><SelectValue placeholder={isSss ? (departments.length === 0 ? 'No departments' : 'Select department') : 'SSS classes only'} /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="_none">None</SelectItem>
                                             {departments.map((d) => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}
@@ -290,7 +290,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Admission Type</Label>
                                     <Select defaultValue="new" onValueChange={(v) => setValue('admission_type', v as 'new' | 'transfer' | 'returning')}>
-                                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="new">New</SelectItem>
                                             <SelectItem value="transfer">Transfer</SelectItem>
@@ -314,7 +314,7 @@ export default function CreateStudent() {
                                 <div className="space-y-1.5">
                                     <Label className="text-sm font-medium">Relation <span className="text-red-500">*</span></Label>
                                     <Select defaultValue="Father" onValueChange={(v) => setValue('guardian.relation', v)}>
-                                        <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                                        <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
                                         <SelectContent>
                                             {['Father','Mother','Guardian','Uncle','Aunt','Sibling'].map((r) => (
                                                 <SelectItem key={r} value={r}>{r}</SelectItem>

@@ -1,4 +1,4 @@
-import { router, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { Moon, Sun, LogOut, User, Menu, KeyRound, Check, Shield, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -71,11 +71,13 @@ interface TopbarProps {
 }
 
 export default function Topbar({ title, breadcrumbs }: TopbarProps) {
-    const { auth, schoolBranding } = usePage<PageProps>().props;
+    const { auth, schoolBranding, platformLogoUrl } = usePage<PageProps>().props;
     const { theme, setTheme } = useAuthStore();
     const { toggleSidebar } = useUIStore();
 
     const user = auth.user;
+    const brandName = schoolBranding?.short_name || schoolBranding?.name || 'Syscend Campus';
+    const mobileLogo = schoolBranding?.logo_url || schoolBranding?.badge_url || platformLogoUrl || '/images/logo.png';
     const allRoles = user?.roles ?? [];
     const activeRole = user?.activeRole ?? user?.role ?? '';
     const roleLabel = activeRole.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -106,28 +108,36 @@ export default function Topbar({ title, breadcrumbs }: TopbarProps) {
                 <div className="absolute top-0 left-0 right-0 h-0.5" style={{ backgroundColor: primaryColor }} />
             )}
             {/* Left */}
-            <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleSidebar}>
-                    <Menu className="w-5 h-5" />
-                </Button>
-                {breadcrumbs && breadcrumbs.length > 0 ? (
-                    <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
-                        {breadcrumbs.map((crumb, i) => (
-                            <span key={i} className="flex items-center gap-1.5">
-                                {i > 0 && <span className="text-border">/</span>}
-                                {crumb.href ? (
-                                    <a href={crumb.href} className="text-muted-foreground hover:text-foreground transition-colors">
-                                        {crumb.label}
-                                    </a>
-                                ) : (
-                                    <span className="text-foreground font-medium">{crumb.label}</span>
-                                )}
-                            </span>
-                        ))}
-                    </nav>
-                ) : title ? (
-                    <h1 className="text-sm font-semibold text-foreground">{title}</h1>
-                ) : null}
+            <div className="flex items-center gap-3 min-w-0">
+                {/* Mobile logo */}
+                <Link href="/" className="flex md:hidden items-center gap-2 min-w-0">
+                    <span className="flex items-center justify-center h-8 w-8 shrink-0 overflow-hidden rounded-md bg-white p-0.5 ring-1 ring-black/10">
+                        <img src={mobileLogo} alt="" className="h-full w-full object-contain" />
+                    </span>
+                    <span className="font-bold text-sm text-foreground truncate">{brandName}</span>
+                </Link>
+
+                {/* Breadcrumbs / title — desktop */}
+                <div className="hidden md:flex items-center min-w-0">
+                    {breadcrumbs && breadcrumbs.length > 0 ? (
+                        <nav className="flex items-center gap-1.5 text-sm overflow-x-auto whitespace-nowrap">
+                            {breadcrumbs.map((crumb, i) => (
+                                <span key={i} className="flex items-center gap-1.5">
+                                    {i > 0 && <span className="text-border">/</span>}
+                                    {crumb.href ? (
+                                        <a href={crumb.href} className="text-muted-foreground hover:text-foreground transition-colors">
+                                            {crumb.label}
+                                        </a>
+                                    ) : (
+                                        <span className="text-foreground font-medium">{crumb.label}</span>
+                                    )}
+                                </span>
+                            ))}
+                        </nav>
+                    ) : title ? (
+                        <h1 className="text-sm font-semibold text-foreground">{title}</h1>
+                    ) : null}
+                </div>
             </div>
 
             {/* Right */}
@@ -215,6 +225,11 @@ export default function Topbar({ title, breadcrumbs }: TopbarProps) {
                         </DropdownMenuGroup>
                     </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* Mobile nav toggle — top right */}
+                <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleSidebar} aria-label="Open menu">
+                    <Menu className="w-5 h-5" />
+                </Button>
             </div>
         </header>
     );

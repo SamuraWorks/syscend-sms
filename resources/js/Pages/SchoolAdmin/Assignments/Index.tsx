@@ -471,7 +471,7 @@ export default function AssignmentsIndex() {
                         <div>
                             <Label>Class</Label>
                             <Select value={selectedClassId || undefined} onValueChange={v => { setSelectedClassId(v); setSelectedOfferingId(''); }}>
-                                <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="Select class" /></SelectTrigger>
                                 <SelectContent>
                                     {classes.map(cls => <SelectItem key={cls.id} value={String(cls.id)}>{cls.name}</SelectItem>)}
                                 </SelectContent>
@@ -480,7 +480,7 @@ export default function AssignmentsIndex() {
                         <div>
                             <Label>Subject Offering</Label>
                             <Select value={selectedOfferingId || undefined} onValueChange={setSelectedOfferingId}>
-                                <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="Select subject" /></SelectTrigger>
                                 <SelectContent>
                                     {filteredOfferings.map(o => (
                                         <SelectItem key={o.id} value={String(o.id)}>
@@ -493,7 +493,7 @@ export default function AssignmentsIndex() {
                         <div>
                             <Label>Teacher</Label>
                             <Select value={selectedStaffId || undefined} onValueChange={setSelectedStaffId}>
-                                <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="Select teacher" /></SelectTrigger>
                                 <SelectContent>
                                     {teachers.map(t => (
                                         <SelectItem key={t.id} value={String(t.id)}>
@@ -526,7 +526,7 @@ export default function AssignmentsIndex() {
                         <div>
                             <Label>Subject Offering</Label>
                             <Select value={selectedOfferingId || undefined} onValueChange={setSelectedOfferingId}>
-                                <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="Select subject" /></SelectTrigger>
                                 <SelectContent>
                                     {offerings.map(o => (
                                         <SelectItem key={o.id} value={String(o.id)}>
@@ -566,7 +566,7 @@ export default function AssignmentsIndex() {
                         <div>
                             <Label>Section</Label>
                             <Select value={selectedSectionId || undefined} onValueChange={setSelectedSectionId}>
-                                <SelectTrigger><SelectValue placeholder="Select section" /></SelectTrigger>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="Select section" /></SelectTrigger>
                                 <SelectContent>
                                     {classes.flatMap(cls =>
                                         cls.sections.map(s => (
@@ -581,7 +581,7 @@ export default function AssignmentsIndex() {
                         <div>
                             <Label>Teacher</Label>
                             <Select value={selectedStaffId || undefined} onValueChange={setSelectedStaffId}>
-                                <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
+                                <SelectTrigger className="w-full"><SelectValue placeholder="Select teacher" /></SelectTrigger>
                                 <SelectContent>
                                     {teachers.map(t => (
                                         <SelectItem key={t.id} value={String(t.id)}>

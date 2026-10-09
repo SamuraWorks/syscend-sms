@@ -22,7 +22,8 @@ class TeacherAssignmentController extends Controller
         $schoolId = $this->getSchoolId();
 
         $academicYearId = $request->input('academic_year_id')
-            ?? AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id');
+            ?: AcademicYear::where('school_id', $schoolId)->where('is_current', true)->value('id')
+            ?: AcademicYear::where('school_id', $schoolId)->orderByDesc('start_date')->value('id');
 
         $classes = SchoolClass::where('school_id', $schoolId)
             ->with(['sections' => fn ($q) => $q->where('is_active', true)])
