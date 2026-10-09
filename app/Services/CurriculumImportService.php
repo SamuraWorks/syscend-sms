@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\{AcademicYear, Department, ImportJob, SchoolClass, Section, Subject, SubjectOffering};
+use App\Support\Imports\HeaderAliases;
 use App\Support\Imports\TabularReader;
 use App\Support\StoredFile;
 use Illuminate\Support\Facades\DB;
@@ -65,7 +66,7 @@ class CurriculumImportService
             throw new \RuntimeException("Import file not found: {$job->file_name}");
         }
 
-        $dataRows = TabularReader::read($filePath, self::EXPECTED_HEADERS, self::HEADER_MAP)['rows'];
+        $dataRows = TabularReader::read($filePath, self::EXPECTED_HEADERS, array_merge(self::HEADER_MAP, HeaderAliases::fromAiMapping($job)))['rows'];
 
         $job->update([
             'total_rows' => count($dataRows),

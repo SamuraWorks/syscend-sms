@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\{Guardian, ImportJob, Student};
+use App\Support\Imports\HeaderAliases;
 use App\Support\Imports\TabularReader;
 use App\Support\StoredFile;
 use Illuminate\Support\Facades\DB;
@@ -46,7 +47,7 @@ class ParentImportService
             throw new \RuntimeException("Import file not found: {$job->file_name}");
         }
 
-        $rows = TabularReader::read($filePath, self::EXPECTED_HEADERS, self::aliasMap())['rows'];
+        $rows = TabularReader::read($filePath, self::EXPECTED_HEADERS, array_merge(self::aliasMap(), HeaderAliases::fromAiMapping($job)))['rows'];
 
         $job->update([
             'total_rows' => count($rows),

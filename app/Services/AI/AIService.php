@@ -118,7 +118,7 @@ class AIService
             ]);
 
             throw new AIUnavailableException(
-                'The AI service could not be reached. Please try again shortly.',
+                $this->providerErrorMessage($e),
                 'provider_error',
                 $e
             );
@@ -168,6 +168,21 @@ class AIService
             ],
             'generated_at' => now()->toISOString(),
         ];
+    }
+
+    private function providerErrorMessage(Throwable $e): string
+    {
+        $message = $e->getMessage();
+
+        if (str_contains($message, 'insufficient_quota')
+            || str_contains($message, 'credit_balance_exhausted')
+            || stripos($message, 'credit') !== false
+            || stripos($message, 'quota') !== false
+            || stripos($message, 'billing') !== false) {
+            return 'The AI provider rejected the request because the account is out of credits or over its quota. Add credits (or configure another provider) and try again.';
+        }
+
+        return 'The AI service could not be reached. Please try again shortly.';
     }
 
     private function promptFor(string $feature): Prompt

@@ -8,7 +8,6 @@ import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -77,6 +76,70 @@ const STEP_OF_FIELD: Record<string, number> = Object.fromEntries(
     STEP_FIELDS.flatMap((fields, index) => fields.map((f) => [f, index])),
 );
 
+const GENDER_OPTIONS = [
+    { value: 'male', label: 'Male' },
+    { value: 'female', label: 'Female' },
+    { value: 'other', label: 'Other' },
+];
+
+const CATEGORY_OPTIONS = [
+    { value: 'general', label: 'General' },
+    { value: 'disabled', label: 'Disabled' },
+    { value: 'quota', label: 'Quota' },
+];
+
+const STATUS_OPTIONS = [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'alumni', label: 'Alumni' },
+    { value: 'transferred', label: 'Transferred' },
+];
+
+const ADMISSION_TYPE_OPTIONS = [
+    { value: 'new', label: 'New' },
+    { value: 'transfer', label: 'Transfer' },
+    { value: 'returning', label: 'Returning' },
+];
+
+const RELATION_OPTIONS = [
+    { value: 'Father', label: 'Father' },
+    { value: 'Mother', label: 'Mother' },
+    { value: 'Guardian', label: 'Guardian' },
+    { value: 'Uncle', label: 'Uncle' },
+    { value: 'Aunt', label: 'Aunt' },
+    { value: 'Sibling', label: 'Sibling' },
+];
+
+interface Option { value: string; label: string }
+
+// Native <select> deliberately: on phones the OS renders its own picker, so we
+// avoid the stack of custom popover "overlays" that made this form awkward on
+// small screens. It is also the most accessible control for touch.
+const SelectField = ({ label, value, onValueChange, options, placeholder, disabled = false, required = false, error }: {
+    label: string;
+    value?: string | number | null;
+    onValueChange: (value: string) => void;
+    options: Option[];
+    placeholder?: string;
+    disabled?: boolean;
+    required?: boolean;
+    error?: string;
+}) => (
+    <div className="space-y-1.5">
+        <Label className="text-sm font-medium">{label}{required && <span className="text-red-500 ml-1">*</span>}</Label>
+        <select
+            value={value === null || value === undefined ? '' : String(value)}
+            onChange={(e) => onValueChange(e.target.value)}
+            disabled={disabled}
+            className="h-10 w-full appearance-none rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm outline-none transition-colors focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+        >
+            {placeholder !== undefined && <option value="">{placeholder}</option>}
+            {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+        {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+);
+
 export default function CreateStudent() {
     const { classes, sections, houses = [], departments = [], next_admission_no, id_generation_enabled = true } = usePage<Props>().props;
     const [step, setStep] = useState(0);
@@ -86,7 +149,7 @@ export default function CreateStudent() {
     const { register, handleSubmit, setValue, watch, setError, trigger, formState: { errors, isSubmitting } } =
         useForm<FormData>({
             resolver: zodResolver(schema) as unknown as Resolver<FormData>,
-            defaultValues: { gender: 'male', category: 'general', status: 'active', nationality: 'Sierra Leonean', guardian: { relation: 'Father' } },
+            defaultValues: { gender: 'male', category: 'general', status: 'active', admission_type: 'new', nationality: 'Sierra Leonean', guardian: { relation: 'Father' } },
         });
 
     const selectedClassId = watch('class_id');
@@ -157,6 +220,11 @@ export default function CreateStudent() {
 
     const confirmAdmit = handleSubmit(onSubmit, (errs) => onInvalid(errs as Record<string, unknown>));
 
+    const classOptions: Option[] = classes.map((c) => ({ value: String(c.id), label: c.name }));
+    const sectionOptions: Option[] = visibleSections.map((s) => ({ value: String(s.id), label: s.name }));
+    const houseOptions: Option[] = [{ value: '_none', label: 'None' }, ...houses.map((h) => ({ value: String(h.id), label: h.name }))];
+    const departmentOptions: Option[] = [{ value: '_none', label: 'None' }, ...departments.map((d) => ({ value: String(d.id), label: d.name }))];
+
     const Field = ({ name, label, placeholder, type = 'text', required = false }: {
         name: string; label: string; placeholder?: string; type?: string; required?: boolean;
     }) => {
@@ -180,7 +248,7 @@ export default function CreateStudent() {
         ]}>
             <Head title="Admit Student" />
 
-            <div className="max-w-2xl">
+            <div className="mx-auto max-w-2xl">
                 <div className="flex items-center gap-3 mb-6">
                     <Button variant="ghost" size="icon" asChild>
                         <Link href="/school/students"><ArrowLeft className="w-4 h-4" /></Link>
@@ -222,17 +290,13 @@ export default function CreateStudent() {
                             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <Field name="first_name" label="First Name" placeholder="John" required />
                                 <Field name="last_name"  label="Last Name"  placeholder="Doe" />
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">Gender <span className="text-red-500">*</span></Label>
-                                    <Select defaultValue="male" onValueChange={(v) => setValue('gender', v as 'male' | 'female' | 'other')}>
-                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="male">Male</SelectItem>
-                                            <SelectItem value="female">Female</SelectItem>
-                                            <SelectItem value="other">Other</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                <SelectField
+                                    label="Gender"
+                                    required
+                                    value={watch('gender')}
+                                    onValueChange={(v) => setValue('gender', v as FormData['gender'], { shouldValidate: true })}
+                                    options={[{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }, { value: 'other', label: 'Other' }]}
+                                />
                                 <Field name="date_of_birth"  label="Date of Birth"   type="date" />
                                 <Field name="place_of_birth" label="Place of Birth"  placeholder="Freetown" />
                                 <Field name="blood_group" label="Blood Group" placeholder="A+" />
@@ -240,27 +304,23 @@ export default function CreateStudent() {
                                 <Field name="nationality" label="Nationality"  placeholder="Sierra Leonean" />
                                 <Field name="phone"       label="Phone"        placeholder="+2327000000000" />
                                 <Field name="email"       label="Email"        placeholder="student@email.com" type="email" />
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">Category</Label>
-                                    <Select defaultValue="general" onValueChange={(v) => setValue('category', v as 'general' | 'disabled' | 'quota')}>
-                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="general">General</SelectItem>
-                                            <SelectItem value="disabled">Disabled</SelectItem>
-                                            <SelectItem value="quota">Quota</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">Status</Label>
-                                    <Select defaultValue="active" onValueChange={(v) => setValue('status', v as 'active' | 'alumni' | 'transferred' | 'inactive')}>
-                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="active">Active</SelectItem>
-                                            <SelectItem value="inactive">Inactive</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                <SelectField
+                                    label="Category"
+                                    value={watch('category')}
+                                    onValueChange={(v) => setValue('category', v as FormData['category'], { shouldValidate: true })}
+                                    options={[{ value: 'general', label: 'General' }, { value: 'disabled', label: 'Disabled' }, { value: 'quota', label: 'Quota' }]}
+                                />
+                                <SelectField
+                                    label="Status"
+                                    value={watch('status')}
+                                    onValueChange={(v) => setValue('status', v as FormData['status'], { shouldValidate: true })}
+                                    options={[
+                                        { value: 'active', label: 'Active' },
+                                        { value: 'inactive', label: 'Inactive' },
+                                        { value: 'alumni', label: 'Alumni' },
+                                        { value: 'transferred', label: 'Transferred' },
+                                    ]}
+                                />
                                 <div className="col-span-2 space-y-1.5">
                                     <Label className="text-sm font-medium">Address</Label>
                                     <Textarea rows={2} className="resize-none" placeholder="House, Road, Area…" {...register('address')} />
@@ -282,89 +342,58 @@ export default function CreateStudent() {
                     {/* Step 1 — Class */}
                     {step === 1 && (
                         <Card className="dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-                            <CardHeader className="pb-3"><CardTitle className="text-sm">Student IDs &amp; Class Assignment</CardTitle></CardHeader>
+                            <CardHeader className="pb-3"><CardTitle className="text-sm">Class &amp; Placement</CardTitle></CardHeader>
                             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <Field
-                                    name="student_id"
-                                    label="Alt / National ID (optional)"
-                                    placeholder="National ID, if any"
+                                <Field name="admission_no" label="Admission No" placeholder={next_admission_no || (id_generation_enabled ? 'Auto-generated' : 'Required')} />
+                                <Field name="student_id"   label="Student ID"   placeholder="Optional" />
+                                <SelectField
+                                    label="Class"
+                                    required
+                                    value={selectedClassId}
+                                    onValueChange={(v) => {
+                                        setValue('class_id', v ? Number(v) : ('' as unknown as number), { shouldValidate: true });
+                                        setValue('section_id', undefined);
+                                        setValue('department_id', undefined);
+                                    }}
+                                    options={classOptions}
+                                    placeholder="Select class"
+                                    error={errors.class_id?.message as string | undefined}
                                 />
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">
-                                        School ID (Admission No)
-                                        {!id_generation_enabled && <span className="text-red-500 ml-1">*</span>}
-                                    </Label>
-                                    <Input
-                                        className="h-10 sm:h-9 font-mono"
-                                        placeholder={next_admission_no ?? 'Auto-generated'}
-                                        required={!id_generation_enabled}
-                                        {...register('admission_no')}
-                                    />
-                                    <p className="text-xs text-slate-400">
-                                        {id_generation_enabled
-                                            ? "Leave blank to auto-generate from your school's format. Must be unique within your school."
-                                            : 'Auto-generation is off, so enter the school-issued ID. Must be unique within your school.'}
-                                    </p>
-                                    {errors.admission_no && <p className="text-xs text-red-500">{errors.admission_no.message}</p>}
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">Class <span className="text-red-500">*</span></Label>
-                                    <Select onValueChange={(v) => { setValue('class_id', Number(v)); setValue('section_id', null); setValue('department_id', undefined); }}>
-                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue placeholder="Select class" /></SelectTrigger>
-                                        <SelectContent>
-                                            {classes.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                    {errors.class_id && <p className="text-xs text-red-500">{errors.class_id.message}</p>}
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">Section</Label>
-                                    <Select onValueChange={(v) => setValue('section_id', Number(v))} disabled={visibleSections.length === 0}>
-                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue placeholder={visibleSections.length === 0 ? 'Select class first' : 'Select section'} /></SelectTrigger>
-                                        <SelectContent>
-                                            {visibleSections.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">House</Label>
-                                    <Select onValueChange={(v) => setValue('house_id', v === '_none' ? undefined : Number(v))} disabled={houses.length === 0}>
-                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue placeholder={houses.length === 0 ? 'No houses configured' : 'Select house'} /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="_none">None</SelectItem>
-                                            {houses.map((h) => <SelectItem key={h.id} value={String(h.id)}>{h.name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">Department</Label>
-                                    <Select
-                                        onValueChange={(v) => setValue('department_id', v === '_none' ? undefined : Number(v))}
-                                        disabled={!isSss || departments.length === 0}
-                                    >
-                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue placeholder={isSss ? (departments.length === 0 ? 'No departments' : 'Select department') : 'SSS classes only'} /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="_none">None</SelectItem>
-                                            {departments.map((d) => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                <SelectField
+                                    label="Section"
+                                    value={watch('section_id')}
+                                    onValueChange={(v) => setValue('section_id', v ? Number(v) : undefined)}
+                                    options={sectionOptions}
+                                    placeholder={visibleSections.length === 0 ? 'Select class first' : 'Select section'}
+                                    disabled={visibleSections.length === 0}
+                                />
+                                <SelectField
+                                    label="House"
+                                    value={watch('house_id') ?? '_none'}
+                                    onValueChange={(v) => setValue('house_id', v === '_none' ? undefined : Number(v))}
+                                    options={houseOptions}
+                                    disabled={houses.length === 0}
+                                />
+                                <SelectField
+                                    label="Department"
+                                    value={watch('department_id') ?? '_none'}
+                                    onValueChange={(v) => setValue('department_id', v === '_none' ? undefined : Number(v))}
+                                    options={departmentOptions}
+                                    placeholder={isSss ? (departments.length === 0 ? 'No departments' : 'Select department') : 'SSS classes only'}
+                                    disabled={!isSss || departments.length === 0}
+                                />
                                 <Field name="roll_no"        label="Roll No"        placeholder="01" />
                                 <Field name="admission_date" label="Admission Date" type="date" />
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">Admission Type</Label>
-                                    <Select defaultValue="new" onValueChange={(v) => setValue('admission_type', v as 'new' | 'transfer' | 'returning')}>
-                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="new">New</SelectItem>
-                                            <SelectItem value="transfer">Transfer</SelectItem>
-                                            <SelectItem value="returning">Returning</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="col-span-2">
-                                    <Field name="previous_school" label="Previous School" placeholder="XYZ School" />
-                                </div>
+                                <SelectField
+                                    label="Admission Type"
+                                    value={watch('admission_type') ?? 'new'}
+                                    onValueChange={(v) => setValue('admission_type', v as FormData['admission_type'])}
+                                    options={[
+                                        { value: 'new', label: 'New' },
+                                        { value: 'transfer', label: 'Transfer' },
+                                        { value: 'returning', label: 'Returning' },
+                                    ]}
+                                />
                             </CardContent>
                         </Card>
                     )}
@@ -374,25 +403,18 @@ export default function CreateStudent() {
                         <Card className="dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                             <CardHeader className="pb-3"><CardTitle className="text-sm">Guardian Information</CardTitle></CardHeader>
                             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <Field name="guardian.name"  label="Guardian Name" placeholder="Mr. John Doe" required />
-                                <div className="space-y-1.5">
-                                    <Label className="text-sm font-medium">Relation <span className="text-red-500">*</span></Label>
-                                    <Select defaultValue="Father" onValueChange={(v) => setValue('guardian.relation', v)}>
-                                        <SelectTrigger className="h-10 w-full sm:h-9"><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            {['Father','Mother','Guardian','Uncle','Aunt','Sibling'].map((r) => (
-                                                <SelectItem key={r} value={r}>{r}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                <Field name="guardian.name" label="Guardian Name" placeholder="Full name" required />
+                                <SelectField
+                                    label="Relation"
+                                    required
+                                    value={watch('guardian.relation') ?? 'Father'}
+                                    onValueChange={(v) => setValue('guardian.relation', v)}
+                                    options={RELATION_OPTIONS}
+                                />
                                 <Field name="guardian.phone"      label="Phone"      placeholder="+2327000000000" />
-                                <Field name="guardian.email"      label="Email"      type="email" />
-                                <Field name="guardian.occupation" label="Occupation" placeholder="Business" />
-                                <div className="col-span-2 space-y-1.5">
-                                    <Label className="text-sm font-medium">Address</Label>
-                                    <Textarea rows={2} className="resize-none" {...register('guardian.address')} />
-                                </div>
+                                <Field name="guardian.email"      label="Email"      placeholder="guardian@email.com" type="email" />
+                                <Field name="guardian.occupation" label="Occupation" placeholder="e.g. Teacher" />
+                                <Field name="guardian.address"    label="Address"    placeholder="House, Road, Area…" />
                             </CardContent>
                         </Card>
                     )}

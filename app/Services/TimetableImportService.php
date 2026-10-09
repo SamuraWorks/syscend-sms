@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\{AcademicYear, SchoolClass, Section, Staff, Subject, Timetable};
+use App\Support\Imports\HeaderAliases;
 use App\Support\Imports\TabularReader;
 use App\Support\StoredFile;
 use Illuminate\Support\Facades\DB;
@@ -34,7 +35,7 @@ class TimetableImportService
     public function parseFile($job): void
     {
         $filePath = StoredFile::localPath($job->file_path, 'private');
-        $rows = TabularReader::read($filePath, self::EXPECTED_HEADERS)['rows'];
+        $rows = TabularReader::read($filePath, self::EXPECTED_HEADERS, HeaderAliases::forJob($job))['rows'];
 
         $validRows = [];
         $errorRows = [];
@@ -76,7 +77,7 @@ class TimetableImportService
     public function executeImport($job): array
     {
         $filePath = StoredFile::localPath($job->file_path, 'private');
-        $rows = TabularReader::read($filePath, self::EXPECTED_HEADERS)['rows'];
+        $rows = TabularReader::read($filePath, self::EXPECTED_HEADERS, HeaderAliases::forJob($job))['rows'];
 
         $imported = 0;
         $skipReasons = [];
