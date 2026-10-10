@@ -10,6 +10,7 @@ use App\Models\Mark;
 use App\Models\Message;
 use App\Models\ReportCard;
 use App\Models\Student;
+use App\Services\FamilyResolver;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -157,20 +158,23 @@ class ParentPortalController extends Controller
     }
 
     /**
-     * All active children of this guardian across BOTH link sources
-     * (guardian_student pivot and legacy students.guardian_id), deduplicated.
+     * All active children of this parent across BOTH link sources
+     * (guardian_student pivot and legacy students.guardian_id) — and across
+     * every guardian row linked to the same account, because a parent with
+     * several children is often stored as one guardian row per child.
+     * Deduplicated by student id.
      */
     private function childrenUnion(Guardian $guardian)
     {
-        return $guardian->children()
-            ->where('students.status', 'active')
-            ->with('schoolClass:id,name', 'section:id,name')
-            ->get()
-            ->merge(
-                $guardian->students()->where('status', 'active')->with('schoolClass:id,name', 'section:id,name')->get()
-            )
-            ->unique('id')
-            ->values();
+        $guardians = Guardian::where('school_id', $guardian->school_id)
+            ->where('user_id', $guardian->user_id)
+            ->get();
+
+        if ($guardians->isEmpty()) {
+            $guardians = collect([$guardian]);
+        }
+
+        return (new FamilyResolver())->childrenForGuardians($guardians);
     }
 
     /**

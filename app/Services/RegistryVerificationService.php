@@ -44,7 +44,7 @@ class RegistryVerificationService
     /**
      * Check if an email matches (case-insensitive).
      */
-    private static function emailsMatch(?string $registryEmail, ?string $providedEmail): bool
+    public static function emailsMatch(?string $registryEmail, ?string $providedEmail): bool
     {
         if (empty($registryEmail) || empty($providedEmail)) {
             return false;
@@ -127,7 +127,7 @@ class RegistryVerificationService
      * Tolerates local vs international formatting (e.g. 076123456 vs +23276123456)
      * by also accepting a suffix match of at least 7 digits.
      */
-    private static function phonesMatch(?string $registryPhone, ?string $providedPhone): bool
+    public static function phonesMatch(?string $registryPhone, ?string $providedPhone): bool
     {
         if (empty($registryPhone) || empty($providedPhone)) {
             return false;
@@ -255,16 +255,16 @@ class RegistryVerificationService
     }
 
     /**
-     * Discover all active children belonging to a guardian across both the
-     * many-to-many pivot and the legacy guardian_id column, deduplicated.
+     * Every active child of this parent — not just the ones linked to the one
+     * guardian row we matched, but all children across every guardian row that
+     * belongs to the same parent identity (a parent with several children is
+     * often stored as one guardian row per child).
      */
     public function discoverChildren(Guardian $guardian): array
     {
-        $fromPivot = $guardian->children()->where('students.status', 'active')->get();
-        $fromLegacy = $guardian->students()->where('status', 'active')->get();
+        $resolver = new FamilyResolver();
 
-        return $fromPivot->merge($fromLegacy)
-            ->unique('id')
+        return $resolver->childrenForGuardians($resolver->guardianGroup($guardian))
             ->map(fn ($s) => [
                 'name'   => $s->full_name,
                 'class'  => $s->schoolClass->name ?? '',

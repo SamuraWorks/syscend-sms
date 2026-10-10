@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Registration;
 
 use App\Http\Controllers\Controller;
 use App\Models\{Guardian, School, User};
+use App\Services\FamilyResolver;
 use App\Services\RegistryVerificationService;
 use Illuminate\Http\{RedirectResponse, Request};
 use Illuminate\Support\Facades\{Auth, Hash, RateLimiter};
@@ -159,9 +160,20 @@ class ParentRegistrationController extends Controller
 
         $guardian->update(['user_id' => $user->id]);
 
-        Guardian::where('email', $email)
-            ->whereNull('user_id')
-            ->update(['user_id' => $user->id]);
+        // One account must cover every child of this parent. A parent is often
+        // stored as one guardian row per child, so link every row that belongs
+        // to the same parent identity (same email — or phone when email is
+        // missing), not just the single row we verified.
+        (new FamilyResolver())
+            ->guardianGroup($guardian)
+            ->each(function (Guardian $sibling) use ($user) {
+                if ($sibling->user_id === null) {
+                    $sibling->update([
+                        'user_id'             => $user->id,
+                        'registration_status' => 'registered',
+                    ]);
+                }
+            });
 
         activity()
             ->causedBy($user)

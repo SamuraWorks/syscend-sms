@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Student;
 use App\Models\Guardian;
-use App\Models\SuccessScore;
+use App\Services\FamilyResolver;
 use App\Services\StudentPerformanceEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,12 +21,9 @@ class ParentPerformanceController extends Controller
             return back()->withErrors('No guardian profile found.');
         }
 
-        $children = Student::where('school_id', $user->school_id)
-            ->where('guardian_id', $guardian->id)
-            ->where('status', 'active')
-            ->get();
+        $children = (new FamilyResolver())->childrenForUser($user);
 
-        $childData = $children->map(function ($child) use ($request) {
+        $childData = $children->map(function (Student $child) use ($request) {
             $engine = new StudentPerformanceEngine($child->school_id, $request->input('academic_year_id'), $request->input('term_id'));
             return $engine->getStudentProfile($child);
         });
@@ -40,12 +37,9 @@ class ParentPerformanceController extends Controller
     public function childDetail(Request $request, int $childId)
     {
         $user = Auth::user();
-        $guardian = Guardian::where('school_id', $user->school_id)->where('user_id', $user->id)->first();
 
-        $student = Student::where('school_id', $user->school_id)
-            ->where('guardian_id', $guardian->id)
-            ->where('id', $childId)
-            ->firstOrFail();
+        $student = (new FamilyResolver())->childrenForUser($user)->firstWhere('id', $childId);
+        abort_unless($student, 404);
 
         $engine = new StudentPerformanceEngine($user->school_id, $request->input('academic_year_id'), $request->input('term_id'));
         $profile = $engine->getStudentProfile($student);

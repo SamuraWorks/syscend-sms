@@ -112,7 +112,7 @@ export default function ParentRegistration({ school, verified, already_registere
                                 ? 'Your family records have been found. Create your account password below.'
                                 : state === 'already_registered'
                                     ? 'This record already has an account.'
-                                    : 'Confirm your child\'s details together with the email and phone number your school has on file.'}
+                                    : 'Confirm any one child\'s details together with the email and phone number your school has on file. One account shows all your children.'}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -184,6 +184,12 @@ export default function ParentRegistration({ school, verified, already_registere
                             </>
                         ) : (
                             <form onSubmit={verifyForm.handleSubmit(onVerify)} className="space-y-4" noValidate>
+                                <div className="flex items-start gap-2 rounded-lg bg-[#1f66f5]/5 border border-[#1f66f5]/20 p-3">
+                                    <Users className="w-4 h-4 text-[#1f66f5] mt-0.5 flex-shrink-0" />
+                                    <p className="text-xs text-slate-600">
+                                        Have more than one child here? You only need to register once — one account shows <span className="font-medium">all your children</span>.
+                                    </p>
+                                </div>
                                 <div className="space-y-1.5">
                                     <Label htmlFor="student_id" className="text-sm font-medium">
                                         Child's Student ID <span className="text-red-500">*</span>
