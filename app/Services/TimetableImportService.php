@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\{AcademicYear, SchoolClass, Section, Staff, Subject, Timetable};
 use App\Support\Imports\HeaderAliases;
+use App\Support\Imports\NameNormalizer;
 use App\Support\Imports\TabularReader;
 use App\Support\StoredFile;
 use Illuminate\Support\Facades\DB;
@@ -27,9 +28,29 @@ class TimetableImportService
 
     private int $schoolId;
 
+    /** @var array<string, SchoolClass>|null */
+    private ?array $classCache = null;
+
+    /** @var array<int, string> */
+    private array $availableClassNames = [];
+
     public function __construct(int $schoolId)
     {
         $this->schoolId = $schoolId;
+    }
+
+    private function resolveClass(string $name): ?SchoolClass
+    {
+        if ($this->classCache === null) {
+            $classes = SchoolClass::where('school_id', $this->schoolId)
+                ->orderBy('level_order')
+                ->orderBy('name')
+                ->get();
+            $this->classCache = NameNormalizer::keyBy($classes, fn($c) => $c->name);
+            $this->availableClassNames = $classes->pluck('name')->filter()->values()->all();
+        }
+
+        return $this->classCache[NameNormalizer::normalize($name)] ?? null;
     }
 
     public function parseFile($job): void
@@ -129,13 +150,16 @@ class TimetableImportService
      */
     private function importRow(array $record): ?string
     {
-        $class = SchoolClass::where('school_id', $this->schoolId)
-            ->whereRaw('LOWER(name) = ?', [Str::lower($record['class_name'] ?? '')])
-            ->first();
-        if (! $class) return "Class '{$record['class_name']}' not found in your school";
+        $class = $this->resolveClass((string) ($record['class_name'] ?? ''));
+        if (! $class) {
+            $hint = $this->availableClassNames
+                ? ' Available classes: ' . implode(', ', $this->availableClassNames) . '.'
+                : ' No classes exist yet — create the classes first.';
+            return "Class '{$record['class_name']}' not found in your school.{$hint}";
+        }
 
         $subject = Subject::where('school_id', $this->schoolId)
-            ->whereRaw('LOWER(name) = ?', [Str::lower($record['subject_name'] ?? '')])
+            ->whereRaw('LOWER(name) = ?', [NameNormalizer::normalize($record['subject_name'] ?? '')])
             ->where('class_id', $class->id)
             ->first();
         if (! $subject) return "Subject '{$record['subject_name']}' is not offered to class '{$record['class_name']}'";
@@ -144,7 +168,7 @@ class TimetableImportService
         if (! empty($record['section_name'])) {
             $section = Section::where('school_id', $this->schoolId)
                 ->where('class_id', $class->id)
-                ->whereRaw('LOWER(name) = ?', [Str::lower($record['section_name'])])
+                ->whereRaw('LOWER(name) = ?', [NameNormalizer::normalize($record['section_name'])])
                 ->first();
             if (! $section) return "Section '{$record['section_name']}' not found for class '{$record['class_name']}'";
         }

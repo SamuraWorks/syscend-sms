@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\{Guardian, ImportJob, SchoolClass, Section, Student};
 use App\Support\Imports\HeaderAliases;
+use App\Support\Imports\NameNormalizer;
 use App\Support\Imports\TabularReader;
 use App\Support\StoredFile;
 use Illuminate\Support\Facades\DB;
@@ -62,13 +63,20 @@ class StudentImportService
 
 
         $existingClasses = SchoolClass::where('school_id', $this->schoolId)
+            ->orderBy('level_order')
+            ->orderBy('name')
             ->get()
-            ->keyBy(fn($c) => strtolower($c->name));
+            ->keyBy(fn($c) => NameNormalizer::normalize($c->name));
+
+        $availableClassNames = $existingClasses->pluck('name')->filter()->values()->all();
 
         $existingSections = [];
+        $availableSections = [];
         foreach ($existingClasses as $class) {
+            $classKey = NameNormalizer::normalize($class->name);
             foreach ($class->sections as $section) {
-                $existingSections[strtolower($class->name)][strtolower($section->name)] = $section->id;
+                $existingSections[$classKey][NameNormalizer::normalize($section->name)] = $section->id;
+                $availableSections[$classKey][] = $section->name;
             }
         }
 
@@ -82,7 +90,7 @@ class StudentImportService
             $firstName = trim($row['first_name'] ?? '');
             $lastName = trim($row['last_name'] ?? '');
             $gender = strtolower(trim($row['gender'] ?? ''));
-            $className = strtolower(trim($row['class_name'] ?? ''));
+            $className = NameNormalizer::normalize($row['class_name'] ?? '');
 
             if ($firstName === '') {
                 $rowErrors[] = 'first_name is required.';
@@ -96,13 +104,20 @@ class StudentImportService
             if ($className === '') {
                 $rowErrors[] = 'class_name is required.';
             } elseif (!isset($existingClasses[$className])) {
-                $rowErrors[] = "class_name '{$row['class_name']}' not found.";
+                $rowErrors[] = "class_name '{$row['class_name']}' not found."
+                    . ($availableClassNames
+                        ? ' Available classes: ' . implode(', ', $availableClassNames) . '.'
+                        : ' No classes exist yet — create the classes first.');
             }
 
-            $sectionName = strtolower(trim($row['section_name'] ?? ''));
+            $sectionName = NameNormalizer::normalize($row['section_name'] ?? '');
             if ($sectionName !== '' && $className !== '' && isset($existingClasses[$className])) {
                 if (!isset($existingSections[$className][$sectionName])) {
-                    $rowErrors[] = "section_name '{$row['section_name']}' not found for class '{$row['class_name']}'.";
+                    $opts = $availableSections[$className] ?? [];
+                    $rowErrors[] = "section_name '{$row['section_name']}' not found for class '{$row['class_name']}'."
+                        . ($opts
+                            ? ' Available sections for this class: ' . implode(', ', $opts) . '.'
+                            : ' This class has no sections — add a section to the class first.');
                 }
             }
 

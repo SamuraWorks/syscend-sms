@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\{AcademicYear, Department, ImportJob, SchoolClass, Subject, SubjectOffering};
 use App\Support\Imports\HeaderAliases;
+use App\Support\Imports\NameNormalizer;
 use App\Support\Imports\TabularReader;
 use App\Support\StoredFile;
 use Illuminate\Support\Facades\DB;
@@ -51,14 +52,18 @@ class SubjectImportService
         $errors = [];
 
         $existingClasses = SchoolClass::where('school_id', $this->schoolId)
+            ->orderBy('level_order')
+            ->orderBy('name')
             ->get()
-            ->keyBy(fn($c) => strtolower($c->name));
+            ->keyBy(fn($c) => NameNormalizer::normalize($c->name));
+        $availableClassNames = $existingClasses->pluck('name')->filter()->values()->all();
 
         $existingDepartments = Department::where('school_id', $this->schoolId)
             ->academic()
             ->active()
             ->get()
-            ->keyBy(fn($d) => strtolower($d->name));
+            ->keyBy(fn($d) => NameNormalizer::normalize($d->name));
+        $availableDepartmentNames = $existingDepartments->pluck('name')->filter()->values()->all();
 
         $existingCodes = Subject::where('school_id', $this->schoolId)
             ->whereNotNull('code')
@@ -81,7 +86,7 @@ class SubjectImportService
             $passMarks      = trim((string) ($row['pass_marks'] ?? ''));
             $departmentName = trim($row['department_name'] ?? '');
 
-            $classKey = strtolower($className);
+            $classKey = NameNormalizer::normalize($className);
             $class = $existingClasses[$classKey] ?? null;
 
             if ($name === '') {
@@ -90,7 +95,10 @@ class SubjectImportService
             if ($className === '') {
                 $rowErrors[] = 'class_name is required.';
             } elseif (!$class) {
-                $rowErrors[] = "class_name '{$className}' not found.";
+                $rowErrors[] = "class_name '{$className}' not found."
+                    . ($availableClassNames
+                        ? ' Available classes: ' . implode(', ', $availableClassNames) . '.'
+                        : ' No classes exist yet — create the classes first.');
             }
 
             if ($type === '') {
@@ -110,9 +118,12 @@ class SubjectImportService
 
             $department = null;
             if ($departmentName !== '') {
-                $department = $existingDepartments[strtolower($departmentName)] ?? null;
+                $department = $existingDepartments[NameNormalizer::normalize($departmentName)] ?? null;
                 if (!$department) {
-                    $rowErrors[] = "department_name '{$departmentName}' not found.";
+                    $rowErrors[] = "department_name '{$departmentName}' not found."
+                        . ($availableDepartmentNames
+                            ? ' Available departments: ' . implode(', ', $availableDepartmentNames) . '.'
+                            : ' No departments exist yet.');
                 } elseif ($class && $class->school_level !== 'senior_secondary') {
                     $rowErrors[] = 'department_name can only be assigned to Senior Secondary (SSS) subjects.';
                 }

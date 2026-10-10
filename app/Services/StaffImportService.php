@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\{Department, Designation, ImportJob, Staff};
 use App\Support\Imports\HeaderAliases;
+use App\Support\Imports\NameNormalizer;
 use App\Support\Imports\TabularReader;
 use App\Support\StoredFile;
 use Illuminate\Support\Facades\DB;
@@ -77,13 +78,17 @@ class StaffImportService
 
         $existingDepartments = Department::where('school_id', $this->schoolId)
             ->pluck('name', 'id')
-            ->mapWithKeys(fn($name, $id) => [strtolower($name) => $id])
+            ->mapWithKeys(fn($name, $id) => [NameNormalizer::normalize($name) => $id])
             ->toArray();
+        $availableDepartmentNames = Department::where('school_id', $this->schoolId)
+            ->pluck('name')->filter()->values()->all();
 
         $existingDesignations = Designation::where('school_id', $this->schoolId)
             ->pluck('name', 'id')
-            ->mapWithKeys(fn($name, $id) => [strtolower($name) => $id])
+            ->mapWithKeys(fn($name, $id) => [NameNormalizer::normalize($name) => $id])
             ->toArray();
+        $availableDesignationNames = Designation::where('school_id', $this->schoolId)
+            ->pluck('name')->filter()->values()->all();
 
         $seenEmpIds = [];
 
@@ -116,6 +121,9 @@ class StaffImportService
                 $rowErrors[] = 'gender must be male or female.';
             }
 
+            $departmentKey = NameNormalizer::normalize($departmentName);
+            $designationKey = NameNormalizer::normalize($designationName);
+
             if ($teacherType !== '' && !in_array($teacherType, self::VALID_TEACHER_TYPES, true)) {
                 $rowErrors[] = 'teacher_type must be subject_teacher, form_master, both, or non_teaching.';
             }
@@ -133,16 +141,20 @@ class StaffImportService
             }
 
             if ($departmentName !== '') {
-                $deptLower = strtolower($departmentName);
-                if (!isset($existingDepartments[$deptLower])) {
-                    $rowErrors[] = "department_name '{$departmentName}' not found.";
+                if (!isset($existingDepartments[$departmentKey])) {
+                    $rowErrors[] = "department_name '{$departmentName}' not found."
+                        . ($availableDepartmentNames
+                            ? ' Available departments: ' . implode(', ', $availableDepartmentNames) . '.'
+                            : ' No departments exist yet — create departments first.');
                 }
             }
 
             if ($designationName !== '') {
-                $desLower = strtolower($designationName);
-                if (!isset($existingDesignations[$desLower])) {
-                    $rowErrors[] = "designation_name '{$designationName}' not found.";
+                if (!isset($existingDesignations[$designationKey])) {
+                    $rowErrors[] = "designation_name '{$designationName}' not found."
+                        . ($availableDesignationNames
+                            ? ' Available designations: ' . implode(', ', $availableDesignationNames) . '.'
+                            : ' No designations exist yet — create designations first.');
                 }
             }
 
@@ -159,8 +171,8 @@ class StaffImportService
                 collect($row)->only(self::ALLOWED_COLUMNS)->toArray(),
                 [
                     '__row_number'       => $rowNum,
-                    '__department_id'    => $departmentName !== '' ? $existingDepartments[strtolower($departmentName)] : null,
-                    '__designation_id'   => $designationName !== '' ? $existingDesignations[strtolower($designationName)] : null,
+                    '__department_id'    => $departmentName !== '' ? ($existingDepartments[$departmentKey] ?? null) : null,
+                    '__designation_id'   => $designationName !== '' ? ($existingDesignations[$designationKey] ?? null) : null,
                     '__teacher_type'     => $teacherType ?: 'non_teaching',
                 ]
             );
