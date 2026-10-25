@@ -1,6 +1,6 @@
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, UserCog, CalendarCheck, DollarSign, Clock, AlertCircle, Trophy, AlertTriangle, ArrowRight, Brain } from 'lucide-react';
+import { Users, UserCog, CalendarCheck, DollarSign, Clock, AlertCircle, Trophy, AlertTriangle, ArrowRight, Brain, UserPlus, ClipboardCheck, Send, ArrowUpRight } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -29,7 +29,7 @@ interface Props {
 
 function KpiCard({ title, value, sub, icon: Icon, color }: { title: string; value: string | number; sub?: string; icon: React.ElementType; color: string }) {
     return (
-        <Card>
+        <Card className="border-border/70 shadow-sm transition-shadow hover:shadow-md">
             <CardContent className="pt-5 pb-5">
                 <div className="flex items-center justify-between">
                     <div>
@@ -52,10 +52,36 @@ export default function Dashboard({ role, totalStudents, totalStaff, attendanceP
     return (
         <AppLayout title="Reports Dashboard">
             <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Analytics Dashboard</h1>
-                    <p className="text-sm text-slate-500 mt-0.5">School performance overview</p>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Overview</p>
+                        <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">Analytics Dashboard</h1>
+                        <p className="mt-1 text-sm text-slate-500">A clear view of today&apos;s school operations and performance.</p>
+                    </div>
+                    <span className="inline-flex w-fit items-center rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-sm">
+                        {new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' }).format(new Date())}
+                    </span>
                 </div>
+
+                {(role === 'school-admin' || role === 'principal') && (
+                    <div className="grid gap-3 sm:grid-cols-3">
+                        <Link href="/school/students/create" className="group rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+                            <div className="flex items-start justify-between"><UserPlus className="h-5 w-5 text-primary" /><ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></div>
+                            <p className="mt-3 text-sm font-semibold">Add a student</p>
+                            <p className="mt-1 text-xs text-muted-foreground">Create a new learner profile</p>
+                        </Link>
+                        <Link href="/school/attendance" className="group rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+                            <div className="flex items-start justify-between"><ClipboardCheck className="h-5 w-5 text-emerald-600" /><ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></div>
+                            <p className="mt-3 text-sm font-semibold">Take attendance</p>
+                            <p className="mt-1 text-xs text-muted-foreground">Record today&apos;s register</p>
+                        </Link>
+                        <Link href="/school/communication/blast" className="group rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+                            <div className="flex items-start justify-between"><Send className="h-5 w-5 text-amber-600" /><ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></div>
+                            <p className="mt-3 text-sm font-semibold">Send an update</p>
+                            <p className="mt-1 text-xs text-muted-foreground">Reach parents and staff</p>
+                        </Link>
+                    </div>
+                )}
 
                 {/* KPI Cards */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
