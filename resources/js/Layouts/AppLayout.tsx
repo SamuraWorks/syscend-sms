@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
 import { toast } from 'sonner';
 import Sidebar from '@/components/layout/Sidebar';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import Topbar from '@/components/layout/Topbar';
 import LicenseBanner from '@/components/layout/LicenseBanner';
 import PageProgress from '@/components/layout/PageProgress';
@@ -117,9 +118,10 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
                 <LicenseBanner />
                 <Topbar title={title} breadcrumbs={breadcrumbs} />
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+                <main className="flex-1 overflow-y-auto p-4 pb-24 sm:p-6 sm:pb-6">
                     {children}
                 </main>
+                <MobileBottomNav />
             </div>
 
             <InstallAppPrompt />
