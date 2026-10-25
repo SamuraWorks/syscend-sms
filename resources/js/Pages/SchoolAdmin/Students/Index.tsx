@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Plus, Search, Users, Eye, Pencil, Trash2, MoreHorizontal, Upload } from 'lucide-react';
+import { Plus, Search, Users, Eye, Pencil, Trash2, MoreHorizontal, Upload, X } from 'lucide-react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -118,6 +118,11 @@ export default function StudentsIndex() {
                             <SelectItem value="inactive">Inactive</SelectItem>
                         </SelectContent>
                     </Select>
+                    {(filters.search || filters.class_id || filters.section_id || filters.status) && (
+                        <Button type="button" variant="ghost" size="sm" onClick={() => { setSearch(''); router.get('/school/students'); }} className="gap-1.5 text-slate-500">
+                            <X className="h-4 w-4" /> Clear filters
+                        </Button>
+                    )}
                 </div>
 
                 <Table>
