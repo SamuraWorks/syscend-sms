@@ -21,7 +21,7 @@ export default function InstallAppPrompt() {
         ? (schoolBranding?.name || 'Syscend Campus')
         : (user?.roles?.includes('super-admin') ? 'Syscend Admin' : 'Syscend Campus');
     const logo = user?.school_id
-        ? (schoolBranding?.badge_url || schoolBranding?.logo_url || platformLogoUrl || '/images/logo.png')
+        ? (schoolBranding?.logo_url || schoolBranding?.badge_url || platformLogoUrl || '/images/logo.png')
         : (platformLogoUrl || '/images/logo.png');
 
     const dismiss = useCallback(() => {
