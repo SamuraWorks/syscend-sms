@@ -17,6 +17,7 @@ interface PageProps { terms: { data: Term[]; meta: { total: number; per_page: nu
 
 export default function AcademicTermsIndex({ terms, academicYears, filters }: PageProps) {
     const [yearFilter, setYearFilter] = useState(filters.academic_year_id || '');
+    const [activeTab, setActiveTab] = useState<'sessions' | 'promotions'>('sessions');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [pendingTerm, setPendingTerm] = useState<Term | null>(null);
     const { data, setData, post, processing, reset } = useForm({ academic_year_id: academicYears.find(y => y.is_current)?.id?.toString() ?? '', name: 'Term 1', start_date: '', end_date: '', is_current: false });
@@ -30,7 +31,28 @@ export default function AcademicTermsIndex({ terms, academicYears, filters }: Pa
         <AppLayout title="Academic Terms">
             <Head title="Academic Terms" />
             <div className="max-w-6xl mx-auto py-6 px-4 space-y-6">
-                <Card>
+                <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Academic lifecycle</p>
+                    <h1 className="mt-1 text-2xl font-bold tracking-tight">Transitions</h1>
+                    <p className="mt-1 text-sm text-muted-foreground">Manage academic sessions, current terms, and student movement without losing history.</p>
+                </div>
+                <div className="inline-flex rounded-lg border border-border bg-muted/40 p-1" role="tablist" aria-label="Transitions sections">
+                    <button type="button" role="tab" aria-selected={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'sessions' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>Sessions</button>
+                    <button type="button" role="tab" aria-selected={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'promotions' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>Promotions</button>
+                </div>
+                {activeTab === 'promotions' ? (
+                    <Card>
+                        <CardHeader><CardTitle>Student promotions</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className="text-sm text-muted-foreground">Review students by their current class and assign destination placements for the next academic year. Existing student profiles and academic history remain unchanged.</p>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <div className="rounded-lg border border-dashed border-border p-4"><p className="font-medium">Source session</p><p className="mt-1 text-sm text-muted-foreground">Choose the academic year and class to review eligible students.</p></div>
+                                <div className="rounded-lg border border-dashed border-border p-4"><p className="font-medium">Destination session</p><p className="mt-1 text-sm text-muted-foreground">Assign the next class or mark an approved repeat, transfer, or graduation.</p></div>
+                            </div>
+                            <Button variant="outline" onClick={() => setActiveTab('sessions')}>Return to sessions</Button>
+                        </CardContent>
+                    </Card>
+                ) : <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="flex items-center gap-2"><Calendar className="h-5 w-5" /> Terms & Sessions</CardTitle>
                         <div className="flex items-center gap-2">
@@ -64,13 +86,13 @@ export default function AcademicTermsIndex({ terms, academicYears, filters }: Pa
                                         <TableCell>{term.academic_year?.name ?? '—'}</TableCell>
                                         <TableCell>{term.start_date}</TableCell>
                                         <TableCell>{term.end_date}</TableCell>
-                                        <TableCell>{term.is_current ? <Badge className="bg-green-100 text-green-800">Current</Badge> : <Badge variant="secondary">Inactive</Badge>}</TableCell>
+                                        <TableCell className="space-x-2">{term.is_current ? <Badge className="bg-green-100 text-green-800">Current</Badge> : <><Badge variant="secondary">Inactive</Badge><Button type="button" variant="ghost" size="sm" onClick={() => setPendingTerm(term)}>Start</Button></>}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
                         </Table>
                     </CardContent>
-                </Card>
+                </Card>}
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogContent>

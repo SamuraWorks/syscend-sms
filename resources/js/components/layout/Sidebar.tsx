@@ -338,9 +338,27 @@ export const navGroups: NavGroup[] = [
         ],
     },
     {
+        title: 'More',
+        items: [
+            { label: 'Classes & Streams', href: '/school-admin/academic-structure', icon: Building2, roles: ['school-admin'] },
+            { label: 'Subjects',          href: '/school-admin/academic-structure', icon: BookOpen, roles: ['school-admin'] },
+            { label: 'Gradebook',         href: '/school/exams',                    icon: BarChart3, roles: ['school-admin'] },
+            { label: 'Finance',           href: '/school/fees/payments',            icon: DollarSign, roles: ['school-admin'] },
+            { label: 'Documents',         href: '/school/report-cards',             icon: FileText, roles: ['school-admin'] },
+            { label: 'Messages',          href: '/school/communication/messages',  icon: MessageSquare, roles: ['school-admin'] },
+            { label: 'School Calendar',   href: '/school/holidays',                icon: CalendarDays, roles: ['school-admin'] },
+            { label: 'Reports',           href: '/school/reports/attendance',       icon: PieChart, roles: ['school-admin'] },
+            { label: 'Users & Permissions', href: '/school/users',                  icon: ShieldCheck, roles: ['school-admin'] },
+            { label: 'School Setup & Settings', href: '/school/settings',            icon: Settings, roles: ['school-admin'] },
+            { label: 'Payroll',           href: '/school/hr/payroll',               icon: Wallet, roles: ['school-admin'] },
+            { label: 'Transport',         href: '/school/transport/vehicles',       icon: Bus, roles: ['school-admin'] },
+            { label: 'Hostel',             href: '/school/hostel',                  icon: Home, roles: ['school-admin'] },
+            { label: 'Inventory',          href: '/school/inventory/items',         icon: Package, roles: ['school-admin'] },
+        ],
+    },
+    {
         title: 'System',
         items: [
-            { label: 'Settings',        href: '/school/settings',                  icon: Settings,      roles: ['school-admin'] },
             { label: 'School Identity',  href: '/school/school-identity',           icon: Fingerprint,   roles: ['school-admin'] },
             { label: 'School Time',      href: '/school/settings/school-time',      icon: Clock,         roles: ['school-admin'] },
             { label: 'Integrations',     href: '/school/settings/integrations',     icon: Plug,          roles: ['school-admin'] },
@@ -799,6 +817,23 @@ export default function Sidebar() {
                             {!collapsed && <span>Download App</span>}
                         </button>
                     </div>
+                )}
+
+                {activeRole === 'school-admin' && (
+                    <nav aria-label="Primary navigation" className="grid grid-cols-5 gap-1 border-t border-border bg-card px-1 py-2 md:hidden">
+                        {[
+                            { label: 'Home', href: '/school/reports/dashboard', icon: LayoutDashboard },
+                            { label: 'Students', href: '/school/students', icon: GraduationCap },
+                            { label: 'Staff', href: '/school/staff', icon: UserCog },
+                            { label: 'Attendance', href: '/school/attendance', icon: ClipboardList },
+                            { label: 'More', href: '/school/settings', icon: Wrench },
+                        ].map(({ label, href, icon: Icon }) => (
+                            <Link key={href} href={href} className="flex min-w-0 flex-col items-center gap-1 rounded-md px-1 py-1 text-[10px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground">
+                                <Icon className="h-4 w-4" aria-hidden="true" />
+                                <span className="truncate">{label}</span>
+                            </Link>
+                        ))}
+                    </nav>
                 )}
 
             </aside>
