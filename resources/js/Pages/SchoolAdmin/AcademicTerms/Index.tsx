@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Calendar } from 'lucide-react';
+import { Calendar, CheckCircle2, History, Layers3, ArrowRight, Search, UsersRound } from 'lucide-react';
 
 interface AcademicYear { id: number; name: string; is_current: boolean; }
 interface Term { id: number; name: string; start_date: string; end_date: string; mid_term_start?: string; mid_term_end?: string; is_current: boolean; academic_year?: AcademicYear; }
@@ -36,6 +36,12 @@ export default function AcademicTermsIndex({ terms, academicYears, filters }: Pa
                     <h1 className="mt-1 text-2xl font-bold tracking-tight">Transitions</h1>
                     <p className="mt-1 text-sm text-muted-foreground">Manage academic sessions, current terms, and student movement without losing history.</p>
                 </div>
+                <div className="grid gap-3 sm:grid-cols-4">
+                    <Card className="border-emerald-200/70 bg-emerald-50/40"><CardContent className="p-4"><div className="flex items-center justify-between"><p className="text-xs font-medium text-muted-foreground">Current session</p><CheckCircle2 className="h-4 w-4 text-emerald-600" /></div><p className="mt-2 text-lg font-semibold">{academicYears.find(y => y.is_current)?.name ?? 'Not set'}</p><p className="text-xs text-muted-foreground">Active academic context</p></CardContent></Card>
+                    <Card><CardContent className="p-4"><div className="flex items-center justify-between"><p className="text-xs font-medium text-muted-foreground">Terms configured</p><Layers3 className="h-4 w-4 text-primary" /></div><p className="mt-2 text-lg font-semibold">{terms.meta.total}</p><p className="text-xs text-muted-foreground">Across available sessions</p></CardContent></Card>
+                    <Card><CardContent className="p-4"><div className="flex items-center justify-between"><p className="text-xs font-medium text-muted-foreground">Previous sessions</p><History className="h-4 w-4 text-slate-500" /></div><p className="mt-2 text-lg font-semibold">{Math.max(academicYears.length - 1, 0)}</p><p className="text-xs text-muted-foreground">History is preserved</p></CardContent></Card>
+                    <Card><CardContent className="p-4"><div className="flex items-center justify-between"><p className="text-xs font-medium text-muted-foreground">Promotion workspace</p><UsersRound className="h-4 w-4 text-amber-600" /></div><p className="mt-2 text-lg font-semibold">Ready</p><p className="text-xs text-muted-foreground">Review before applying</p></CardContent></Card>
+                </div>
                 <div className="inline-flex rounded-lg border border-border bg-muted/40 p-1" role="tablist" aria-label="Transitions sections">
                     <button type="button" role="tab" aria-selected={activeTab === 'sessions'} onClick={() => setActiveTab('sessions')} className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'sessions' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>Sessions</button>
                     <button type="button" role="tab" aria-selected={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'promotions' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>Promotions</button>
@@ -43,13 +49,16 @@ export default function AcademicTermsIndex({ terms, academicYears, filters }: Pa
                 {activeTab === 'promotions' ? (
                     <Card>
                         <CardHeader><CardTitle>Student promotions</CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <p className="text-sm text-muted-foreground">Review students by their current class and assign destination placements for the next academic year. Existing student profiles and academic history remain unchanged.</p>
-                            <div className="grid gap-3 sm:grid-cols-2">
-                                <div className="rounded-lg border border-dashed border-border p-4"><p className="font-medium">Source session</p><p className="mt-1 text-sm text-muted-foreground">Choose the academic year and class to review eligible students.</p></div>
-                                <div className="rounded-lg border border-dashed border-border p-4"><p className="font-medium">Destination session</p><p className="mt-1 text-sm text-muted-foreground">Assign the next class or mark an approved repeat, transfer, or graduation.</p></div>
+                        <CardContent className="space-y-5">
+                            <p className="text-sm text-muted-foreground">Select a source and destination session, review eligible students, then confirm placements. Creating or activating a session never moves students automatically.</p>
+                            <div className="grid gap-4 md:grid-cols-[1fr_auto_1fr] md:items-end">
+                                <div><Label>Source academic session</Label><Select><SelectTrigger className="mt-1"><SelectValue placeholder="Choose source" /></SelectTrigger><SelectContent>{academicYears.map(year => <SelectItem key={year.id} value={String(year.id)}>{year.name}</SelectItem>)}</SelectContent></Select></div>
+                                <ArrowRight className="hidden h-5 w-5 text-muted-foreground md:block" aria-hidden="true" />
+                                <div><Label>Destination academic session</Label><Select><SelectTrigger className="mt-1"><SelectValue placeholder="Choose destination" /></SelectTrigger><SelectContent>{academicYears.map(year => <SelectItem key={year.id} value={String(year.id)}>{year.name}</SelectItem>)}</SelectContent></Select></div>
                             </div>
-                            <Button variant="outline" onClick={() => setActiveTab('sessions')}>Return to sessions</Button>
+                            <div className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-3 sm:flex-row sm:items-center sm:justify-between"><div className="relative w-full sm:max-w-sm"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input className="pl-9" placeholder="Search students by name or ID" /></div><span className="text-sm text-muted-foreground">0 students selected</span></div>
+                            <div className="rounded-lg border border-dashed p-8 text-center"><UsersRound className="mx-auto h-8 w-8 text-muted-foreground/50" /><p className="mt-3 font-medium">Choose both sessions to load students</p><p className="mt-1 text-sm text-muted-foreground">Students will be grouped by class and stream for safe individual or bulk placement.</p></div>
+                            <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setActiveTab('sessions')}>Return to sessions</Button><Button disabled>Review selected students</Button></div>
                         </CardContent>
                     </Card>
                 ) : <Card>
