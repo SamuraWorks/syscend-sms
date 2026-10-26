@@ -50,7 +50,7 @@ export default function Dashboard({ role, totalStudents, totalStaff, attendanceP
     const fmt = (n: number) => new Intl.NumberFormat().format(n);
 
     return (
-        <AppLayout title="Reports Dashboard">
+        <AppLayout title="Overview">
             <div className="space-y-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -119,7 +119,7 @@ export default function Dashboard({ role, totalStudents, totalStaff, attendanceP
                                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                                         <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                                         <YAxis tick={{ fontSize: 11 }} />
-                                        <Tooltip formatter={(v) => [`Le ${fmt(Number(v))}`, 'Collected']} />
+                                        <Tooltip formatter={(v) => [`Le ${fmt(Number(v))}`, 'Collected']} labelFormatter={(label) => `${label}`} />
                                         <Bar dataKey="amount" fill="#6366f1" radius={[4, 4, 0, 0]} isAnimationActive={false} />
                                     </BarChart>
                                 </ResponsiveContainer>
