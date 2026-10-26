@@ -42,15 +42,8 @@ import {
 } from 'lucide-react';
 
 const STEPS = [
-    { id: 'profile', label: 'School Profile', icon: School, required: true },
-    { id: 'school_operations', label: 'School Operations', icon: Clock, required: true },
-    { id: 'academic_structure', label: 'Academic Structure', icon: Building2, required: true },
-    { id: 'subjects', label: 'Subjects & Curriculum', icon: BookOpen, required: true },
-    { id: 'academic_year', label: 'Academic Calendar & Terms', icon: CalendarDays, required: true },
-    { id: 'assessment', label: 'Assessment Setup', icon: ClipboardCheck, required: true },
-    { id: 'grading', label: 'Grading & Promotion', icon: GraduationCap, required: true },
-    { id: 'streams', label: 'Streams & Sections', icon: Layers, required: false },
-    { id: 'branding', label: 'Branding & Documents', icon: Palette, required: false },
+    { id: 'profile', label: 'School Name & Motto', icon: School, required: true },
+    { id: 'branding', label: 'Logo & Brand Colors', icon: Palette, required: false },
     { id: 'ready', label: 'School Ready', icon: Rocket, required: false },
 ];
 
