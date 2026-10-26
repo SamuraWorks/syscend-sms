@@ -33,8 +33,8 @@ export default function FeeReceipt({ payment }: { payment: FeePayment }) {
 
     return (
         <AppLayout title={`Receipt — ${payment.receipt_no}`}>
-            <div className="max-w-xl mx-auto space-y-4">
-                <div className="flex items-center justify-between">
+            <div className="max-w-xl mx-auto space-y-4 print:max-w-none print:space-y-0">
+                <div className="print:hidden flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Link href="/school/fees/payments" className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 dark:hover:text-white">
                             <ArrowLeft className="w-4 h-4" /> Payments

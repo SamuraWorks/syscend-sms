@@ -18,7 +18,7 @@ import { requestInstallPrompt } from '@/components/InstallAppPrompt';
 import { isStandalone } from '@/lib/pwa';
 import type { PageProps } from '@/Types';
 
-interface NavItem {
+export interface NavItem {
     label: string;
     href: string;
     icon: React.ElementType;
@@ -31,7 +31,7 @@ interface NavGroup {
     items: NavItem[];
 }
 
-const navGroups: NavGroup[] = [
+export const navGroups: NavGroup[] = [
     // ═══════════════════════════════════════════════════════════════
     // SUPER ADMIN PORTAL — Platform Command Center
     // ═══════════════════════════════════════════════════════════════
@@ -172,7 +172,7 @@ const navGroups: NavGroup[] = [
         ],
     },
 
-    // ═══════════════════════════════════════════════════════════════
+    // ═══════════════��═══════════════════════════════════════════════
     // PRINCIPAL / HEADTEACHER PORTAL
     // ═══════════════════════════════════════════════════════════════
     {
