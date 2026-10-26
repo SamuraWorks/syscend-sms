@@ -34,7 +34,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
 // Register the service worker so the app is PWA-installable and the install
 // prompt can appear. Only on secure origins (https / localhost) and in the
 // browser — never during SSR. Registration failures are non-fatal.
-if ('serviceWorker' in navigator && typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
     const hostname = window.location.hostname;
     const isLocalHost = hostname === 'localhost' || hostname === '127.0.0.1';
     if (window.location.protocol === 'https:' || isLocalHost) {

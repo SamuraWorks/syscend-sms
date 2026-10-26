@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\PushSubscription;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use App\Models\PlatformSetting;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\WebPush;
 use Throwable;
@@ -29,10 +31,13 @@ class PushService
         $subscriptions = PushSubscription::where('user_id', $user->id)->get();
         if ($subscriptions->isEmpty()) return false;
 
+        $branding = $this->brandingFor($user);
         $payload = json_encode([
             'title'   => $title,
             'message' => $message,
             'url'     => $url,
+            'icon'    => $branding['icon'],
+            'badge'   => $branding['badge'],
         ]);
 
         try {
@@ -72,6 +77,25 @@ class PushService
 
             return false;
         }
+    }
+
+    /** @return array{icon: string, badge: string} */
+    private function brandingFor(User $user): array
+    {
+        $fallback = asset('images/logo.png');
+        $school = $user->school;
+
+        if ($school) {
+            $icon = $school->logo_url ?: $school->badge_url;
+            if ($icon) {
+                return ['icon' => $icon, 'badge' => $school->badge_url ?: $icon];
+            }
+        }
+
+        $platformLogo = PlatformSetting::get('platform_logo');
+        $platformUrl = $platformLogo ? Storage::disk('public')->url($platformLogo) : $fallback;
+
+        return ['icon' => $platformUrl, 'badge' => $platformUrl];
     }
 
     private function ensureOpenSslConfig(): void

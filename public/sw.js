@@ -4,15 +4,13 @@
  * cache-first for static build assets only. Data/API responses are never
  * cached.
  */
-const CACHE = 'syscend-v2';
-const NAV_CACHE_KEY = '/';
+const CACHE = 'syscend-v3';
 
 self.addEventListener('install', (event) => {
     self.skipWaiting();
     event.waitUntil(
         caches
             .open(CACHE)
-            .then((cache) => cache.addAll(['/', '/manifest.webmanifest']))
             .catch(() => {})
     );
 });
@@ -39,8 +37,11 @@ self.addEventListener('push', (event) => {
     const title = data.title || 'Syscend Campus';
     const options = {
         body: data.message || 'You have a new update.',
+        icon: data.icon || '/images/logo.png',
+        badge: data.badge || data.icon || '/images/logo.png',
         data: { url: data.url || '/' },
         tag: data.tag || undefined,
+        requireInteraction: data.requireInteraction === true,
     };
     event.waitUntil(self.registration.showNotification(title, options));
 });
@@ -86,20 +87,9 @@ self.addEventListener('fetch', (event) => {
     const url = new URL(request.url);
     if (url.origin !== self.location.origin) return;
 
-    // Navigations: network first, fall back to the cached app shell while offline.
-    if (request.mode === 'navigate') {
-        event.respondWith(
-            fetch(request)
-                .then((response) => {
-                    if (response.ok) {
-                        caches.open(CACHE).then((c) => c.put(NAV_CACHE_KEY, response.clone())).catch(() => {});
-                    }
-                    return response;
-                })
-                .catch(() => caches.match(NAV_CACHE_KEY))
-        );
-        return;
-    }
+    // Never cache HTML/Inertia navigations: the response is user- and
+    // school-specific, so caching it can show a stale or blank app shell.
+    if (request.mode === 'navigate') return;
 
     // Static assets: cache-first with stale-while-revalidate. Everything else
     // (API, Inertia data requests) is passed straight through untouched.
