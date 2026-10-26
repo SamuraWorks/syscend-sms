@@ -4,7 +4,7 @@ import {
     LayoutDashboard, School, Users, GraduationCap, UserCog,
     CalendarDays, BookOpen, ClipboardList, DollarSign,
     Library, Bus, Home, Package, MessageSquare, BarChart3,
-    Settings, ChevronLeft, ChevronRight, Layers, Clock, CalendarOff,
+    Settings, Layers, Clock, CalendarOff,
     Building2, BadgeCheck, NotebookPen, Video, Megaphone, Mail, Send, Bell,
     PieChart, FileText, TrendingUp, Wrench, ShieldCheck, Plug,
     CreditCard, Tag, Wallet, Receipt, FileSpreadsheet, AlertTriangle, Landmark,
@@ -702,7 +702,7 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
 
 export default function Sidebar() {
     const { auth, schoolBranding, schoolSetupComplete } = usePage<PageProps>().props;
-    const { sidebarCollapsed, toggleCollapsed } = useUIStore();
+    const { sidebarCollapsed } = useUIStore();
     const activeRole = auth?.user?.activeRole ?? auth?.user?.role ?? '';
     const branding = schoolBranding as Record<string, any> | null;
 
@@ -753,10 +753,10 @@ export default function Sidebar() {
             >
                 {/* Logo */}
                 <div className={cn('flex items-center h-16 px-4 border-b border-border', collapsed && 'justify-center px-2')}>
-                    <div className="flex size-9 items-center justify-center overflow-hidden shrink-0 rounded-full bg-white p-0.5 ring-1 ring-black/10">
+                    <div className="flex size-9 items-center justify-center overflow-hidden shrink-0 rounded-full ring-1 ring-black/10">
                         {branding?.logo_url
-                            ? <img src={branding.logo_url} alt={branding.name ?? 'School'} className="size-full object-contain [filter:none]" />
-                            : <img src="/images/logo.png" alt="Syscend Campus" className="size-full object-contain [filter:none]" />}
+                            ? <img src={branding.logo_url} alt={branding.name ?? 'School'} className="size-full rounded-full object-cover" />
+                            : <img src="/images/logo.png" alt="Syscend Campus" className="size-full rounded-full object-cover" />}
                     </div>
                     {!collapsed && (
                         <span className="ml-2.5 font-bold text-foreground text-base tracking-tight truncate">
@@ -801,17 +801,6 @@ export default function Sidebar() {
                     </div>
                 )}
 
-                {/* Collapse toggle — hidden on mobile */}
-                <button
-                    onClick={toggleCollapsed}
-                    className="hidden md:flex absolute -right-3 top-[1.625rem] items-center justify-center w-6 h-6 rounded-full border border-border bg-card shadow-sm hover:bg-accent transition-colors z-10"
-                    aria-label="Toggle sidebar"
-                >
-                    {collapsed
-                        ? <ChevronRight className="w-3 h-3 text-muted-foreground" />
-                        : <ChevronLeft className="w-3 h-3 text-muted-foreground" />
-                    }
-                </button>
             </aside>
         </TooltipProvider>
     );

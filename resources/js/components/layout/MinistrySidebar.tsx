@@ -3,7 +3,7 @@ import {
     LayoutDashboard, School, ClipboardCheck, MapPin, Users,
     FileText, ShieldCheck, ClipboardList, Star, PieChart,
     TrendingUp, Megaphone, Mail, Bell, KeyRound, Settings,
-    ChevronLeft, ChevronRight, GraduationCap, UserCog, Download,
+    GraduationCap, UserCog, Download,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/Stores/useUIStore';
@@ -190,17 +190,6 @@ export default function MinistrySidebar() {
                     ))}
                 </nav>
 
-                {/* Collapse toggle */}
-                <button
-                    onClick={toggleCollapsed}
-                    className="absolute -right-3 top-[1.625rem] flex items-center justify-center w-6 h-6 rounded-full border border-border bg-card shadow-sm hover:bg-accent transition-colors z-10"
-                    aria-label="Toggle sidebar"
-                >
-                    {sidebarCollapsed
-                        ? <ChevronRight className="w-3 h-3 text-muted-foreground" />
-                        : <ChevronLeft className="w-3 h-3 text-muted-foreground" />
-                    }
-                </button>
             </aside>
         </TooltipProvider>
     );

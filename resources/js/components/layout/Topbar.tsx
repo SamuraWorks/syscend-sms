@@ -110,8 +110,8 @@ export default function Topbar({ title, breadcrumbs }: TopbarProps) {
             <div className="flex items-center gap-3 min-w-0">
                 {/* Mobile logo */}
                 <Link href="/" className="flex md:hidden items-center gap-2 min-w-0">
-                    <span className="flex size-8 items-center justify-center shrink-0 overflow-hidden rounded-full bg-white p-0.5 ring-1 ring-black/10">
-                        <img src={mobileLogo} alt="" className="h-full w-full object-contain" />
+                    <span className="flex size-8 items-center justify-center shrink-0 overflow-hidden rounded-full ring-1 ring-black/10">
+                        <img src={mobileLogo} alt="" className="size-full rounded-full object-cover" />
                     </span>
                     <span className="font-bold text-sm text-foreground truncate">{brandName}</span>
                 </Link>
