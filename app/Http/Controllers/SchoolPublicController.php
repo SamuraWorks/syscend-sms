@@ -88,20 +88,22 @@ class SchoolPublicController extends Controller
 
         // The user's own identity icon goes first so it becomes the installed
         // app icon (school logo/badge, or the Syscend admin logo).
-        if (! empty($data['icon'])) {
+        foreach (['icon' => $data['icon'] ?? null, 'alt_icon' => $data['alt_icon'] ?? null] as $key => $source) {
+            if (empty($source)) {
+                continue;
+            }
+
             $icons[] = [
-                'src'     => $data['icon'],
-                'sizes'   => '192x192 512x512',
-                'type'    => $this->imageMime($data['icon']),
-                'purpose' => 'any',
+                'src'     => $source,
+                'sizes'   => '192x192',
+                'type'    => $this->imageMime($source),
+                'purpose' => $key === 'icon' ? 'any maskable' : 'any',
             ];
-        }
-        if (! empty($data['alt_icon'])) {
             $icons[] = [
-                'src'     => $data['alt_icon'],
-                'sizes'   => '192x192 512x512',
-                'type'    => $this->imageMime($data['alt_icon']),
-                'purpose' => 'any',
+                'src'     => $source,
+                'sizes'   => '512x512',
+                'type'    => $this->imageMime($source),
+                'purpose' => $key === 'icon' ? 'any maskable' : 'any',
             ];
         }
 

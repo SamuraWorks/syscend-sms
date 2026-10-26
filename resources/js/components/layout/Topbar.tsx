@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Moon, Sun, LogOut, User, Menu, KeyRound, Check, Shield, Bell } from 'lucide-react';
+import { Moon, Sun, LogOut, User, KeyRound, Check, Shield, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
@@ -73,7 +73,6 @@ interface TopbarProps {
 export default function Topbar({ title, breadcrumbs }: TopbarProps) {
     const { auth, schoolBranding, platformLogoUrl } = usePage<PageProps>().props;
     const { theme, setTheme } = useAuthStore();
-    const { toggleSidebar } = useUIStore();
 
     const user = auth.user;
     const brandName = schoolBranding?.short_name || schoolBranding?.name || 'Syscend Campus';
@@ -109,11 +108,6 @@ export default function Topbar({ title, breadcrumbs }: TopbarProps) {
             )}
             {/* Left */}
             <div className="flex items-center gap-3 min-w-0">
-                {/* Mobile nav toggle */}
-                <Button variant="ghost" size="icon" className="md:hidden" onClick={toggleSidebar} aria-label="Open menu">
-                    <Menu className="w-5 h-5" />
-                </Button>
-
                 {/* Mobile logo */}
                 <Link href="/" className="flex md:hidden items-center gap-2 min-w-0">
                     <span className="flex size-8 items-center justify-center shrink-0 overflow-hidden rounded-full bg-white p-0.5 ring-1 ring-black/10">

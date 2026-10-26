@@ -15,12 +15,12 @@
 
             // Match the manifest to the signed-in identity so an install picks
             // up the right name/icon (school branding vs Syscend admin).
-            $manifestHref = '/manifest.webmanifest';
+            $manifestHref = '/manifest.webmanifest?v=' . time();
             $appleIconHref = null;
             if ($authUser && $authUser->school_id) {
                 $school = School::withoutGlobalScopes()->find($authUser->school_id);
                 if ($school) {
-                    $manifestHref = '/' . $school->slug . '/manifest.webmanifest';
+                    $manifestHref = '/' . $school->slug . '/manifest.webmanifest?v=' . ($school->updated_at?->timestamp ?? time());
                     $appleIconHref = $school->badge_url ?: $school->logo_url;
                 }
             }
