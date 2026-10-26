@@ -45,6 +45,55 @@ const STATUS_OPTIONS: { value: AttendanceStatus; label: string; color: string; i
     { value: 'half_day', label: 'Half Day', color: 'bg-blue-100 text-blue-700 border-blue-300',    icon: MinusCircle  },
 ];
 
+function AdminAttendanceReview({ classes, sections, students, sessions, existing, filters, canApprove }: Props) {
+    const filteredSections = filters.class_id ? sections.filter(s => s.class_id === Number(filters.class_id)) : [];
+    const records = students.map(student => ({ student, record: existing[student.id] }));
+    const submitted = records.filter(({ record }) => record?.submitted_at);
+    const approved = submitted.length > 0 && submitted.every(({ record }) => record?.approved_at);
+
+    function changeFilter(key: string, value: string) {
+        router.get('/school/attendance', { ...filters, [key]: value || undefined }, { preserveScroll: true });
+    }
+
+    function approve() {
+        if (!filters.class_id || !window.confirm('Approve this teacher-submitted register?')) return;
+        router.post('/school/attendance/bulk-approve', {
+            date: filters.date,
+            class_id: filters.class_id,
+            session_id: filters.session_id || undefined,
+        }, { preserveScroll: true });
+    }
+
+    return (
+        <AppLayout title="Attendance submissions">
+            <div className="space-y-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Attendance submissions</h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Review registers submitted by class/form teachers. Student roll-call is teacher-owned.</p>
+                    </div>
+                    {submitted.length > 0 && !approved && canApprove && <Button onClick={approve} className="gap-2"><Shield className="h-4 w-4" /> Approve register</Button>}
+                </div>
+                <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/30 dark:text-indigo-200">
+                    Review-only workspace. Teacher submissions remain versioned and auditable; use the corrections workflow when a register needs changes.
+                </div>
+                <Card><CardContent className="flex flex-wrap items-end gap-3 p-4">
+                    <div><label className="mb-1 block text-xs font-medium text-slate-500">Date</label><Input type="date" value={filters.date} onChange={e => changeFilter('date', e.target.value)} /></div>
+                    <div><label className="mb-1 block text-xs font-medium text-slate-500">Class</label><Select value={filters.class_id ?? ''} onValueChange={v => changeFilter('class_id', v)}><SelectTrigger className="w-40"><SelectValue placeholder="Select class" /></SelectTrigger><SelectContent>{classes.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}</SelectContent></Select></div>
+                    {filteredSections.length > 0 && <div><label className="mb-1 block text-xs font-medium text-slate-500">Stream</label><Select value={filters.section_id ?? ''} onValueChange={v => changeFilter('section_id', v)}><SelectTrigger className="w-36"><SelectValue placeholder="All streams" /></SelectTrigger><SelectContent>{filteredSections.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent></Select></div>}
+                    {sessions.length > 0 && <div><label className="mb-1 block text-xs font-medium text-slate-500">Session</label><Select value={filters.session_id ?? ''} onValueChange={v => changeFilter('session_id', v)}><SelectTrigger className="w-36"><SelectValue placeholder="All sessions" /></SelectTrigger><SelectContent>{sessions.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}</SelectContent></Select></div>}
+                </CardContent></Card>
+                {!filters.class_id ? <div className="rounded-xl border bg-white py-16 text-center text-slate-500 dark:bg-slate-950">Select a class and date to review a register.</div> : (
+                    <Card><CardContent className="p-0"><Table><TableHeader><TableRow><TableHead>Student</TableHead><TableHead>Stream</TableHead><TableHead>Status</TableHead><TableHead>Submission</TableHead></TableRow></TableHeader><TableBody>
+                        {records.length === 0 && <TableRow><TableCell colSpan={4} className="py-16 text-center text-slate-400">No students or submission found for this register.</TableCell></TableRow>}
+                        {records.map(({ student, record }) => <TableRow key={student.id}><TableCell className="font-medium">{student.first_name} {student.last_name}</TableCell><TableCell>{student.section?.name ?? '—'}</TableCell><TableCell><span className="rounded-full border px-2 py-1 text-xs capitalize">{record?.status_draft ?? 'not submitted'}</span><span className="ml-2 text-xs text-slate-500">{record?.status ?? '—'}</span></TableCell><TableCell className="text-xs text-slate-500">{record?.submitted_at ? new Date(record.submitted_at).toLocaleString() : 'Not submitted'}</TableCell></TableRow>)}
+                    </TableBody></Table></CardContent></Card>
+                )}
+            </div>
+        </AppLayout>
+    );
+}
+
 export default function AttendanceIndex({ classes = [], sections = [], students = [], sessions = [], existing = {}, filters, role, canApprove }: Props) {
     const { flash } = usePage<PageProps>().props;
     const { records, setDate, setClassId, setSectionId, markStudent, markAll, initRecords } = useAttendanceStore();
@@ -74,6 +123,10 @@ export default function AttendanceIndex({ classes = [], sections = [], students 
     function handleSessionChange(value: string) {
         setCurrentSessionId(value);
         router.get('/school/attendance', { ...filters, session_id: value || undefined }, { preserveScroll: true });
+    }
+
+    if (!isClassTeacher) {
+        return <AdminAttendanceReview {...{ classes, sections, students, sessions, existing, filters, role, canApprove }} />;
     }
 
     const filteredSections = filters.class_id

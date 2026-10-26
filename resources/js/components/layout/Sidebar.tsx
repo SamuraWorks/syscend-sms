@@ -283,7 +283,7 @@ export const navGroups: NavGroup[] = [
             { label: 'Teacher Assignments',   href: '/school-admin/assignments', icon: UserCog,      roles: ['school-admin'] },
             { label: 'Student Enrollments',  href: '/school-admin/enrollments', icon: GraduationCap, roles: ['school-admin'] },
             { label: 'Timetable',            href: '/school/timetable',         icon: CalendarDays,  roles: ['school-admin'] },
-            { label: 'Attendance',           href: '/school/attendance',        icon: ClipboardList, roles: ['school-admin'] },
+            { label: 'Attendance submissions', href: '/school/attendance',        icon: ClipboardList, roles: ['school-admin'] },
             { label: 'Examinations',         href: '/school/exams',             icon: BookOpen,      roles: ['school-admin'] },
             { label: 'Results & Approvals',  href: '/school/approvals',         icon: ClipboardList, roles: ['school-admin'] },
             { label: 'Report Cards',         href: '/school/report-cards',      icon: FileText,      roles: ['school-admin','accountant'] },
