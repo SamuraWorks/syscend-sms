@@ -17,7 +17,7 @@ export default function AcademicTermsIndex({ terms, academicYears, filters }: Pa
 
     const handleFilter = (value: string) => {
         setYearFilter(value);
-        router.get('/school/academic-terms', value ? { academic_year_id: value } : {}, { preserveState: true });
+        router.get('/school/academic-terms', value && value !== 'all' ? { academic_year_id: value } : {}, { preserveState: true });
     };
 
     return (

@@ -13,6 +13,7 @@ use App\Models\SubjectOffering;
 use App\Models\Timetable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -114,9 +115,20 @@ class ClassController extends Controller
         $data['school_id'] = $schoolId;
         $data['is_active'] = $data['is_active'] ?? true;
 
-        SchoolClass::create($data);
+        DB::transaction(function () use ($data, $schoolId) {
+            $class = SchoolClass::create($data);
 
-        return back()->with('success', 'Class created.');
+            // Every class is immediately usable for placement. Keep the class
+            // name intact and use the existing sections relationship.
+            Section::create([
+                'school_id' => $schoolId,
+                'class_id' => $class->id,
+                'name' => 'Main',
+                'is_active' => true,
+            ]);
+        });
+
+        return back()->with('success', 'Class created with the Main stream.');
     }
 
     public function update(Request $request, SchoolClass $class): RedirectResponse

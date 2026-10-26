@@ -88,7 +88,7 @@ export default function MobileBottomNav() {
                     </div>
                 </div>
             </section>
-            <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_18px_rgba(15,23,42,0.08)] backdrop-blur md:hidden" aria-label="Mobile navigation">
+            <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[#E4E7EC] bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_18px_rgba(15,23,42,0.08)] md:hidden" aria-label="Mobile navigation">
                 <div className="mx-auto grid min-h-16 max-w-lg grid-cols-5 px-1">
                     {primaryItems.map((item) => {
                         const Icon = item.icon;
