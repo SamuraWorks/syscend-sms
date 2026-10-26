@@ -72,8 +72,8 @@ export default function Dashboard({ role, totalStudents, totalStaff, attendanceP
                         </Link>
                         <Link href="/school/attendance" className="group rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
                             <div className="flex items-start justify-between"><ClipboardCheck className="h-5 w-5 text-emerald-600" /><ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></div>
-                            <p className="mt-3 text-sm font-semibold">Take attendance</p>
-                            <p className="mt-1 text-xs text-muted-foreground">Record today&apos;s register</p>
+                            <p className="mt-3 text-sm font-semibold">Review attendance</p>
+                            <p className="mt-1 text-xs text-muted-foreground">Review teacher submissions</p>
                         </Link>
                         <Link href="/school/communication/blast" className="group rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
                             <div className="flex items-start justify-between"><Send className="h-5 w-5 text-amber-600" /><ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></div>
