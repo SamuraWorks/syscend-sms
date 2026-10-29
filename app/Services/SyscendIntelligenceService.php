@@ -2,7 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\AdmissionInquiry;
 use App\Models\Attendance;
+use App\Models\BookIssue;
+use App\Models\FeePayment;
+use App\Models\HostelAllocation;
+use App\Models\InventoryItem;
 use App\Models\Student;
 use App\Models\StudentAlert;
 use App\Models\SuccessScore;
@@ -57,6 +62,7 @@ final class SyscendIntelligenceService
             ],
             'alerts' => $alerts,
             'data_quality' => $dataQuality,
+            'role_metrics' => $this->roleMetrics($schoolId, $role),
             'recommendations' => $this->recommendations($summary, $attendanceRate, $alerts->count()),
             'ai' => ['available' => false, 'message' => 'AI explanations are unavailable until a server-side provider is configured. Calculations above are deterministic and sourced from campus records.'],
         ];
@@ -83,6 +89,33 @@ final class SyscendIntelligenceService
             'recommendations' => ['Please try again later or contact your school administrator if this continues.'],
             'ai' => ['available' => false, 'message' => 'No insight was generated because the underlying campus data could not be read.'],
         ];
+    }
+
+    private function roleMetrics(int $schoolId, string $role): array
+    {
+        return match ($role) {
+            'accountant', 'proprietor' => [
+                ['label' => 'Collected fees', 'value' => (float) FeePayment::where('school_id', $schoolId)->sum('amount_paid')],
+                ['label' => 'Outstanding balance', 'value' => (float) FeePayment::where('school_id', $schoolId)->selectRaw('COALESCE(SUM(amount_due + fine - discount - amount_paid), 0) as balance')->value('balance')],
+            ],
+            'librarian' => [
+                ['label' => 'Active issues', 'value' => BookIssue::where('school_id', $schoolId)->where('status', '!=', 'returned')->count()],
+                ['label' => 'Overdue issues', 'value' => BookIssue::where('school_id', $schoolId)->where('status', '!=', 'returned')->whereDate('due_date', '<', now())->count()],
+            ],
+            'receptionist' => [
+                ['label' => 'Pending admissions', 'value' => AdmissionInquiry::where('school_id', $schoolId)->whereIn('status', ['new', 'pending', 'follow_up'])->count()],
+                ['label' => 'Incomplete registrations', 'value' => Student::where('school_id', $schoolId)->where('registration_status', '!=', 'approved')->count()],
+            ],
+            'store-manager' => [
+                ['label' => 'Low-stock items', 'value' => InventoryItem::where('school_id', $schoolId)->whereColumn('current_stock', '<=', 'minimum_stock')->count()],
+                ['label' => 'Active inventory', 'value' => InventoryItem::where('school_id', $schoolId)->where('is_active', true)->count()],
+            ],
+            'warden' => [
+                ['label' => 'Active allocations', 'value' => HostelAllocation::where('school_id', $schoolId)->where('status', 'active')->count()],
+                ['label' => 'Recorded departures', 'value' => HostelAllocation::where('school_id', $schoolId)->whereNotNull('leaving_date')->count()],
+            ],
+            default => [],
+        };
     }
 
     private function recommendations(array $summary, ?float $attendanceRate, int $openAlerts): array

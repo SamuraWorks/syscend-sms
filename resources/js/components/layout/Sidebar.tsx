@@ -36,6 +36,7 @@ export const navGroups: NavGroup[] = [
         title: 'Intelligence',
         items: [
             { label: 'Syscend Intelligence', href: '/school/intelligence', icon: Brain, roles: ['school-admin', 'principal', 'teacher', 'accountant', 'librarian', 'receptionist', 'driver', 'warden', 'store-manager', 'proprietor', 'student'] },
+ { label: 'Syscend Intelligence', href: '/school/parent/intelligence', icon: Brain, roles: ['parent'] },
         ],
     },
     // ═══════════════════════════════════════════════════════════════

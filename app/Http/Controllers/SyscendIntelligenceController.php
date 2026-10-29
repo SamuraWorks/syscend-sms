@@ -28,4 +28,30 @@ final class SyscendIntelligenceController extends Controller
 
         return Inertia::render('Intelligence/Index', ['intelligence' => $payload]);
     }
+
+    public function parent(Request $request, SyscendIntelligenceService $intelligence)
+    {
+        $user = $request->user();
+        try {
+            $children = (new \App\Services\FamilyResolver())->childrenForUser($user);
+            $profiles = $children->map(fn ($child) => (new \App\Services\StudentPerformanceEngine(
+                (int) $child->school_id,
+                $request->input('academic_year_id'),
+                $request->input('term_id'),
+            ))->getStudentProfile($child))->values();
+            $payload = [
+                'role' => 'parent', 'title' => 'Family learning intelligence',
+                'description' => 'Private academic and attendance insights for your linked children.',
+                'source_status' => $profiles->isEmpty() ? 'limited' : 'connected',
+                'profiles' => $profiles, 'metrics' => [['label' => 'Linked children', 'value' => $profiles->count(), 'tone' => 'indigo']],
+                'trends' => [], 'alerts' => [], 'data_quality' => [],
+                'recommendations' => ['Review each child profile and discuss any declining subject or attendance signal with the school.'],
+                'ai' => ['available' => false, 'message' => 'AI explanations are unavailable; this view uses verified records for your linked children only.'],
+            ];
+        } catch (Throwable $exception) {
+            report($exception);
+            $payload = $intelligence->unavailable('parent');
+        }
+        return Inertia::render('Intelligence/Index', ['intelligence' => $payload]);
+    }
 }

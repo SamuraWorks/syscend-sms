@@ -955,6 +955,7 @@ Route::middleware('auth')->group(function () {
         Route::get('communication',   [ParentPortalController::class, 'communication'])->name('communication');
         // Performance Intelligence
         Route::get('performance',     [ParentPerformanceController::class, 'dashboard'])->name('performance');
+        Route::get('intelligence',    [SyscendIntelligenceController::class, 'parent'])->name('intelligence');
         Route::get('child-performance/{childId}', [ParentPerformanceController::class, 'childDetail'])->name('child-performance');
     });
 
