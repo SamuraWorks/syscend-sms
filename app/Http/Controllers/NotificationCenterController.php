@@ -3,9 +3,27 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class NotificationCenterController extends Controller
 {
+    public function index(Request $request)
+    {
+        $notifications = $request->user()->notifications()->latest()->paginate(20)->through(fn ($notification) => [
+            'id' => (string) $notification->id,
+            'title' => data_get($notification->data, 'title', 'Notification'),
+            'body' => data_get($notification->data, 'message', data_get($notification->data, 'body', 'You have a new notification.')),
+            'created_at' => optional($notification->created_at)->toISOString(),
+            'read' => $notification->read_at !== null,
+            'url' => data_get($notification->data, 'url'),
+        ]);
+
+        return Inertia::render('Notifications/Index', [
+            'notifications' => $notifications,
+            'unread_count' => $request->user()->unreadNotifications()->count(),
+        ]);
+    }
+
     public function summary(Request $request)
     {
         $user = $request->user();

@@ -226,6 +226,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile',                   [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/photo',            [ProfileController::class, 'uploadPhoto'])->name('profile.photo');
     Route::delete('/profile/photo',          [ProfileController::class, 'deletePhoto'])->name('profile.photo.delete');
+    Route::get('/notifications', [NotificationCenterController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/summary', [NotificationCenterController::class, 'summary'])->name('notifications.summary');
     Route::post('/notifications/{notification}/read', [NotificationCenterController::class, 'markRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationCenterController::class, 'markAllRead'])->name('notifications.read-all');
