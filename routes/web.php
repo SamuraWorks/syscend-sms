@@ -106,6 +106,7 @@ use App\Http\Controllers\ParentPerformanceController;
 use App\Http\Controllers\TeacherPerformanceController;
 use App\Http\Controllers\SchoolAdminPerformanceController;
 use App\Http\Controllers\SuperAdminPerformanceController;
+use App\Http\Controllers\SyscendIntelligenceController;
 use App\Services\RoleRegistry;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -890,6 +891,12 @@ Route::middleware('auth')->group(function () {
             Route::patch('people/{personType}/{personId}/school-id',   [PersonIdentityController::class, 'updatePersonId'])->name('people.school-id.update');
         });
     });
+
+    // Shared intelligence surface. The controller applies the role and tenant boundary
+    // before assembling any data; navigation visibility is not the security boundary.
+    Route::middleware(['auth', 'verified', 'role:school-admin|principal|teacher|accountant|librarian|receptionist|driver|warden|store-manager|proprietor|student', 'school.approved'])
+        ->get('school/intelligence', SyscendIntelligenceController::class)
+        ->name('school.intelligence');
 
     /*
     |--------------------------------------------------------------------------
