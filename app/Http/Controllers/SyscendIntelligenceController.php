@@ -26,10 +26,17 @@ final class SyscendIntelligenceController extends Controller
             $payload = $intelligence->unavailable($role);
         }
 
-        $aiStatus = app(\App\Services\AI\AIService::class)->status('intelligence');
+        try {
+            $aiStatus = app(\App\Services\AI\AIService::class)->status('intelligence');
+        } catch (Throwable $exception) {
+            report($exception);
+            $aiStatus = ['allowed' => false, 'has_credentials' => false];
+        }
+
+        $aiAvailable = (bool) ($aiStatus['allowed'] ?? false) && (bool) ($aiStatus['has_credentials'] ?? false);
         $payload['ai'] = [
-            'available' => $aiStatus['allowed'] && $aiStatus['has_credentials'],
-            'message' => ($aiStatus['allowed'] && $aiStatus['has_credentials'])
+            'available' => $aiAvailable,
+            'message' => $aiAvailable
                 ? 'AI explanations use the verified records above and are labeled with their supporting facts.'
                 : 'AI explanations are unavailable until an authorized provider is configured; this view remains deterministic and evidence-based.',
         ];

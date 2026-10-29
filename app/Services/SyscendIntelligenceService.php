@@ -124,8 +124,8 @@ final class SyscendIntelligenceService
 
     private function studentInsights(array $profile): array
     {
-        $current = $profile['current_score'];
-        $metadata = is_object($current) ? ($current->metadata ?? []) : ($current['metadata'] ?? []);
+        $current = $profile['current_score'] ?? null;
+        $metadata = is_object($current) ? ($current->metadata ?? []) : (is_array($current) ? ($current['metadata'] ?? []) : []);
         $homework = $metadata['homework_detail'] ?? [];
         $attendance = $metadata['attendance_detail'] ?? [];
         $subjectScores = is_object($current) ? ($current->subject_scores ?? []) : ($current['subject_scores'] ?? []);
