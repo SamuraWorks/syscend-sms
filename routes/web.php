@@ -36,6 +36,7 @@ use App\Http\Controllers\SchoolAdmin\LibraryController;
 use App\Http\Controllers\SchoolAdmin\PayrollController;
 use App\Http\Controllers\SchoolAdmin\TimetableController;
 use App\Http\Controllers\SchoolAdmin\AIController;
+use App\Http\Controllers\SyscendIntelligenceController;
 use App\Http\Controllers\SchoolAdmin\PersonIdentityController;
 use App\Http\Controllers\SchoolAdmin\ClassController;
 use App\Http\Controllers\SchoolAdmin\DepartmentController;
@@ -106,17 +107,26 @@ use App\Http\Controllers\ParentPerformanceController;
 use App\Http\Controllers\TeacherPerformanceController;
 use App\Http\Controllers\SchoolAdminPerformanceController;
 use App\Http\Controllers\SuperAdminPerformanceController;
+use App\Http\Controllers\SyscendIntelligenceController;
 use App\Services\RoleRegistry;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/up', fn () => response()->json(['status' => 'ok']));
 
-/*
-|--------------------------------------------------------------------------
-| Guest routes
-|--------------------------------------------------------------------------
-*/
+    Route::middleware(['role:school-admin|principal|teacher|accountant|librarian|receptionist|driver|warden|store-manager|proprietor|student', 'school.approved', 'school.setup'])
+        ->prefix('school')
+        ->name('school.')
+        ->group(function () {
+            Route::get('intelligence', SyscendIntelligenceController::class)->name('intelligence');
+        });
+
+    /*
+    |--------------------------------------------------------------------------
+    | School Admin routes (school-admin, principal)
+    |--------------------------------------------------------------------------
+    */
+
 Route::middleware('guest')->group(function () {
     Route::get('/', HomeController::class)->name('home');
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -890,6 +900,12 @@ Route::middleware('auth')->group(function () {
             Route::patch('people/{personType}/{personId}/school-id',   [PersonIdentityController::class, 'updatePersonId'])->name('people.school-id.update');
         });
     });
+
+    // Shared intelligence surface. The controller applies the role and tenant boundary
+    // before assembling any data; navigation visibility is not the security boundary.
+    Route::middleware(['auth', 'verified', 'role:school-admin|principal|teacher|accountant|librarian|receptionist|driver|warden|store-manager|proprietor|student', 'school.approved'])
+        ->get('school/intelligence', SyscendIntelligenceController::class)
+        ->name('school.intelligence');
 
     /*
     |--------------------------------------------------------------------------
