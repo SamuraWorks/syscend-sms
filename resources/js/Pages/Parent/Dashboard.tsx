@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { GraduationCap, DollarSign, Bell, TrendingUp, CheckCircle, AlertTriangle, Users } from 'lucide-react';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import ParentChildSwitcher from '@/components/ParentChildSwitcher';
+import EmbeddedIntelligence from '@/components/intelligence/EmbeddedIntelligence';
 
 interface Guardian { id: number; name: string; phone: string; email: string | null; }
 interface ChildAttendance { total: number; present: number; absent: number; percentage: number; }
@@ -25,6 +26,7 @@ interface Props {
     children: Child[]; announcements: Announcement[];
     childrenIndex?: { id: number; full_name: string }[];
     selectedChild?: string | null;
+    intelligence?: Record<string, unknown> | null;
 }
 
 function AttendanceBar({ pct, label }: { pct: number; label: string }) {
@@ -127,7 +129,7 @@ function ChildCard({ child }: { child: Child }) {
     );
 }
 
-export default function ParentDashboard({ linked, guardian, children, announcements, childrenIndex, selectedChild }: Props) {
+export default function ParentDashboard({ linked, guardian, children, announcements, childrenIndex, selectedChild, intelligence }: Props) {
     if (!linked || !guardian) {
         return (
             <AppLayout title="Parent Dashboard">
@@ -178,6 +180,8 @@ export default function ParentDashboard({ linked, guardian, children, announceme
                         )}
                     </div>
                 </div>
+
+                <EmbeddedIntelligence data={intelligence as any} audience="parent" />
 
                 {/* Children Cards */}
                 <div>

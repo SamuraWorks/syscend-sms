@@ -88,6 +88,20 @@ final class SyscendIntelligenceService
         ];
     }
 
+    public function parent(int $schoolId, int $userId): array
+    {
+        $guardian = \App\Models\Guardian::where('school_id', $schoolId)->where('user_id', $userId)->first();
+        $children = $guardian ? $guardian->students : collect();
+        $insights = [];
+        foreach ($children as $child) {
+            $profile = (new StudentPerformanceEngine($schoolId))->getStudentProfile($child);
+            $score = $profile['current_score'] ?? null;
+            $value = is_object($score) ? ($score->total_score ?? null) : (is_array($score) ? ($score['total_score'] ?? null) : null);
+            $insights[] = ['type' => 'family', 'title' => $child->full_name . ' progress', 'message' => $value === null ? 'No current score is available for this child.' : "The latest recorded score is {$value}%. Review the detailed report for subject-level context.", 'priority' => 'normal'];
+        }
+        return ['role' => 'parent', 'insights' => $insights, 'recommendations' => ['Discuss any declining subject with your child and the relevant teacher.', 'Review attendance and upcoming academic deadlines together.'], 'voice_report' => 'Good morning. Here is your family academic report. ' . collect($insights)->pluck('message')->implode(' '), 'ai' => ['message' => 'This report is limited to verified records belonging to your linked children.']];
+    }
+
     public function unavailable(string $role): array
     {
         return [

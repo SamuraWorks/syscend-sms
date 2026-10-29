@@ -11,6 +11,7 @@ use App\Models\Mark;
 use App\Models\ReportCard;
 use App\Models\Student;
 use App\Models\Timetable;
+use App\Services\SyscendIntelligenceService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -194,6 +195,7 @@ class StudentPortalController extends Controller
             'marks'          => $marks,
             'timetableToday' => $timetableToday,
             'announcements'  => $announcements,
+            'intelligence'   => app(SyscendIntelligenceService::class)->student((int) $user->school_id, (int) $user->id),
         ]);
     }
 

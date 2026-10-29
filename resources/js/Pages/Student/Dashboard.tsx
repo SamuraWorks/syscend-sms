@@ -8,6 +8,7 @@ import {
     TrendingUp, FileText,
 } from 'lucide-react';
 import ProfileAvatar from '@/components/ProfileAvatar';
+import EmbeddedIntelligence from '@/components/intelligence/EmbeddedIntelligence';
 
 interface Student {
     id: number; full_name: string; admission_no: string;
@@ -33,6 +34,7 @@ interface Props {
     linked: boolean; student: Student | null;
     attendance: Attendance; exams: Exam[]; homework: HW[];
     fees: Fees; marks: Mark[]; timetableToday: TT[]; announcements: Announcement[];
+    intelligence?: Record<string, unknown> | null;
 }
 
 const attColor: Record<string, string> = {
@@ -64,7 +66,7 @@ function AttendanceCircle({ pct }: { pct: number }) {
     );
 }
 
-export default function StudentDashboard({ linked, student, attendance, exams, homework, fees, marks, timetableToday, announcements }: Props) {
+export default function StudentDashboard({ linked, student, attendance, exams, homework, fees, marks, timetableToday, announcements, intelligence }: Props) {
     if (!linked || !student) {
         return (
             <AppLayout title="My Dashboard">
@@ -113,6 +115,8 @@ export default function StudentDashboard({ linked, student, attendance, exams, h
                         <span className="capitalize">{attendance.today.replace('-', ' ')}</span>
                     </div>
                 </div>
+
+                <EmbeddedIntelligence data={intelligence as any} audience="student" />
 
                 {/* KPI Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
