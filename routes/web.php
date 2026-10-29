@@ -913,6 +913,13 @@ Route::middleware('auth')->group(function () {
         ->group(function () {
             Route::get('status',                    [AIController::class, 'status'])->name('status');
             Route::post('homepage/generate',        [AIController::class, 'generateHomepage'])->name('homepage.generate')->middleware('throttle:ai-generate');
+            Route::post('intelligence/ask',         [AIController::class, 'generateIntelligence'])->name('intelligence.ask')->middleware('throttle:ai-generate');
+        });
+
+    Route::middleware(['auth', 'verified', 'role:student|parent', 'school.approved'])
+        ->prefix('school/ai')->name('school.ai.portal.')
+        ->group(function () {
+            Route::post('intelligence/ask', [AIController::class, 'generateIntelligence'])->name('intelligence.ask')->middleware('throttle:ai-generate');
         });
 
     /*

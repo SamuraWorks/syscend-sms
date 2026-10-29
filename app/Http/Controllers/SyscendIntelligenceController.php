@@ -26,6 +26,14 @@ final class SyscendIntelligenceController extends Controller
             $payload = $intelligence->unavailable($role);
         }
 
+        $aiStatus = app(\App\Services\AI\AIService::class)->status('intelligence');
+        $payload['ai'] = [
+            'available' => $aiStatus['allowed'] && $aiStatus['has_credentials'],
+            'message' => ($aiStatus['allowed'] && $aiStatus['has_credentials'])
+                ? 'AI explanations use the verified records above and are labeled with their supporting facts.'
+                : 'AI explanations are unavailable until an authorized provider is configured; this view remains deterministic and evidence-based.',
+        ];
+
         return Inertia::render('Intelligence/Index', ['intelligence' => $payload]);
     }
 
