@@ -81,7 +81,7 @@ export const navGroups: NavGroup[] = [
     {
         title: 'Platform Analytics',
         items: [
-            { label: 'Performance Analytics', href: '/super-admin/performance', icon: Sparkles, roles: ['super-admin'] },
+            ,
         ],
     },
     {
@@ -245,7 +245,7 @@ export const navGroups: NavGroup[] = [
         title: 'Reports',
         items: [
             { label: 'Overview',              href: '/school/principal/reports',       icon: PieChart,      roles: ['principal'] },
-            { label: 'Performance Intel',     href: '/school/principal/performance',   icon: TrendingUp,    roles: ['principal'] },
+            { label: 'Syscend Intelligence',  href: '/school/intelligence',           icon: Brain,          roles: ['principal'] },
             { label: 'Attendance Reports', href: '/school/reports/attendance', icon: ClipboardList, roles: ['principal'] },
             { label: 'Academic Reports',   href: '/school/reports/academic',   icon: TrendingUp,    roles: ['principal'] },
             { label: 'Custom Reports',     href: '/school/reports/custom',     icon: FileText,      roles: ['principal'] },
@@ -400,9 +400,9 @@ export const navGroups: NavGroup[] = [
         ],
     },
     {
-        title: 'My Performance',
+        title: 'My Intelligence',
         items: [
-            { label: 'Performance',  href: '/school/student/performance',  icon: Brain,  roles: ['student'] },
+            { label: 'Syscend Intelligence', href: '/school/intelligence', icon: Brain, roles: ['student'] },
             { label: 'Goals',        href: '/school/student/goals',        icon: Target, roles: ['student'] },
             { label: 'Achievements', href: '/school/student/achievements', icon: Trophy, roles: ['student'] },
         ],
@@ -433,9 +433,9 @@ export const navGroups: NavGroup[] = [
         ],
     },
     {
-        title: "Child's Performance",
+        title: "Family Intelligence",
         items: [
-            { label: 'Performance', href: '/school/parent/performance', icon: Brain, roles: ['parent'] },
+            { label: 'Syscend Intelligence', href: '/school/parent/intelligence', icon: Brain, roles: ['parent'] },
         ],
     },
     {
@@ -551,7 +551,7 @@ export const navGroups: NavGroup[] = [
     {
         title: 'Academic Intelligence',
         items: [
-            { label: 'Academic Overview', href: '/school/proprietor/performance', icon: Eye, roles: ['proprietor'] },
+            { label: 'Syscend Intelligence', href: '/school/intelligence', icon: Eye, roles: ['proprietor'] },
         ],
     },
     {

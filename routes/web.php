@@ -737,28 +737,6 @@ Route::middleware('auth')->group(function () {
             Route::delete('school-identity/asset',                     [SchoolIdentityController::class, 'removeAsset'])->name('school-identity.asset.remove');
             Route::get('school-identity/branding-data',                [SchoolIdentityController::class, 'branding'])->name('school-identity.branding-data');
 
-            // Performance Intelligence (shared by all school roles)
-            Route::get('performance/overview',            [PerformanceController::class, 'overview'])->name('performance.overview');
-            Route::get('performance/recalculate',         [PerformanceController::class, 'recalculate'])->name('performance.recalculate');
-            Route::get('performance/student/{studentId}', [PerformanceController::class, 'studentProfile'])->name('performance.student');
-            Route::get('performance/top-students',        [PerformanceController::class, 'topStudents'])->name('performance.top-students');
-            Route::get('performance/at-risk',             [PerformanceController::class, 'atRiskStudents'])->name('performance.at-risk');
-            Route::get('performance/most-improved',       [PerformanceController::class, 'mostImproved'])->name('performance.most-improved');
-            Route::get('performance/subjects',            [PerformanceController::class, 'subjectPerformance'])->name('performance.subjects');
-            Route::get('performance/departments',         [PerformanceController::class, 'departmentPerformance'])->name('performance.departments');
-            Route::get('performance/alerts',              [PerformanceController::class, 'alerts'])->name('performance.alerts');
-            Route::post('performance/alerts/{id}/read',   [PerformanceController::class, 'markAlertRead'])->name('performance.alerts.read');
-            Route::get('performance/interventions',       [PerformanceController::class, 'interventions'])->name('performance.interventions');
-            Route::post('performance/interventions',      [PerformanceController::class, 'storeIntervention'])->name('performance.interventions.store');
-            Route::get('performance/interventions/{id}',  [PerformanceController::class, 'showIntervention'])->name('performance.interventions.show');
-            Route::put('performance/interventions/{id}',  [PerformanceController::class, 'updateIntervention'])->name('performance.interventions.update');
-            Route::post('performance/interventions/{id}/notes', [PerformanceController::class, 'addInterventionNote'])->name('performance.interventions.notes');
-            Route::get('performance/behaviours',          [PerformanceController::class, 'behaviours'])->name('performance.behaviours');
-            Route::post('performance/behaviours',         [PerformanceController::class, 'storeBehaviour'])->name('performance.behaviours.store');
-            Route::get('performance/goals',               [PerformanceController::class, 'goals'])->name('performance.goals');
-            Route::post('performance/goals',              [PerformanceController::class, 'storeGoal'])->name('performance.goals.store');
-            Route::get('performance/achievements',        [PerformanceController::class, 'achievements'])->name('performance.achievements');
-
             // Result Change Requests
             Route::get('result-change-requests', [ResultChangeRequestController::class, 'index'])->name('result-change-requests.index');
             Route::post('result-change-requests', [ResultChangeRequestController::class, 'store'])->name('result-change-requests.store');
@@ -946,7 +924,7 @@ Route::middleware('auth')->group(function () {
         Route::get('academic-progress',   [StudentPortalController::class, 'academicProgress'])->name('academic-progress');
         Route::get('school-info',         [StudentPortalController::class, 'schoolInfo'])->name('school-info');
         // Performance Intelligence
-        Route::get('performance',         [StudentPerformanceController::class, 'dashboard'])->name('performance');
+        Route::redirect('performance', '/school/intelligence')->name('performance');
         Route::get('goals',               [StudentPerformanceController::class, 'goals'])->name('goals');
         Route::get('achievements',        [StudentPerformanceController::class, 'achievements'])->name('achievements');
     });
@@ -965,7 +943,7 @@ Route::middleware('auth')->group(function () {
         Route::get('documents/{documentId}/download', [ParentPortalController::class, 'downloadDocument'])->name('documents.download')->whereNumber('documentId');
         Route::get('communication',   [ParentPortalController::class, 'communication'])->name('communication');
         // Performance Intelligence
-        Route::get('performance',     [ParentPerformanceController::class, 'dashboard'])->name('performance');
+        Route::redirect('performance', '/school/parent/intelligence')->name('performance');
         Route::get('intelligence',    [SyscendIntelligenceController::class, 'parent'])->name('intelligence');
         Route::get('child-performance/{childId}', [ParentPerformanceController::class, 'childDetail'])->name('child-performance');
     });
@@ -999,7 +977,7 @@ Route::middleware('auth')->group(function () {
         Route::get('downloads',            [TeacherPortalController::class, 'downloads'])->name('downloads');
         Route::get('profile',              [TeacherPortalController::class, 'profile'])->name('profile');
         // Performance Intelligence
-        Route::get('performance',          [TeacherPerformanceController::class, 'dashboard'])->name('performance');
+        Route::redirect('performance', '/school/intelligence')->name('performance');
         Route::get('performance/student/{studentId}', [TeacherPerformanceController::class, 'studentDetail'])->name('performance.student');
         Route::get('performance/class',    [TeacherPerformanceController::class, 'classPerformance'])->name('performance.class');
     });
@@ -1024,7 +1002,7 @@ Route::middleware('auth')->group(function () {
         Route::get('downloads',           [AccountantPortalController::class, 'downloads'])->name('downloads');
         Route::get('profile',             [AccountantPortalController::class, 'profile'])->name('profile');
         // Performance Intelligence
-        Route::get('performance',         [PerformanceController::class, 'overview'])->name('performance');
+        Route::redirect('performance', '/school/intelligence')->name('performance');
         Route::get('performance/recalculate', [PerformanceController::class, 'recalculate'])->name('performance.recalculate');
     });
 
@@ -1056,7 +1034,7 @@ Route::middleware('auth')->group(function () {
         Route::post('approvals/{exam}/reject',  [PrincipalPortalController::class, 'rejectExam'])->name('approvals.exam.reject');
         Route::get('audit-log',           [PrincipalPortalController::class, 'auditLog'])->name('audit-log');
         // Performance Intelligence
-        Route::get('performance',         [PrincipalPerformanceController::class, 'dashboard'])->name('performance');
+        Route::redirect('performance', '/school/intelligence')->name('performance');
         Route::get('performance/student/{studentId}', [PrincipalPerformanceController::class, 'studentDetail'])->name('performance.student');
     });
 
@@ -1079,7 +1057,7 @@ Route::middleware('auth')->group(function () {
         Route::get('downloads',           [ProprietorPortalController::class, 'downloads'])->name('downloads');
         Route::get('profile',             [ProprietorPortalController::class, 'profile'])->name('profile');
         // Performance Intelligence
-        Route::get('performance',         [ProprietorPerformanceController::class, 'dashboard'])->name('performance');
+        Route::redirect('performance', '/school/intelligence')->name('performance');
     });
 
     /*
@@ -1232,7 +1210,7 @@ Route::middleware('auth')->group(function () {
             Route::post('2fa/enable', [TwoFactorController::class, 'confirmEnable'])->name('2fa.confirm-enable');
 
             // Performance Intelligence
-            Route::get('performance',                    [SuperAdminPerformanceController::class, 'dashboard'])->name('performance');
+            Route::redirect('performance', '/school/intelligence')->name('performance');
 
             // Platform Notification Centre
             Route::get('notifications',                     [SuperAdminNotificationController::class, 'index'])->name('notifications.index');

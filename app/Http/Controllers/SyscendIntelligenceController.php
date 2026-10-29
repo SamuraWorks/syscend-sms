@@ -53,6 +53,16 @@ final class SyscendIntelligenceController extends Controller
                 'source_status' => $profiles->isEmpty() ? 'limited' : 'connected',
                 'profiles' => $profiles, 'metrics' => [['label' => 'Linked children', 'value' => $profiles->count(), 'tone' => 'indigo']],
                 'trends' => [], 'alerts' => [], 'data_quality' => [],
+                'insights' => $profiles->map(function ($profile) {
+                    $score = $profile['current_score'] ?? null;
+                    $value = is_object($score) ? ($score->total_score ?? null) : ($score['total_score'] ?? null);
+                    return ['type' => 'family', 'title' => 'Child progress available', 'message' => $value === null ? 'No current score is available for this child.' : "The latest recorded progress score is {$value}%.", 'priority' => 'normal'];
+                })->values()->all(),
+                'voice_report' => 'Good morning. Here is your family learning report. ' . $profiles->map(function ($profile) {
+                    $score = $profile['current_score'] ?? null;
+                    $value = is_object($score) ? ($score->total_score ?? null) : ($score['total_score'] ?? null);
+                    return $value === null ? 'A child has no current score available.' : "A child has a latest recorded score of {$value} percent.";
+                })->implode(' '),
                 'recommendations' => ['Review each child profile and discuss any declining subject or attendance signal with the school.'],
                 'ai' => ['available' => false, 'message' => 'AI explanations are unavailable; this view uses verified records for your linked children only.'],
             ];
