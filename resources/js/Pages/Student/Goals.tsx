@@ -1,3 +1,4 @@
+import { FormEvent, useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -5,6 +6,10 @@ import { Target, TrendingUp, Calendar, Flag, CheckCircle, Clock, Sparkles } from
 
 interface Props {
     linked: boolean;
+    canManage?: boolean;
+    students?: { id: number; name: string }[];
+    selectedStudentId?: number;
+
     goals: {
         data: {
             id: number;
@@ -44,7 +49,23 @@ const progressColor = (p: number) =>
     p >= 40 ? 'bg-yellow-500' :
     p >= 20 ? 'bg-orange-500' : 'bg-red-500';
 
-export default function Goals({ linked, goals }: Props) {
+export default function Goals({ linked, goals, canManage = false, students = [], selectedStudentId }: Props) {
+    const [showForm, setShowForm] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+
+    const submitGoal = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setSubmitting(true);
+        const form = event.currentTarget;
+        const response = await fetch(route('school.goals.store'), {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '', Accept: 'application/json' },
+            body: new FormData(form),
+        });
+        if (response.ok) window.location.reload();
+        setSubmitting(false);
+    };
+
     if (!linked) {
         return (
             <AppLayout title="My Goals">
@@ -63,12 +84,17 @@ export default function Goals({ linked, goals }: Props) {
     return (
         <AppLayout title="My Goals">
             <div className="space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                     <div>
                         <h1 className="text-xl font-bold text-slate-900 dark:text-white">My Goals</h1>
-                        <p className="text-sm text-slate-500 mt-0.5">Track your personal learning goals and achievements</p>
+                        <p className="text-sm text-slate-500 mt-0.5">Set term goals and track progress with your family.</p>
                     </div>
+                    {canManage && <button type="button" onClick={() => setShowForm(!showForm)} className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700">{showForm ? 'Cancel' : 'Set a goal'}</button>}
                 </div>
+
+                {students.length > 1 && <form method="get" className="flex items-center gap-2"><label htmlFor="student_id" className="text-sm text-slate-500">Student</label><select id="student_id" name="student_id" defaultValue={selectedStudentId} onChange={(event) => event.currentTarget.form?.submit()} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900">{students.map((student) => <option key={student.id} value={student.id}>{student.name}</option>)}</select></form>}
+
+                {showForm && <Card><CardHeader><CardTitle className="text-base">Create a term goal</CardTitle></CardHeader><CardContent><form onSubmit={submitGoal} className="grid gap-3 sm:grid-cols-2"><input type="hidden" name="student_id" value={selectedStudentId || ''} /><input name="title" required placeholder="Goal title" className="rounded-lg border p-2 text-sm" /><select name="category" className="rounded-lg border p-2 text-sm"><option value="academic">Academic</option><option value="attendance">Attendance</option><option value="personal">Personal</option></select><input name="target_value" placeholder="Target (e.g. 80%)" className="rounded-lg border p-2 text-sm" /><input name="target_date" type="date" className="rounded-lg border p-2 text-sm" /><textarea name="description" placeholder="What will success look like?" className="rounded-lg border p-2 text-sm sm:col-span-2" rows={2} /><button disabled={submitting} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white sm:col-span-2">{submitting ? 'Saving...' : 'Save goal'}</button></form></CardContent></Card>}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <Card>
