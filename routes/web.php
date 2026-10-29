@@ -36,7 +36,6 @@ use App\Http\Controllers\SchoolAdmin\LibraryController;
 use App\Http\Controllers\SchoolAdmin\PayrollController;
 use App\Http\Controllers\SchoolAdmin\TimetableController;
 use App\Http\Controllers\SchoolAdmin\AIController;
-use App\Http\Controllers\SyscendIntelligenceController;
 use App\Http\Controllers\SchoolAdmin\PersonIdentityController;
 use App\Http\Controllers\SchoolAdmin\ClassController;
 use App\Http\Controllers\SchoolAdmin\DepartmentController;
@@ -113,13 +112,6 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/up', fn () => response()->json(['status' => 'ok']));
-
-    Route::middleware(['role:school-admin|principal|teacher|accountant|librarian|receptionist|driver|warden|store-manager|proprietor|student', 'school.approved', 'school.setup'])
-        ->prefix('school')
-        ->name('school.')
-        ->group(function () {
-            Route::get('intelligence', SyscendIntelligenceController::class)->name('intelligence');
-        });
 
     /*
     |--------------------------------------------------------------------------
