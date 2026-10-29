@@ -69,6 +69,22 @@ final class SyscendIntelligenceService
         return ['role' => 'student', 'title' => 'Personal learning intelligence', 'description' => 'A private view of your academic progress, attendance, and next steps.', 'profile' => $profile, 'ai' => ['available' => false, 'message' => 'AI explanations are unavailable; this view uses your recorded results only.']];
     }
 
+    public function unavailable(string $role): array
+    {
+        return [
+            'role' => $role,
+            'title' => 'Syscend Intelligence',
+            'description' => 'Intelligence is temporarily unavailable while the campus data connection is checked.',
+            'source_status' => 'limited',
+            'metrics' => [],
+            'trends' => [],
+            'alerts' => [],
+            'data_quality' => [],
+            'recommendations' => ['Please try again later or contact your school administrator if this continues.'],
+            'ai' => ['available' => false, 'message' => 'No insight was generated because the underlying campus data could not be read.'],
+        ];
+    }
+
     private function recommendations(array $summary, ?float $attendanceRate, int $openAlerts): array
     {
         $items = [];
