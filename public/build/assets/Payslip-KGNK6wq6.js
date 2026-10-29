@@ -1,4 +1,8 @@
+<<<<<<<< HEAD:public/build/assets/Payslip-KGNK6wq6.js
 import{r as e,t}from"./jsx-runtime-Bk81EdXH.js";import{t as n}from"./arrow-left-BqaKZJDz.js";import{t as r}from"./AppLayout-BLCOT2W4.js";import{t as i}from"./printer-5QW1x526.js";import{t as a}from"./button-vUchPwTs.js";import{t as o}from"./badge-BjfvTvjA.js";var s=t(),c={draft:`bg-slate-100 text-slate-600`,generated:`bg-blue-100 text-blue-700`,paid:`bg-green-100 text-green-700`};function l({payroll:t}){return(0,s.jsxs)(r,{title:`Payslip — ${t.month_year}`,children:[(0,s.jsx)(`style`,{children:`
+========
+import{r as e,t}from"./jsx-runtime-Bk81EdXH.js";import{t as n}from"./arrow-left-BqaKZJDz.js";import{t as r}from"./AppLayout-CmRpw4Zh.js";import{t as i}from"./printer-5QW1x526.js";import{t as a}from"./button-vUchPwTs.js";import{t as o}from"./badge-BjfvTvjA.js";var s=t(),c={draft:`bg-slate-100 text-slate-600`,generated:`bg-blue-100 text-blue-700`,paid:`bg-green-100 text-green-700`};function l({payroll:t}){return(0,s.jsxs)(r,{title:`Payslip — ${t.month_year}`,children:[(0,s.jsx)(`style`,{children:`
+>>>>>>>> 97542d3675ed73a0c87d212ca62b79424b4ead0a:public/build/assets/Payslip-Bp6ExO6P.js
                 @media print {
                     body * { visibility: hidden !important; }
                     #payslip-print-area, #payslip-print-area * { visibility: visible !important; }

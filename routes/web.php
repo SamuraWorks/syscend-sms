@@ -107,17 +107,19 @@ use App\Http\Controllers\ParentPerformanceController;
 use App\Http\Controllers\TeacherPerformanceController;
 use App\Http\Controllers\SchoolAdminPerformanceController;
 use App\Http\Controllers\SuperAdminPerformanceController;
+use App\Http\Controllers\SyscendIntelligenceController;
 use App\Services\RoleRegistry;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/up', fn () => response()->json(['status' => 'ok']));
 
-/*
-|--------------------------------------------------------------------------
-| Guest routes
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | School Admin routes (school-admin, principal)
+    |--------------------------------------------------------------------------
+    */
+
 Route::middleware('guest')->group(function () {
     Route::get('/', HomeController::class)->name('home');
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -895,6 +897,12 @@ Route::middleware('auth')->group(function () {
         });
     });
 
+    // Shared intelligence surface. The controller applies the role and tenant boundary
+    // before assembling any data; navigation visibility is not the security boundary.
+    Route::middleware(['auth', 'verified', 'role:school-admin|principal|teacher|accountant|librarian|receptionist|driver|warden|store-manager|proprietor|student', 'school.approved'])
+        ->get('school/intelligence', SyscendIntelligenceController::class)
+        ->name('school.intelligence');
+
     /*
     |--------------------------------------------------------------------------
     | AI feature endpoints (school-scoped)
@@ -909,6 +917,13 @@ Route::middleware('auth')->group(function () {
         ->group(function () {
             Route::get('status',                    [AIController::class, 'status'])->name('status');
             Route::post('homepage/generate',        [AIController::class, 'generateHomepage'])->name('homepage.generate')->middleware('throttle:ai-generate');
+            Route::post('intelligence/ask',         [AIController::class, 'generateIntelligence'])->name('intelligence.ask')->middleware('throttle:ai-generate');
+        });
+
+    Route::middleware(['auth', 'verified', 'role:student|parent', 'school.approved'])
+        ->prefix('school/ai')->name('school.ai.portal.')
+        ->group(function () {
+            Route::post('intelligence/ask', [AIController::class, 'generateIntelligence'])->name('intelligence.ask')->middleware('throttle:ai-generate');
         });
 
     /*
@@ -951,6 +966,7 @@ Route::middleware('auth')->group(function () {
         Route::get('communication',   [ParentPortalController::class, 'communication'])->name('communication');
         // Performance Intelligence
         Route::get('performance',     [ParentPerformanceController::class, 'dashboard'])->name('performance');
+        Route::get('intelligence',    [SyscendIntelligenceController::class, 'parent'])->name('intelligence');
         Route::get('child-performance/{childId}', [ParentPerformanceController::class, 'childDetail'])->name('child-performance');
     });
 

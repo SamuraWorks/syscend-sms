@@ -3,6 +3,7 @@
 use App\Services\AI\Prompts\AnnouncementPrompt;
 use App\Services\AI\Prompts\HomepagePrompt;
 use App\Services\AI\Prompts\ImportColumnMappingPrompt;
+use App\Services\AI\Prompts\IntelligencePrompt;
 use App\Services\AI\Prompts\LessonPlanPrompt;
 
 return [
@@ -93,6 +94,22 @@ return [
     */
 
     'features' => [
+        'intelligence' => [
+            'label'           => 'Syscend Intelligence',
+            'model'           => env('OPENAI_INTELLIGENCE_MODEL', env('OPENAI_MODEL', 'gpt-4o-mini')),
+            'temperature'     => (float) env('OPENAI_INTELLIGENCE_TEMPERATURE', 0.2),
+            'max_tokens'      => (int) env('OPENAI_INTELLIGENCE_MAX_TOKENS', 2048),
+            'timeout'         => (int) env('OPENAI_INTELLIGENCE_TIMEOUT', 90),
+            'enabled'         => (bool) env('OPENAI_INTELLIGENCE_ENABLED', true),
+            'prompt'          => IntelligencePrompt::class,
+            'allowed_roles'   => ['super-admin', 'school-admin', 'principal', 'teacher', 'accountant', 'librarian', 'receptionist', 'driver', 'warden', 'store-manager', 'proprietor', 'student', 'parent', 'ministry-admin', 'district-officer'],
+            'cache_ttl'       => 0,
+            'limits'         => [
+                'per_school_per_day' => (int) env('OPENAI_INTELLIGENCE_SCHOOL_DAILY_LIMIT', 100),
+                'per_user_per_day'   => (int) env('OPENAI_INTELLIGENCE_USER_DAILY_LIMIT', 20),
+            ],
+        ],
+
         'homepage' => [
             'label'           => 'School Homepage',
             'model'           => env('OPENAI_HOMEPAGE_MODEL', env('OPENAI_MODEL', 'gpt-4o-mini')),

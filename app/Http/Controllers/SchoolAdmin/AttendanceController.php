@@ -163,6 +163,10 @@ class AttendanceController extends Controller
             }
         }
 
+        if ($this->canApproveAttendance()) {
+            return back()->with('error', 'School admins review and approve teacher-submitted attendance; they do not take student attendance.');
+        }
+
         $schoolId = $this->getSchoolId();
 
         try {
@@ -252,6 +256,10 @@ class AttendanceController extends Controller
             if (! in_array($data['class_id'], $allowedIds)) {
                 return back()->with('error', 'You can only submit attendance for your assigned class.');
             }
+        }
+
+        if ($this->canApproveAttendance()) {
+            return back()->with('error', 'School admins review and approve teacher-submitted attendance; they do not submit student attendance.');
         }
 
         $schoolId = $this->getSchoolId();

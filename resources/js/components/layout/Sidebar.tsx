@@ -32,6 +32,13 @@ interface NavGroup {
 }
 
 export const navGroups: NavGroup[] = [
+    {
+        title: 'Intelligence',
+        items: [
+            { label: 'Syscend Intelligence', href: '/school/intelligence', icon: Brain, roles: ['school-admin', 'principal', 'teacher', 'accountant', 'librarian', 'receptionist', 'driver', 'warden', 'store-manager', 'proprietor', 'student'] },
+ { label: 'Syscend Intelligence', href: '/school/parent/intelligence', icon: Brain, roles: ['parent'] },
+        ],
+    },
     // ═══════════════════════════════════════════════════════════════
     // SUPER ADMIN PORTAL — Platform Command Center
     // ═══════════════════════════════════════════════════════════════
@@ -277,13 +284,13 @@ export const navGroups: NavGroup[] = [
     {
         title: 'Academics',
         items: [
+            { label: 'Transitions',        href: '/school/academic-terms',          icon: CalendarClock, roles: ['school-admin'] },
             { label: 'Academic Structure', href: '/school-admin/academic-structure', icon: Building2, roles: ['school-admin'] },
             { label: 'Departments',        href: '/school/departments',              icon: Building2, roles: ['school-admin'] },
             { label: 'Houses',             href: '/school/houses',                   icon: Flag,      roles: ['school-admin'] },
             { label: 'Teacher Assignments',   href: '/school-admin/assignments', icon: UserCog,      roles: ['school-admin'] },
-            { label: 'Student Enrollments',  href: '/school-admin/enrollments', icon: GraduationCap, roles: ['school-admin'] },
             { label: 'Timetable',            href: '/school/timetable',         icon: CalendarDays,  roles: ['school-admin'] },
-            { label: 'Attendance',           href: '/school/attendance',        icon: ClipboardList, roles: ['school-admin'] },
+            { label: 'Attendance submissions', href: '/school/attendance',        icon: ClipboardList, roles: ['school-admin'] },
             { label: 'Examinations',         href: '/school/exams',             icon: BookOpen,      roles: ['school-admin'] },
             { label: 'Results & Approvals',  href: '/school/approvals',         icon: ClipboardList, roles: ['school-admin'] },
             { label: 'Report Cards',         href: '/school/report-cards',      icon: FileText,      roles: ['school-admin','accountant'] },
@@ -338,9 +345,27 @@ export const navGroups: NavGroup[] = [
         ],
     },
     {
+        title: 'More',
+        items: [
+            { label: 'Classes & Streams', href: '/school-admin/academic-structure', icon: Building2, roles: ['school-admin'] },
+            { label: 'Subjects',          href: '/school/subjects',                 icon: BookOpen, roles: ['school-admin'] },
+            { label: 'Gradebook & Results', href: '/school/exams',                  icon: BarChart3, roles: ['school-admin'] },
+            { label: 'Finance',           href: '/school/fees/payments',            icon: DollarSign, roles: ['school-admin'] },
+            { label: 'Documents',         href: '/school/report-cards',             icon: FileText, roles: ['school-admin'] },
+            { label: 'Messages',          href: '/school/communication/messages',  icon: MessageSquare, roles: ['school-admin'] },
+            { label: 'School Calendar',   href: '/school/holidays',                icon: CalendarDays, roles: ['school-admin'] },
+            { label: 'Reports',           href: '/school/reports/attendance',       icon: PieChart, roles: ['school-admin'] },
+            { label: 'Users & Permissions', href: '/school/users',                  icon: ShieldCheck, roles: ['school-admin'] },
+            { label: 'School Setup & Settings', href: '/school/settings',           icon: Settings, roles: ['school-admin'] },
+            { label: 'Payroll — Coming soon', href: '/school/hr/payroll',           icon: Wallet, roles: ['school-admin'] },
+            { label: 'Transport — Coming soon', href: '/school/transport/vehicles', icon: Bus, roles: ['school-admin'] },
+            { label: 'Hostel — Coming soon', href: '/school/hostel',                icon: Home, roles: ['school-admin'] },
+            { label: 'Inventory — Coming soon', href: '/school/inventory/items',    icon: Package, roles: ['school-admin'] },
+        ],
+    },
+    {
         title: 'System',
         items: [
-            { label: 'Settings',        href: '/school/settings',                  icon: Settings,      roles: ['school-admin'] },
             { label: 'School Identity',  href: '/school/school-identity',           icon: Fingerprint,   roles: ['school-admin'] },
             { label: 'School Time',      href: '/school/settings/school-time',      icon: Clock,         roles: ['school-admin'] },
             { label: 'Integrations',     href: '/school/settings/integrations',     icon: Plug,          roles: ['school-admin'] },
@@ -755,8 +780,8 @@ export default function Sidebar() {
                 <div className={cn('flex items-center h-16 px-4 border-b border-border', collapsed && 'justify-center px-2')}>
                     <div className="flex size-9 items-center justify-center overflow-hidden shrink-0 rounded-full ring-1 ring-black/10">
                         {branding?.logo_url
-                            ? <img src={branding.logo_url} alt={branding.name ?? 'School'} className="size-full rounded-full object-cover" />
-                            : <img src="/images/logo.png" alt="Syscend Campus" className="size-full rounded-full object-cover" />}
+                            ? <img src={branding.logo_url} alt={branding.name ?? 'School'} className="size-full rounded-full object-contain" />
+                            : <img src="/images/logo.png" alt="Syscend Campus" className="size-full rounded-full object-contain" />}
                     </div>
                     {!collapsed && (
                         <span className="ml-2.5 font-bold text-foreground text-base tracking-tight truncate">
@@ -799,6 +824,23 @@ export default function Sidebar() {
                             {!collapsed && <span>Download App</span>}
                         </button>
                     </div>
+                )}
+
+                {activeRole === 'school-admin' && (
+                    <nav aria-label="Primary navigation" className="grid grid-cols-5 gap-1 border-t border-border bg-card px-1 py-2 md:hidden">
+                        {[
+                            { label: 'Home', href: '/school/reports/dashboard', icon: LayoutDashboard },
+                            { label: 'Students', href: '/school/students', icon: GraduationCap },
+                            { label: 'Staff', href: '/school/staff', icon: UserCog },
+                            { label: 'Attendance', href: '/school/attendance', icon: ClipboardList },
+                            { label: 'More', href: '/school/settings', icon: Wrench },
+                        ].map(({ label, href, icon: Icon }) => (
+                            <Link key={href} href={href} className="flex min-w-0 flex-col items-center gap-1 rounded-md px-1 py-1 text-[10px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground">
+                                <Icon className="h-4 w-4" aria-hidden="true" />
+                                <span className="truncate">{label}</span>
+                            </Link>
+                        ))}
+                    </nav>
                 )}
 
             </aside>

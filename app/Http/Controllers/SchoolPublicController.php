@@ -54,8 +54,8 @@ class SchoolPublicController extends Controller
             'start_url'   => '/dashboard',
             'id'          => '/' . $school->slug . '/app',
             'theme_color' => $school->primary_color ?? '#1e40af',
-            'icon'        => $badge ?: $logo,
-            'alt_icon'    => ($badge && $logo) ? $logo : null,
+            'icon'        => $logo ?: $badge,
+            'alt_icon'    => ($logo && $badge) ? $badge : null,
         ]);
     }
 
