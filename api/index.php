@@ -28,30 +28,8 @@ $set = static function (string $key, string $value): void {
     $_SERVER[$key] = $value;
 };
 
-// Vercel's filesystem is read-only and the fresh database may not yet contain
-// Laravel's optional session/cache tables. Use writable ephemeral fallbacks at
-// the serverless boundary; application data remains in PostgreSQL.
-$runtimeDir = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'syscend-runtime';
-$sessionDir = $runtimeDir.DIRECTORY_SEPARATOR.'sessions';
-$cacheDir = $runtimeDir.DIRECTORY_SEPARATOR.'cache';
-
-foreach ([$sessionDir, $cacheDir] as $directory) {
-    if (! is_dir($directory)) {
-        @mkdir($directory, 0777, true);
-    }
-}
-
-$force = static function (string $key, string $value): void {
-    putenv($key.'='.$value);
-    $_ENV[$key] = $value;
-    $_SERVER[$key] = $value;
-};
-
-$force('LOG_CHANNEL', 'stderr');
-$force('QUEUE_CONNECTION', 'sync');
-$force('SESSION_DRIVER', 'file');
-$force('SESSION_FILES', $sessionDir);
-$force('CACHE_STORE', 'array');
+$set('LOG_CHANNEL', 'stderr');
+$set('QUEUE_CONNECTION', 'sync');
 
 // Vercel stores the production Supabase configuration under the *_2 names.
 // Map those values at the serverless boundary so Laravel keeps its standard
