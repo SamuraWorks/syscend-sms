@@ -57,7 +57,7 @@ class DemoSeeder extends Seeder
     {
         $this->command->info('Seeding Freetown International Academy demo environment...');
 
-        $this->createSuperAdmin();
+        $this->createPlatformDemoUsers();
         $this->createSchoolAndSubscription();
         $this->createAcademicStructure();
         $this->createDepartmentsAndDesignations();
@@ -85,19 +85,12 @@ class DemoSeeder extends Seeder
         $this->printSummary();
     }
 
-    private function createSuperAdmin(): void
+    private function createPlatformDemoUsers(): void
     {
-        $user = User::firstOrCreate(
-            ['email' => 'syscend@gmail.com'],
-            [
-                'name' => 'Super Administrator',
-                'phone' => '+23279630777',
-                'password' => Hash::make($this->demoPass),
-                'status' => 'active',
-            ]
-        );
-        $user->syncRoles(['super-admin']);
-        $this->command->line('  Super Administrator preserved');
+        foreach ([['name' => 'Super Administrator Demo', 'email' => 'superadmin.demo@freetownacademy.edu', 'role' => 'super-admin'], ['name' => 'Ministry Demo', 'email' => 'ministry@freetownacademy.edu', 'role' => 'ministry-admin'], ['name' => 'District Demo', 'email' => 'district@freetownacademy.edu', 'role' => 'district-officer']] as $data) {
+            $user = User::firstOrCreate(['email' => $data['email']], ['name' => $data['name'], 'password' => Hash::make($this->demoPass), 'status' => 'active']);
+            $user->syncRoles([$data['role']]);
+        }
     }
 
     private function createSchoolAndSubscription(): void
@@ -239,7 +232,7 @@ class DemoSeeder extends Seeder
         }
 
         $adminDept = $depts['Administration'];
-        foreach (['Teacher', 'Senior Teacher', 'Head of Department', 'Principal', 'Accountant', 'Librarian', 'School Administrator', 'Proprietor'] as $name) {
+        foreach (['Teacher', 'Senior Teacher', 'Head of Department', 'Principal', 'Accountant', 'Librarian', 'School Administrator', 'Proprietor', 'Receptionist', 'Driver', 'Warden', 'Store Manager'] as $name) {
             Designation::create(['school_id' => $this->schoolId, 'department_id' => $adminDept->id, 'name' => $name]);
         }
 
@@ -452,6 +445,10 @@ class DemoSeeder extends Seeder
             ['first' => 'Fatima', 'last' => 'Bangura', 'role' => 'principal', 'phone' => '+23278100003', 'dob' => '1972-03-15', 'salary' => 6000000, 'desig' => 'Principal'],
             ['first' => 'Ishmael', 'last' => 'Turay', 'role' => 'accountant', 'phone' => '+23278100005', 'dob' => '1980-06-10', 'salary' => 3500000, 'desig' => 'Accountant'],
             ['first' => 'Aminata', 'last' => 'Sesay', 'role' => 'librarian', 'phone' => '+23278100006', 'dob' => '1983-09-22', 'salary' => 3000000, 'desig' => 'Librarian'],
+            ['first' => 'Hawa', 'last' => 'Kallon', 'role' => 'receptionist', 'phone' => '+23278100007', 'dob' => '1988-02-18', 'salary' => 2400000, 'desig' => 'Receptionist'],
+            ['first' => 'Sorie', 'last' => 'Conteh', 'role' => 'driver', 'phone' => '+23278100008', 'dob' => '1979-10-04', 'salary' => 2200000, 'desig' => 'Driver'],
+            ['first' => 'Isatu', 'last' => 'Koroma', 'role' => 'warden', 'phone' => '+23278100009', 'dob' => '1985-11-12', 'salary' => 2600000, 'desig' => 'Warden'],
+            ['first' => 'Musa', 'last' => 'Jalloh', 'role' => 'store-manager', 'phone' => '+23278100010', 'dob' => '1982-04-30', 'salary' => 2500000, 'desig' => 'Store Manager'],
         ];
 
         $empNo = 1;
@@ -614,7 +611,19 @@ class DemoSeeder extends Seeder
 
             $this->students[] = $student;
         }
-        $this->command->line('  5 Students + 5 Parent Users');
+
+        $studentUser = User::create([
+            'school_id' => $this->schoolId,
+            'name' => 'Ibrahim Bangura',
+            'email' => 'student.demo@' . $this->domain,
+            'username' => 'student.demo',
+            'password' => Hash::make($this->demoPass),
+            'status' => 'active',
+        ]);
+        $studentUser->syncRoles(['student']);
+        $this->students[0]?->update(['user_id' => $studentUser->id]);
+
+        $this->command->line('  5 Students + 5 Parent Users + Student Portal User');
     }
 
     private function createExams(): void

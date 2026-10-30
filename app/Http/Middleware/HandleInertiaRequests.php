@@ -42,6 +42,7 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            'demoMode' => fn () => (bool) $request->session()->get('demo_mode'),
             'auth' => [
                 'user' => function () use ($request) {
                     $user = $request->user();

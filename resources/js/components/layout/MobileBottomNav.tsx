@@ -31,6 +31,7 @@ export default function MobileBottomNav() {
     const [moreOpen, setMoreOpen] = useState(false);
     const role = auth?.user?.activeRole ?? auth?.user?.role ?? '';
     const pathname = url ?? (typeof window === 'undefined' ? '' : window.location.pathname);
+    const brandColor = usePage<PageProps>().props.schoolBranding?.primary_color ?? usePage<PageProps>().props.schoolConfig?.primary_color ?? null;
 
     const items = useMemo(() => navGroups
         .flatMap((group) => group.items)
@@ -88,13 +89,13 @@ export default function MobileBottomNav() {
                     </div>
                 </div>
             </section>
-            <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[#E4E7EC] bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_18px_rgba(15,23,42,0.08)] md:hidden" aria-label="Mobile navigation">
+            <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-primary/20 bg-primary/[0.06] pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_rgba(30,64,175,0.12)] backdrop-blur md:hidden" aria-label="Mobile navigation">
                 <div className="mx-auto grid min-h-16 max-w-lg grid-cols-5 px-1">
                     {primaryItems.map((item) => {
                         const Icon = item.icon;
                         const active = isActive(item, pathname);
                         return <Link key={item.href} href={item.href} className={cn('flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium text-muted-foreground transition-colors', active && 'text-primary')} aria-current={active ? 'page' : undefined}>
-                            <span className={cn('flex size-7 items-center justify-center rounded-lg', active && 'bg-primary/10')}><Icon className="size-[18px]" aria-hidden="true" /></span>
+                            <span className={cn('flex size-7 items-center justify-center rounded-lg', active && 'bg-primary/10')}><Icon className="size-[18px]" aria-hidden="true" style={{ color: brandColor ?? undefined }} /></span>
                             <span className="max-w-full truncate">{item.label.replace(' Dashboard', '')}</span>
                         </Link>;
                     })}

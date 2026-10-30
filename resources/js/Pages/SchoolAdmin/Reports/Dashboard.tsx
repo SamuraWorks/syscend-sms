@@ -72,8 +72,8 @@ export default function Dashboard({ role, totalStudents, totalStaff, attendanceP
                         </Link>
                         <Link href="/school/attendance" className="group rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
                             <div className="flex items-start justify-between"><ClipboardCheck className="h-5 w-5 text-emerald-600" /><ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></div>
-                            <p className="mt-3 text-sm font-semibold">Take attendance</p>
-                            <p className="mt-1 text-xs text-muted-foreground">Record today&apos;s register</p>
+                            <p className="mt-3 text-sm font-semibold">Review attendance</p>
+                            <p className="mt-1 text-xs text-muted-foreground">Review teacher submissions</p>
                         </Link>
                         <Link href="/school/communication/blast" className="group rounded-xl border border-border/70 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
                             <div className="flex items-start justify-between"><Send className="h-5 w-5 text-amber-600" /><ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></div>
@@ -154,9 +154,9 @@ export default function Dashboard({ role, totalStudents, totalStaff, attendanceP
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <Brain className="w-5 h-5 text-indigo-500" />
-                                <h2 className="text-lg font-semibold">Performance Intelligence</h2>
+                                <h2 className="text-lg font-semibold">Syscend Intelligence</h2>
                             </div>
-                            <Link href="/school/performance/overview" className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                            <Link href="/school/intelligence" className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
                                 Full Analytics <ArrowRight className="w-4 h-4" />
                             </Link>
                         </div>
@@ -169,7 +169,7 @@ export default function Dashboard({ role, totalStudents, totalStaff, attendanceP
                                             <Trophy className="w-4 h-4 text-amber-500" />
                                             Top Performing Students
                                         </CardTitle>
-                                        <Link href="/school/performance/top-students" className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                                        <Link href="/school/intelligence" className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
                                             View All <ArrowRight className="w-3 h-3" />
                                         </Link>
                                     </CardHeader>
@@ -227,7 +227,7 @@ export default function Dashboard({ role, totalStudents, totalStaff, attendanceP
                                             <AlertTriangle className="w-4 h-4 text-orange-500" />
                                             At-Risk Students
                                         </CardTitle>
-                                        <Link href="/school/performance/at-risk" className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                                        <Link href="/school/intelligence" className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
                                             View All <ArrowRight className="w-3 h-3" />
                                         </Link>
                                     </CardHeader>

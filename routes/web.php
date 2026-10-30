@@ -72,9 +72,11 @@ use App\Http\Controllers\SuperAdmin\ModuleManagerController;
 use App\Http\Controllers\SuperAdmin\PackageController;
 use App\Http\Controllers\SuperAdmin\SchoolController;
 use App\Http\Controllers\SuperAdmin\DemoManagementController;
-use App\Http\Controllers\SuperAdmin\DemoResetController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DemoRequestController;
+use App\Http\Controllers\DemoController;
+use App\Http\Controllers\DemoEnvironmentController;
+use App\Http\Controllers\SuperAdmin\DemoResetController;
 use App\Http\Controllers\StartTrialController;
 use App\Http\Controllers\SuperAdmin\SubscriptionController;
 use App\Http\Controllers\SuperAdmin\InvoiceController;
@@ -84,6 +86,7 @@ use App\Http\Controllers\SuperAdmin\SchoolWithAdminController;
 use App\Http\Controllers\SuperAdmin\NotificationController as SuperAdminNotificationController;
 use App\Http\Controllers\SuperAdmin\AuditLogController as SuperAdminAuditLogController;
 use App\Http\Controllers\WebPushController;
+use App\Http\Controllers\NotificationCenterController;
 use App\Http\Controllers\Registration\RegistrationLandingController;
 use App\Http\Controllers\Registration\StudentRegistrationController;
 use App\Http\Controllers\Registration\ParentRegistrationController;
@@ -106,17 +109,20 @@ use App\Http\Controllers\ParentPerformanceController;
 use App\Http\Controllers\TeacherPerformanceController;
 use App\Http\Controllers\SchoolAdminPerformanceController;
 use App\Http\Controllers\SuperAdminPerformanceController;
+use App\Http\Controllers\SyscendIntelligenceController;
+use App\Http\Controllers\StudentGoalController;
 use App\Services\RoleRegistry;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/up', fn () => response()->json(['status' => 'ok']));
 
-/*
-|--------------------------------------------------------------------------
-| Guest routes
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | School Admin routes (school-admin, principal)
+    |--------------------------------------------------------------------------
+    */
+
 Route::middleware('guest')->group(function () {
     Route::get('/', HomeController::class)->name('home');
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -195,6 +201,11 @@ Route::get('/request-demo',       [DemoRequestController::class, 'show'])->name(
 Route::post('/request-demo',      [DemoRequestController::class, 'submit'])->middleware('throttle:demo')->name('demo.submit');
 Route::get('/request-demo/thank-you', [DemoRequestController::class, 'thankYou'])->name('demo.thank-you');
 
+// Interactive live demo. These routes use the production portal controllers with isolated demo identities.
+Route::get('/demo', [DemoController::class, 'index'])->name('demo.index');
+Route::get('/demo/{role}', [DemoController::class, 'portal'])->where('role', '[a-z-]+')->name('demo.portal');
+Route::post('/demo/exit', [DemoEnvironmentController::class, 'exit'])->name('demo.exit');
+
 /*
 |--------------------------------------------------------------------------
 | Self-service free trial (public)
@@ -209,6 +220,12 @@ Route::post('/start-trial', [StartTrialController::class, 'store'])->middleware(
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
+    Route::middleware(['role:student|parent', 'school.approved'])->prefix('school')->name('school.')->group(function () {
+        Route::get('goals', [StudentGoalController::class, 'index'])->name('goals.index');
+        Route::post('goals', [StudentGoalController::class, 'store'])->name('goals.store');
+        Route::patch('goals/{goal}', [StudentGoalController::class, 'update'])->name('goals.update');
+    });
+
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
     // Email verification (parent self-registration accounts)
@@ -223,6 +240,10 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile',                   [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/photo',            [ProfileController::class, 'uploadPhoto'])->name('profile.photo');
     Route::delete('/profile/photo',          [ProfileController::class, 'deletePhoto'])->name('profile.photo.delete');
+    Route::get('/notifications', [NotificationCenterController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/summary', [NotificationCenterController::class, 'summary'])->name('notifications.summary');
+    Route::post('/notifications/{notification}/read', [NotificationCenterController::class, 'markRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationCenterController::class, 'markAllRead'])->name('notifications.read-all');
     Route::get('/password/change',           [ProfileController::class, 'changePasswordPage'])->name('password.change');
     Route::put('/profile/password',          [ProfileController::class, 'updatePassword'])->name('profile.password');
 
@@ -731,28 +752,6 @@ Route::middleware('auth')->group(function () {
             Route::delete('school-identity/asset',                     [SchoolIdentityController::class, 'removeAsset'])->name('school-identity.asset.remove');
             Route::get('school-identity/branding-data',                [SchoolIdentityController::class, 'branding'])->name('school-identity.branding-data');
 
-            // Performance Intelligence (shared by all school roles)
-            Route::get('performance/overview',            [PerformanceController::class, 'overview'])->name('performance.overview');
-            Route::get('performance/recalculate',         [PerformanceController::class, 'recalculate'])->name('performance.recalculate');
-            Route::get('performance/student/{studentId}', [PerformanceController::class, 'studentProfile'])->name('performance.student');
-            Route::get('performance/top-students',        [PerformanceController::class, 'topStudents'])->name('performance.top-students');
-            Route::get('performance/at-risk',             [PerformanceController::class, 'atRiskStudents'])->name('performance.at-risk');
-            Route::get('performance/most-improved',       [PerformanceController::class, 'mostImproved'])->name('performance.most-improved');
-            Route::get('performance/subjects',            [PerformanceController::class, 'subjectPerformance'])->name('performance.subjects');
-            Route::get('performance/departments',         [PerformanceController::class, 'departmentPerformance'])->name('performance.departments');
-            Route::get('performance/alerts',              [PerformanceController::class, 'alerts'])->name('performance.alerts');
-            Route::post('performance/alerts/{id}/read',   [PerformanceController::class, 'markAlertRead'])->name('performance.alerts.read');
-            Route::get('performance/interventions',       [PerformanceController::class, 'interventions'])->name('performance.interventions');
-            Route::post('performance/interventions',      [PerformanceController::class, 'storeIntervention'])->name('performance.interventions.store');
-            Route::get('performance/interventions/{id}',  [PerformanceController::class, 'showIntervention'])->name('performance.interventions.show');
-            Route::put('performance/interventions/{id}',  [PerformanceController::class, 'updateIntervention'])->name('performance.interventions.update');
-            Route::post('performance/interventions/{id}/notes', [PerformanceController::class, 'addInterventionNote'])->name('performance.interventions.notes');
-            Route::get('performance/behaviours',          [PerformanceController::class, 'behaviours'])->name('performance.behaviours');
-            Route::post('performance/behaviours',         [PerformanceController::class, 'storeBehaviour'])->name('performance.behaviours.store');
-            Route::get('performance/goals',               [PerformanceController::class, 'goals'])->name('performance.goals');
-            Route::post('performance/goals',              [PerformanceController::class, 'storeGoal'])->name('performance.goals.store');
-            Route::get('performance/achievements',        [PerformanceController::class, 'achievements'])->name('performance.achievements');
-
             // Result Change Requests
             Route::get('result-change-requests', [ResultChangeRequestController::class, 'index'])->name('result-change-requests.index');
             Route::post('result-change-requests', [ResultChangeRequestController::class, 'store'])->name('result-change-requests.store');
@@ -872,7 +871,7 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{enrollment}', [EnrollmentController::class, 'destroy'])->name('destroy');
         });
 
-        // ── Teacher Assignments (Subject + Form Master) ──
+        // ── Teacher Assignments (Subject + Form Master) ��─
         Route::prefix('assignments')->name('assignments.')->group(function () {
             Route::get('/', [TeacherAssignmentController::class, 'index'])->name('index');
             Route::post('/', [TeacherAssignmentController::class, 'store'])->name('store');
@@ -891,6 +890,12 @@ Route::middleware('auth')->group(function () {
         });
     });
 
+    // Shared intelligence surface. The controller applies the role and tenant boundary
+    // before assembling any data; navigation visibility is not the security boundary.
+    Route::middleware(['auth', 'verified', 'role:school-admin|principal|teacher|accountant|librarian|receptionist|driver|warden|store-manager|proprietor|student', 'school.approved'])
+        ->get('school/intelligence', SyscendIntelligenceController::class)
+        ->name('school.intelligence');
+
     /*
     |--------------------------------------------------------------------------
     | AI feature endpoints (school-scoped)
@@ -905,6 +910,13 @@ Route::middleware('auth')->group(function () {
         ->group(function () {
             Route::get('status',                    [AIController::class, 'status'])->name('status');
             Route::post('homepage/generate',        [AIController::class, 'generateHomepage'])->name('homepage.generate')->middleware('throttle:ai-generate');
+            Route::post('intelligence/ask',         [AIController::class, 'generateIntelligence'])->name('intelligence.ask')->middleware('throttle:ai-generate');
+        });
+
+    Route::middleware(['auth', 'verified', 'role:student|parent', 'school.approved'])
+        ->prefix('school/ai')->name('school.ai.portal.')
+        ->group(function () {
+            Route::post('intelligence/ask', [AIController::class, 'generateIntelligence'])->name('intelligence.ask')->middleware('throttle:ai-generate');
         });
 
     /*
@@ -927,7 +939,7 @@ Route::middleware('auth')->group(function () {
         Route::get('academic-progress',   [StudentPortalController::class, 'academicProgress'])->name('academic-progress');
         Route::get('school-info',         [StudentPortalController::class, 'schoolInfo'])->name('school-info');
         // Performance Intelligence
-        Route::get('performance',         [StudentPerformanceController::class, 'dashboard'])->name('performance');
+        Route::redirect('performance', '/school/intelligence')->name('performance');
         Route::get('goals',               [StudentPerformanceController::class, 'goals'])->name('goals');
         Route::get('achievements',        [StudentPerformanceController::class, 'achievements'])->name('achievements');
     });
@@ -946,7 +958,8 @@ Route::middleware('auth')->group(function () {
         Route::get('documents/{documentId}/download', [ParentPortalController::class, 'downloadDocument'])->name('documents.download')->whereNumber('documentId');
         Route::get('communication',   [ParentPortalController::class, 'communication'])->name('communication');
         // Performance Intelligence
-        Route::get('performance',     [ParentPerformanceController::class, 'dashboard'])->name('performance');
+        Route::redirect('performance', '/school/parent/intelligence')->name('performance');
+        Route::get('intelligence',    [SyscendIntelligenceController::class, 'parent'])->name('intelligence');
         Route::get('child-performance/{childId}', [ParentPerformanceController::class, 'childDetail'])->name('child-performance');
     });
 
@@ -979,7 +992,7 @@ Route::middleware('auth')->group(function () {
         Route::get('downloads',            [TeacherPortalController::class, 'downloads'])->name('downloads');
         Route::get('profile',              [TeacherPortalController::class, 'profile'])->name('profile');
         // Performance Intelligence
-        Route::get('performance',          [TeacherPerformanceController::class, 'dashboard'])->name('performance');
+        Route::redirect('performance', '/school/intelligence')->name('performance');
         Route::get('performance/student/{studentId}', [TeacherPerformanceController::class, 'studentDetail'])->name('performance.student');
         Route::get('performance/class',    [TeacherPerformanceController::class, 'classPerformance'])->name('performance.class');
     });
@@ -1004,7 +1017,7 @@ Route::middleware('auth')->group(function () {
         Route::get('downloads',           [AccountantPortalController::class, 'downloads'])->name('downloads');
         Route::get('profile',             [AccountantPortalController::class, 'profile'])->name('profile');
         // Performance Intelligence
-        Route::get('performance',         [PerformanceController::class, 'overview'])->name('performance');
+        Route::redirect('performance', '/school/intelligence')->name('performance');
         Route::get('performance/recalculate', [PerformanceController::class, 'recalculate'])->name('performance.recalculate');
     });
 
@@ -1036,7 +1049,7 @@ Route::middleware('auth')->group(function () {
         Route::post('approvals/{exam}/reject',  [PrincipalPortalController::class, 'rejectExam'])->name('approvals.exam.reject');
         Route::get('audit-log',           [PrincipalPortalController::class, 'auditLog'])->name('audit-log');
         // Performance Intelligence
-        Route::get('performance',         [PrincipalPerformanceController::class, 'dashboard'])->name('performance');
+        Route::redirect('performance', '/school/intelligence')->name('performance');
         Route::get('performance/student/{studentId}', [PrincipalPerformanceController::class, 'studentDetail'])->name('performance.student');
     });
 
@@ -1059,7 +1072,7 @@ Route::middleware('auth')->group(function () {
         Route::get('downloads',           [ProprietorPortalController::class, 'downloads'])->name('downloads');
         Route::get('profile',             [ProprietorPortalController::class, 'profile'])->name('profile');
         // Performance Intelligence
-        Route::get('performance',         [ProprietorPerformanceController::class, 'dashboard'])->name('performance');
+        Route::redirect('performance', '/school/intelligence')->name('performance');
     });
 
     /*
@@ -1212,7 +1225,7 @@ Route::middleware('auth')->group(function () {
             Route::post('2fa/enable', [TwoFactorController::class, 'confirmEnable'])->name('2fa.confirm-enable');
 
             // Performance Intelligence
-            Route::get('performance',                    [SuperAdminPerformanceController::class, 'dashboard'])->name('performance');
+            Route::redirect('performance', '/school/intelligence')->name('performance');
 
             // Platform Notification Centre
             Route::get('notifications',                     [SuperAdminNotificationController::class, 'index'])->name('notifications.index');
@@ -1228,10 +1241,7 @@ Route::middleware('auth')->group(function () {
             Route::get('audit-log/stream',              [SuperAdminAuditLogController::class, 'stream'])->name('audit-log.stream');
             Route::get('audit-log/export',              [SuperAdminAuditLogController::class, 'export'])->name('audit-log.export');
 
-            // Demo Reset
-            Route::get('demo-reset', [DemoResetController::class, 'index'])->name('demo-reset.index');
-            Route::post('demo-reset', [DemoResetController::class, 'execute'])->name('demo-reset.execute');
-        });
+                });
 
     /*
     |--------------------------------------------------------------------------
