@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Bell, BookOpen, CheckCircle2, ChevronDown, CircleDollarSign, GraduationCap, LayoutDashboard, Menu, Play, RotateCcw, Sparkles, TrendingUp, Users, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Bell, BookOpen, CheckCircle2, ChevronDown, CircleDollarSign, GraduationCap, LayoutDashboard, Menu, Play, RotateCcw, Sparkles, TrendingUp, Users, X } from 'lucide-react';
 import { demoRecords, demoRoleById, demoSchool, demoStudent, type DemoRole } from '@/demo/data';
 import { Button } from '@/components/ui/button';
 
