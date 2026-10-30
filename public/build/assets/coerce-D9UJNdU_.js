@@ -1,1 +1,0 @@
-import{d as e,t}from"./schemas-DYR7MJEY.js";function n(n){return e(t,n)}export{n as t};
