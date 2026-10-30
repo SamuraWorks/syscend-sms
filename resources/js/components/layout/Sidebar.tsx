@@ -403,7 +403,7 @@ export const navGroups: NavGroup[] = [
         title: 'My Performance',
         items: [
             { label: 'Performance',  href: '/school/student/performance',  icon: Brain,  roles: ['student'] },
-            { label: 'Goals',        href: '/school/student/goals',        icon: Target, roles: ['student'] },
+            { label: 'Goals',        href: '/school/goals',        icon: Target, roles: ['student', 'parent'] },
             { label: 'Achievements', href: '/school/student/achievements', icon: Trophy, roles: ['student'] },
         ],
     },

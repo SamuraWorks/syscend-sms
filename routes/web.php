@@ -75,6 +75,7 @@ use App\Http\Controllers\SuperAdmin\DemoManagementController;
 use App\Http\Controllers\SuperAdmin\DemoResetController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DemoRequestController;
+use App\Http\Controllers\DemoPortalController;
 use App\Http\Controllers\StartTrialController;
 use App\Http\Controllers\SuperAdmin\SubscriptionController;
 use App\Http\Controllers\SuperAdmin\InvoiceController;
@@ -107,6 +108,7 @@ use App\Http\Controllers\TeacherPerformanceController;
 use App\Http\Controllers\SchoolAdminPerformanceController;
 use App\Http\Controllers\SuperAdminPerformanceController;
 use App\Http\Controllers\SyscendIntelligenceController;
+use App\Http\Controllers\StudentGoalController;
 use App\Services\RoleRegistry;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -193,6 +195,9 @@ Route::get('/security', fn () => Inertia::render('Public/Security'))->name('secu
 | Demo Request (public)
 |--------------------------------------------------------------------------
 */
+Route::get('/demo',               [DemoPortalController::class, 'index'])->name('demo.portal');
+Route::post('/demo/login',        [DemoPortalController::class, 'login'])->middleware('throttle:demo')->name('demo.login');
+Route::post('/demo/exit',         [DemoPortalController::class, 'exit'])->name('demo.exit');
 Route::get('/request-demo',       [DemoRequestController::class, 'show'])->name('demo.request');
 Route::post('/request-demo',      [DemoRequestController::class, 'submit'])->middleware('throttle:demo')->name('demo.submit');
 Route::get('/request-demo/thank-you', [DemoRequestController::class, 'thankYou'])->name('demo.thank-you');
@@ -211,6 +216,12 @@ Route::post('/start-trial', [StartTrialController::class, 'store'])->middleware(
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth')->group(function () {
+    Route::middleware(['role:student|parent', 'school.approved'])->prefix('school')->name('school.')->group(function () {
+        Route::get('goals', [StudentGoalController::class, 'index'])->name('goals.index');
+        Route::post('goals', [StudentGoalController::class, 'store'])->name('goals.store');
+        Route::patch('goals/{goal}', [StudentGoalController::class, 'update'])->name('goals.update');
+    });
+
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
     // Email verification (parent self-registration accounts)

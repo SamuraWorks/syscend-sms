@@ -10,6 +10,7 @@ import InstallAppPrompt from '@/components/InstallAppPrompt';
 import { useAuthStore } from '@/Stores/useAuthStore';
 import { useUIStore } from '@/Stores/useUIStore';
 import { cn } from '@/lib/utils';
+import { Link } from '@inertiajs/react';
 import type { PageProps } from '@/Types';
 
 interface AppLayoutProps {
@@ -19,7 +20,7 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children, title, breadcrumbs }: AppLayoutProps) {
-    const { flash, faviconUrl, schoolBranding, platformLogoUrl } = usePage<PageProps>().props;
+    const { flash, faviconUrl, schoolBranding, platformLogoUrl, demoMode } = usePage<PageProps>().props;
     const theme = useAuthStore((s) => s.theme);
     const { sidebarOpen } = useUIStore();
 
@@ -116,6 +117,7 @@ export default function AppLayout({ children, title, breadcrumbs }: AppLayoutPro
 
             {/* Main */}
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+                {demoMode && <div className="flex items-center justify-between gap-3 bg-amber-400 px-4 py-1.5 text-xs font-semibold text-amber-950"><span>DEMO MODE · Fictional connected data</span><Link href="/demo" method="get" className="underline underline-offset-2">Switch portal</Link></div>}
                 <LicenseBanner />
                 <Topbar title={title} breadcrumbs={breadcrumbs} />
                 <main className="flex-1 overflow-y-auto p-4 pb-24 sm:p-6 sm:pb-6">
