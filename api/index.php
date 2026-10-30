@@ -57,24 +57,29 @@ $force('CACHE_STORE', 'array');
 // Map those values at the serverless boundary so Laravel keeps its standard
 // configuration contract without duplicating or exposing secrets in source.
 $productionAliases = [
-    'APP_KEY' => 'APP_KEY_2',
-    'APP_URL' => 'APP_URL_2',
-    'DB_CONNECTION' => 'DB_CONNECTION_2',
-    'DB_HOST' => 'DB_HOST_2',
-    'DB_PORT' => 'DB_PORT_2',
-    'DB_DATABASE' => 'DB_DATABASE_2',
-    'DB_USERNAME' => 'DB_USERNAME_2',
-    'DB_PASSWORD' => 'DB_PASSWORD_2',
-    'DB_SSLMODE' => 'DB_SSLMODE_2',
+    'APP_KEY' => ['APP_KEY_2'],
+    'APP_URL' => ['APP_URL_2'],
+    'DB_CONNECTION' => ['DB_CONNECTION_2', 'DB_CONNECTION'],
+    'DB_HOST' => ['DB_HOST_2', 'POSTGRES_HOST', 'DB_HOST'],
+    'DB_PORT' => ['DB_PORT_2', 'POSTGRES_PORT', 'DB_PORT'],
+    'DB_DATABASE' => ['DB_DATABASE_2', 'POSTGRES_DATABASE', 'DB_DATABASE'],
+    'DB_USERNAME' => ['DB_USERNAME_2', 'POSTGRES_USER', 'DB_USERNAME'],
+    'DB_PASSWORD' => ['DB_PASSWORD_2', 'POSTGRES_PASSWORD', 'DB_PASSWORD'],
+    'DB_SSLMODE' => ['DB_SSLMODE_2', 'DB_SSLMODE'],
 ];
 
-foreach ($productionAliases as $target => $source) {
-    $sourceValue = getenv($source);
+foreach ($productionAliases as $target => $sources) {
+    foreach ($sources as $source) {
+        $sourceValue = getenv($source);
 
-    if ($sourceValue !== false && $sourceValue !== '') {
+        if ($sourceValue === false || $sourceValue === '' || str_starts_with($sourceValue, '<')) {
+            continue;
+        }
+
         putenv($target.'='.$sourceValue);
         $_ENV[$target] = $sourceValue;
         $_SERVER[$target] = $sourceValue;
+        break;
     }
 }
 
