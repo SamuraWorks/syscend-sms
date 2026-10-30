@@ -75,7 +75,7 @@ use App\Http\Controllers\SuperAdmin\DemoManagementController;
 use App\Http\Controllers\SuperAdmin\DemoResetController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DemoRequestController;
-use App\Http\Controllers\DemoPortalController;
+use App\Http\Controllers\DemoEnvironmentController;
 use App\Http\Controllers\StartTrialController;
 use App\Http\Controllers\SuperAdmin\SubscriptionController;
 use App\Http\Controllers\SuperAdmin\InvoiceController;
@@ -195,9 +195,11 @@ Route::get('/security', fn () => Inertia::render('Public/Security'))->name('secu
 | Demo Request (public)
 |--------------------------------------------------------------------------
 */
-Route::get('/demo',               [DemoPortalController::class, 'index'])->name('demo.portal');
-Route::post('/demo/login',        [DemoPortalController::class, 'login'])->middleware('throttle:demo')->name('demo.login');
-Route::post('/demo/exit',         [DemoPortalController::class, 'exit'])->name('demo.exit');
+Route::get('/demo/{portal}', [DemoEnvironmentController::class, 'enter'])
+    ->where('portal', 'school-admin|principal|teacher|accountant|librarian|student|parent|proprietor|ministry-admin|district-officer')
+    ->middleware('throttle:demo')
+    ->name('demo.enter');
+Route::post('/demo/exit', [DemoEnvironmentController::class, 'exit'])->name('demo.exit');
 Route::get('/request-demo',       [DemoRequestController::class, 'show'])->name('demo.request');
 Route::post('/request-demo',      [DemoRequestController::class, 'submit'])->middleware('throttle:demo')->name('demo.submit');
 Route::get('/request-demo/thank-you', [DemoRequestController::class, 'thankYou'])->name('demo.thank-you');
