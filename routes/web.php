@@ -72,10 +72,8 @@ use App\Http\Controllers\SuperAdmin\ModuleManagerController;
 use App\Http\Controllers\SuperAdmin\PackageController;
 use App\Http\Controllers\SuperAdmin\SchoolController;
 use App\Http\Controllers\SuperAdmin\DemoManagementController;
-use App\Http\Controllers\SuperAdmin\DemoResetController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DemoRequestController;
-use App\Http\Controllers\DemoController;
 use App\Http\Controllers\StartTrialController;
 use App\Http\Controllers\SuperAdmin\SubscriptionController;
 use App\Http\Controllers\SuperAdmin\InvoiceController;
@@ -121,10 +119,6 @@ Route::get('/up', fn () => response()->json(['status' => 'ok']));
     | School Admin routes (school-admin, principal)
     |--------------------------------------------------------------------------
     */
-
-Route::get('/demo', [DemoController::class, 'index'])->name('demo.index');
-Route::get('/demo/{role}', [DemoController::class, 'portal'])->name('demo.portal');
-Route::post('/demo/exit', [DemoController::class, 'exit'])->name('demo.exit');
 
 Route::middleware('guest')->group(function () {
     Route::get('/', HomeController::class)->name('home');
@@ -200,11 +194,6 @@ Route::get('/security', fn () => Inertia::render('Public/Security'))->name('secu
 | Demo Request (public)
 |--------------------------------------------------------------------------
 */
-Route::get('/demo/{portal}', [DemoEnvironmentController::class, 'enter'])
-    ->where('portal', 'school-admin|principal|teacher|accountant|librarian|student|parent|proprietor|ministry-admin|district-officer')
-    ->middleware('throttle:demo')
-    ->name('demo.enter');
-Route::post('/demo/exit', [DemoEnvironmentController::class, 'exit'])->name('demo.exit');
 Route::get('/request-demo',       [DemoRequestController::class, 'show'])->name('demo.request');
 Route::post('/request-demo',      [DemoRequestController::class, 'submit'])->middleware('throttle:demo')->name('demo.submit');
 Route::get('/request-demo/thank-you', [DemoRequestController::class, 'thankYou'])->name('demo.thank-you');
@@ -1244,10 +1233,7 @@ Route::middleware('auth')->group(function () {
             Route::get('audit-log/stream',              [SuperAdminAuditLogController::class, 'stream'])->name('audit-log.stream');
             Route::get('audit-log/export',              [SuperAdminAuditLogController::class, 'export'])->name('audit-log.export');
 
-            // Demo Reset
-            Route::get('demo-reset', [DemoResetController::class, 'index'])->name('demo-reset.index');
-            Route::post('demo-reset', [DemoResetController::class, 'execute'])->name('demo-reset.execute');
-        });
+                });
 
     /*
     |--------------------------------------------------------------------------
