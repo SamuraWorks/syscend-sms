@@ -57,7 +57,6 @@ class DemoSeeder extends Seeder
     {
         $this->command->info('Seeding Freetown International Academy demo environment...');
 
-        $this->createSuperAdmin();
         $this->createPlatformDemoUsers();
         $this->createSchoolAndSubscription();
         $this->createAcademicStructure();
@@ -84,21 +83,6 @@ class DemoSeeder extends Seeder
 
         $this->command->info('Demo environment seeded successfully!');
         $this->printSummary();
-    }
-
-    private function createSuperAdmin(): void
-    {
-        $user = User::firstOrCreate(
-            ['email' => 'syscend@gmail.com'],
-            [
-                'name' => 'Super Administrator',
-                'phone' => '+23279630777',
-                'password' => Hash::make($this->demoPass),
-                'status' => 'active',
-            ]
-        );
-        $user->syncRoles(['super-admin']);
-        $this->command->line('  Super Administrator preserved');
     }
 
     private function createPlatformDemoUsers(): void
