@@ -31,6 +31,31 @@ $set = static function (string $key, string $value): void {
 $set('LOG_CHANNEL', 'stderr');
 $set('QUEUE_CONNECTION', 'sync');
 
+// Vercel stores the production Supabase configuration under the *_2 names.
+// Map those values at the serverless boundary so Laravel keeps its standard
+// configuration contract without duplicating or exposing secrets in source.
+$productionAliases = [
+    'APP_KEY' => 'APP_KEY_2',
+    'APP_URL' => 'APP_URL_2',
+    'DB_CONNECTION' => 'DB_CONNECTION_2',
+    'DB_HOST' => 'DB_HOST_2',
+    'DB_PORT' => 'DB_PORT_2',
+    'DB_DATABASE' => 'DB_DATABASE_2',
+    'DB_USERNAME' => 'DB_USERNAME_2',
+    'DB_PASSWORD' => 'DB_PASSWORD_2',
+    'DB_SSLMODE' => 'DB_SSLMODE_2',
+];
+
+foreach ($productionAliases as $target => $source) {
+    $sourceValue = getenv($source);
+
+    if ($sourceValue !== false && $sourceValue !== '') {
+        putenv($target.'='.$sourceValue);
+        $_ENV[$target] = $sourceValue;
+        $_SERVER[$target] = $sourceValue;
+    }
+}
+
 $compiledViews = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.'syscend-views';
 $set('VIEW_COMPILED_PATH', $compiledViews);
 
