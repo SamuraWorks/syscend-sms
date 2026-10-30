@@ -1,4 +1,12 @@
+<<<<<<< HEAD:public/build/assets/Payslip-Dc1LIO2W.js
 import{r as e,t}from"./jsx-runtime-Bk81EdXH.js";import{t as n}from"./arrow-left-BqaKZJDz.js";import{t as r}from"./AppLayout-CasKEGHq.js";import{t as i}from"./printer-5QW1x526.js";import{t as a}from"./button-vUchPwTs.js";import{t as o}from"./badge-BjfvTvjA.js";var s=t(),c={draft:`bg-slate-100 text-slate-600`,generated:`bg-blue-100 text-blue-700`,paid:`bg-green-100 text-green-700`};function l({payroll:t}){return(0,s.jsxs)(r,{title:`Payslip — ${t.month_year}`,children:[(0,s.jsx)(`style`,{children:`
+=======
+<<<<<<<< HEAD:public/build/assets/Payslip-DU8KxlL7.js
+import{r as e,t}from"./jsx-runtime-Bk81EdXH.js";import{t as n}from"./arrow-left-BqaKZJDz.js";import{t as r}from"./AppLayout-zziOxjbV.js";import{t as i}from"./printer-5QW1x526.js";import{t as a}from"./button-vUchPwTs.js";import{t as o}from"./badge-BjfvTvjA.js";var s=t(),c={draft:`bg-slate-100 text-slate-600`,generated:`bg-blue-100 text-blue-700`,paid:`bg-green-100 text-green-700`};function l({payroll:t}){return(0,s.jsxs)(r,{title:`Payslip — ${t.month_year}`,children:[(0,s.jsx)(`style`,{children:`
+========
+import{r as e,t}from"./jsx-runtime-Bk81EdXH.js";import{t as n}from"./arrow-left-BqaKZJDz.js";import{t as r}from"./AppLayout-CPdnl1I1.js";import{t as i}from"./printer-5QW1x526.js";import{t as a}from"./button-vUchPwTs.js";import{t as o}from"./badge-BjfvTvjA.js";var s=t(),c={draft:`bg-slate-100 text-slate-600`,generated:`bg-blue-100 text-blue-700`,paid:`bg-green-100 text-green-700`};function l({payroll:t}){return(0,s.jsxs)(r,{title:`Payslip — ${t.month_year}`,children:[(0,s.jsx)(`style`,{children:`
+>>>>>>>> v0/admin-portal-redesign:public/build/assets/Payslip-CQ9TZQtu.js
+>>>>>>> v0/admin-portal-redesign:public/build/assets/Payslip-DU8KxlL7.js
                 @media print {
                     body * { visibility: hidden !important; }
                     #payslip-print-area, #payslip-print-area * { visibility: visible !important; }

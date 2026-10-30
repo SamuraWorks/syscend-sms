@@ -687,7 +687,7 @@ export const navGroups: NavGroup[] = [
     },
 ];
 
-function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
+function NavLink({ item, collapsed, brandColor }: { item: NavItem; collapsed: boolean; brandColor?: string | null }) {
     const { url } = usePage();
     const isActive = item.exact ? url === item.href : url.startsWith(item.href);
 
@@ -702,13 +702,17 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
             className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
                 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                isActive
-                    ? 'sidebar-active text-primary'
-                    : 'text-sidebar-foreground',
-                collapsed && 'justify-center px-2',
-            )}
+                    isActive
+                        ? 'sidebar-active text-primary'
+                        : 'text-sidebar-foreground',
+                    collapsed && 'justify-center px-2',
+                )}
+                style={isActive && brandColor ? { color: brandColor } : undefined}
         >
-            <item.icon className={cn('shrink-0', isActive ? 'text-primary' : 'text-muted-foreground', 'w-[18px] h-[18px]')} />
+            <item.icon
+                className={cn('shrink-0', isActive ? 'text-primary' : 'text-muted-foreground', 'w-[18px] h-[18px]')}
+                style={isActive && brandColor ? { color: brandColor } : undefined}
+            />
             {!collapsed && <span className="truncate">{item.label}</span>}
         </Link>
     );
@@ -800,7 +804,7 @@ export default function Sidebar() {
                             )}
                             <div className="space-y-0.5">
                                 {group.items.map((item) => (
-                                    <NavLink key={item.href} item={item} collapsed={collapsed} />
+                                    <NavLink key={item.href} item={item} collapsed={collapsed} brandColor={branding?.primary_color} />
                                 ))}
                             </div>
                         </div>
@@ -834,7 +838,7 @@ export default function Sidebar() {
                             { label: 'Attendance', href: '/school/attendance', icon: ClipboardList },
                             { label: 'More', href: '/school/settings', icon: Wrench },
                         ].map(({ label, href, icon: Icon }) => (
-                            <Link key={href} href={href} className="flex min-w-0 flex-col items-center gap-1 rounded-md px-1 py-1 text-[10px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground">
+                                <Link key={href} href={href} className="flex min-w-0 flex-col items-center gap-1 rounded-md px-1 py-1 text-[10px] font-medium text-muted-foreground hover:bg-accent hover:text-foreground" style={{ color: branding?.primary_color ?? undefined }}>
                                 <Icon className="h-4 w-4" aria-hidden="true" />
                                 <span className="truncate">{label}</span>
                             </Link>
