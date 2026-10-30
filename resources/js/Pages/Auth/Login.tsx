@@ -178,6 +178,10 @@ export default function Login() {
                                     'Sign in'
                                 )}
                             </Button>
+
+                            <Button asChild type="button" variant="outline" className="w-full h-10 font-medium">
+                                <Link href="/demo">Explore Live Demo</Link>
+                            </Button>
                         </form>
                     </CardContent>
                 </Card>
