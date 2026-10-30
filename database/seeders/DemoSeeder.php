@@ -58,6 +58,7 @@ class DemoSeeder extends Seeder
         $this->command->info('Seeding Freetown International Academy demo environment...');
 
         $this->createSuperAdmin();
+        $this->createPlatformDemoUsers();
         $this->createSchoolAndSubscription();
         $this->createAcademicStructure();
         $this->createDepartmentsAndDesignations();
@@ -98,6 +99,14 @@ class DemoSeeder extends Seeder
         );
         $user->syncRoles(['super-admin']);
         $this->command->line('  Super Administrator preserved');
+    }
+
+    private function createPlatformDemoUsers(): void
+    {
+        foreach ([['name' => 'Ministry Demo', 'email' => 'ministry@freetownacademy.edu', 'role' => 'ministry-admin'], ['name' => 'District Demo', 'email' => 'district@freetownacademy.edu', 'role' => 'district-officer']] as $data) {
+            $user = User::firstOrCreate(['email' => $data['email']], ['name' => $data['name'], 'password' => Hash::make($this->demoPass), 'status' => 'active']);
+            $user->syncRoles([$data['role']]);
+        }
     }
 
     private function createSchoolAndSubscription(): void
@@ -614,7 +623,19 @@ class DemoSeeder extends Seeder
 
             $this->students[] = $student;
         }
-        $this->command->line('  5 Students + 5 Parent Users');
+
+        $studentUser = User::create([
+            'school_id' => $this->schoolId,
+            'name' => 'Ibrahim Bangura',
+            'email' => 'student.demo@' . $this->domain,
+            'username' => 'student.demo',
+            'password' => Hash::make($this->demoPass),
+            'status' => 'active',
+        ]);
+        $studentUser->syncRoles(['student']);
+        $this->students[0]?->update(['user_id' => $studentUser->id]);
+
+        $this->command->line('  5 Students + 5 Parent Users + Student Portal User');
     }
 
     private function createExams(): void
