@@ -75,6 +75,7 @@ use App\Http\Controllers\SuperAdmin\DemoManagementController;
 use App\Http\Controllers\SuperAdmin\DemoResetController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DemoRequestController;
+use App\Http\Controllers\DemoController;
 use App\Http\Controllers\StartTrialController;
 use App\Http\Controllers\SuperAdmin\SubscriptionController;
 use App\Http\Controllers\SuperAdmin\InvoiceController;
@@ -119,6 +120,10 @@ Route::get('/up', fn () => response()->json(['status' => 'ok']));
     | School Admin routes (school-admin, principal)
     |--------------------------------------------------------------------------
     */
+
+Route::get('/demo', [DemoController::class, 'index'])->name('demo.index');
+Route::get('/demo/{role}', [DemoController::class, 'portal'])->name('demo.portal');
+Route::post('/demo/exit', [DemoController::class, 'exit'])->name('demo.exit');
 
 Route::middleware('guest')->group(function () {
     Route::get('/', HomeController::class)->name('home');
@@ -857,7 +862,7 @@ Route::middleware('auth')->group(function () {
             Route::delete('/{enrollment}', [EnrollmentController::class, 'destroy'])->name('destroy');
         });
 
-        // ── Teacher Assignments (Subject + Form Master) ──
+        // ── Teacher Assignments (Subject + Form Master) ��─
         Route::prefix('assignments')->name('assignments.')->group(function () {
             Route::get('/', [TeacherAssignmentController::class, 'index'])->name('index');
             Route::post('/', [TeacherAssignmentController::class, 'store'])->name('store');
