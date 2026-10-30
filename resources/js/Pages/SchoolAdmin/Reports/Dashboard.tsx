@@ -154,9 +154,9 @@ export default function Dashboard({ role, totalStudents, totalStaff, attendanceP
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <Brain className="w-5 h-5 text-indigo-500" />
-                                <h2 className="text-lg font-semibold">Performance Intelligence</h2>
+                                <h2 className="text-lg font-semibold">Syscend Intelligence</h2>
                             </div>
-                            <Link href="/school/performance/overview" className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                            <Link href="/school/intelligence" className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
                                 Full Analytics <ArrowRight className="w-4 h-4" />
                             </Link>
                         </div>
@@ -169,7 +169,7 @@ export default function Dashboard({ role, totalStudents, totalStaff, attendanceP
                                             <Trophy className="w-4 h-4 text-amber-500" />
                                             Top Performing Students
                                         </CardTitle>
-                                        <Link href="/school/performance/top-students" className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                                        <Link href="/school/intelligence" className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
                                             View All <ArrowRight className="w-3 h-3" />
                                         </Link>
                                     </CardHeader>
@@ -227,7 +227,7 @@ export default function Dashboard({ role, totalStudents, totalStaff, attendanceP
                                             <AlertTriangle className="w-4 h-4 text-orange-500" />
                                             At-Risk Students
                                         </CardTitle>
-                                        <Link href="/school/performance/at-risk" className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                                        <Link href="/school/intelligence" className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
                                             View All <ArrowRight className="w-3 h-3" />
                                         </Link>
                                     </CardHeader>

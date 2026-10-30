@@ -47,7 +47,7 @@ export default function PerformanceOverview({ linked, summary, topStudents, atRi
             <AppLayout title="Performance Overview">
                 <div className="flex flex-col items-center justify-center py-20 text-center">
                     <Brain className="w-16 h-16 text-slate-300 dark:text-slate-600 mb-4" />
-                    <h2 className="text-xl font-bold text-slate-700 dark:text-slate-300">Performance Intelligence</h2>
+                    <h2 className="text-xl font-bold text-slate-700 dark:text-slate-300">Syscend Intelligence</h2>
                     <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-md">Link your account to a school to view performance analytics.</p>
                 </div>
             </AppLayout>
@@ -58,7 +58,7 @@ export default function PerformanceOverview({ linked, summary, topStudents, atRi
     const distTotal = Object.values(dist).reduce((a: number, b: number) => a + b, 0) || 1;
 
     return (
-        <AppLayout title="Performance Intelligence Overview">
+        <AppLayout title="Syscend Intelligence Overview">
             <div className="space-y-6">
                 {/* Hero */}
                 <div className="rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 p-6 text-white flex items-center gap-5">
@@ -66,8 +66,8 @@ export default function PerformanceOverview({ linked, summary, topStudents, atRi
                         <Brain className="w-7 h-7" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold">Student Performance Intelligence</h1>
-                        <p className="text-white/80 text-sm mt-1">Real-time analytics, early warnings, and intervention tracking</p>
+                        <h1 className="text-2xl font-bold">Syscend Intelligence</h1>
+                        <p className="text-white/80 text-sm mt-1">Verified performance insights, early warnings, and practical next steps</p>
                     </div>
                 </div>
 

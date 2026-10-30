@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Brain, TrendingUp, AlertTriangle, Database, Sparkles, CheckCircle2 } from 'lucide-react';
 
-type Intelligence = { role: string; title: string; description: string; source_status: string; metrics?: { label: string; value: string | number; tone: string }[]; role_metrics?: { label: string; value: string | number }[]; trends?: { label: string; value: number }[]; alerts?: any[]; data_quality?: any[]; recommendations?: string[]; ai: { available: boolean; message: string }; profile?: any; profiles?: any[]; };
+type Intelligence = { role: string; title: string; description: string; source_status: string; metrics?: { label: string; value: string | number; tone: string }[]; role_metrics?: { label: string; value: string | number }[]; trends?: { label: string; value: number }[]; alerts?: any[]; data_quality?: any[]; recommendations?: string[]; insights?: { type: string; title: string; message: string; priority: string }[]; voice_report?: string; ai: { available: boolean; message: string }; profile?: any; profiles?: any[]; };
 
 export default function IntelligenceIndex({ intelligence }: { intelligence: Intelligence }) {
     const isStudent = intelligence.role === 'student';
@@ -12,6 +12,7 @@ export default function IntelligenceIndex({ intelligence }: { intelligence: Inte
         <section className="overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-700 via-violet-700 to-slate-900 p-6 text-white shadow-lg sm:p-8">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-start gap-4"><div className="rounded-2xl bg-white/15 p-3"><Brain className="h-7 w-7" /></div><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">Syscend Intelligence</p><h1 className="mt-1 text-2xl font-bold sm:text-3xl">{intelligence.title}</h1><p className="mt-2 max-w-2xl text-sm text-indigo-100">{intelligence.description}</p></div></div><Badge className="w-fit border-white/20 bg-white/10 text-white">{intelligence.source_status === 'connected' ? 'Live campus data' : 'Limited source data'}</Badge></div>
         </section>
+        <ProactiveBrief intelligence={intelligence} />
         {isStudent && intelligence.profile ? <StudentProfile profile={intelligence.profile} /> : <>
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{[...(intelligence.metrics ?? []), ...(intelligence.role_metrics ?? [])].map((metric) => <Card key={metric.label}><CardContent className="p-4"><p className="text-2xl font-bold text-slate-900 dark:text-white">{metric.value}</p><p className="mt-1 text-xs text-slate-500">{metric.label}</p></CardContent></Card>)}</div>
             {intelligence.role === 'parent' && <div className="grid gap-4 md:grid-cols-2">{(intelligence.profiles ?? []).map((profile, index) => <Card key={profile.student_id ?? index}><CardHeader><CardTitle className="text-sm">Child {index + 1}</CardTitle></CardHeader><CardContent><p className="text-3xl font-bold text-indigo-600">{profile.score ?? profile.total_score ?? '—'}%</p><p className="mt-1 text-sm text-slate-500">{profile.classification?.replaceAll('_', ' ') ?? 'Progress recorded'}</p></CardContent></Card>)}</div>}
@@ -19,8 +20,27 @@ export default function IntelligenceIndex({ intelligence }: { intelligence: Inte
             <div className="grid gap-6 lg:grid-cols-2"><Card><CardHeader><CardTitle className="flex items-center gap-2 text-sm"><AlertTriangle className="h-4 w-4 text-amber-500" />Open alerts</CardTitle></CardHeader><CardContent className="space-y-3">{(intelligence.alerts ?? []).length ? intelligence.alerts?.map((alert) => <div key={alert.id} className="rounded-lg border p-3"><div className="flex justify-between gap-3"><p className="text-sm font-medium">{alert.title}</p><Badge variant="outline">{alert.severity}</Badge></div><p className="mt-1 text-xs text-slate-500">{alert.message}</p></div>) : <p className="text-sm text-slate-500">No open alerts from the current records.</p>}</CardContent></Card><Card><CardHeader><CardTitle className="flex items-center gap-2 text-sm"><Database className="h-4 w-4 text-slate-500" />Data coverage</CardTitle></CardHeader><CardContent className="space-y-3">{(intelligence.data_quality ?? []).map((item) => <div key={item.label} className="flex justify-between border-b pb-2 text-sm last:border-0"><span>{item.label}</span><span className="font-semibold">{item.value}</span></div>)}</CardContent></Card></div>
         </>}
         <IntelligenceAssistant role={intelligence.role} />
+        <VoiceReport text={intelligence.voice_report} />
         <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-4 text-sm text-indigo-950 dark:border-indigo-900/40 dark:bg-indigo-950/20 dark:text-indigo-100"><strong>Transparency:</strong> {intelligence.ai.message}</div>
     </div></AppLayout>;
+}
+
+function ProactiveBrief({ intelligence }: { intelligence: Intelligence }) {
+    const insights = intelligence.insights ?? [];
+    return <Card className="border-indigo-100 bg-indigo-50/40 dark:border-indigo-900/40 dark:bg-indigo-950/20"><CardHeader><CardTitle className="flex items-center gap-2 text-sm"><Sparkles className="h-4 w-4 text-indigo-500" />What Syscend Intelligence has noticed</CardTitle></CardHeader><CardContent className="grid gap-3 md:grid-cols-2">{insights.map((insight) => <div key={`${insight.type}-${insight.title}`} className="rounded-xl border bg-white/80 p-4 dark:bg-slate-950/40"><div className="flex items-center justify-between gap-3"><p className="font-semibold text-slate-900 dark:text-white">{insight.title}</p><Badge variant={insight.priority === 'high' ? 'destructive' : 'outline'}>{insight.priority}</Badge></div><p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{insight.message}</p></div>)}</CardContent></Card>;
+}
+
+function VoiceReport({ text }: { text?: string }) {
+    const [speaking, setSpeaking] = useState(false);
+    const toggle = () => {
+        if (!text || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+        if (speaking) { window.speechSynthesis.cancel(); setSpeaking(false); return; }
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.onend = () => setSpeaking(false);
+        utterance.onerror = () => setSpeaking(false);
+        window.speechSynthesis.cancel(); window.speechSynthesis.speak(utterance); setSpeaking(true);
+    };
+    return <Card><CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold text-slate-900 dark:text-white">Listen to My Progress</p><p className="mt-1 text-sm text-slate-500">Your personalized report, generated from verified records.</p><details className="mt-2 text-xs text-slate-500"><summary className="cursor-pointer">Read transcript</summary><p className="mt-2 leading-5">{text ?? 'No report is available yet.'}</p></details></div><button type="button" onClick={toggle} disabled={!text} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{speaking ? 'Stop report' : 'Play report'}</button></CardContent></Card>;
 }
 
 function IntelligenceAssistant({ role }: { role: string }) {

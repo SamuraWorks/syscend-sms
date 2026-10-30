@@ -182,6 +182,13 @@ export default function Login() {
                     </CardContent>
                 </Card>
 
+                <div className="mt-4 rounded-xl border border-primary/20 bg-primary/[0.06] p-4 text-center">
+                    <Link href="/demo" className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90">
+                        Explore Live Demo
+                    </Link>
+                    <p className="mt-2 text-xs leading-5 text-muted-foreground">Explore Syscend Campus through interactive demonstrations of our different portals. No account or password required.</p>
+                </div>
+
                 <p className="text-center text-xs text-muted-foreground mt-6">
                     &copy; {new Date().getFullYear()} {schoolBranding?.name || "Syscend Campus"}. All rights reserved.
                 </p>

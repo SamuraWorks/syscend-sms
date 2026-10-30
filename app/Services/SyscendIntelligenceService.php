@@ -45,10 +45,14 @@ final class SyscendIntelligenceService
             ['label' => 'Attendance records', 'value' => $attendance->count(), 'source' => 'attendance'],
         ];
 
+        $insights = $this->schoolInsights($summary, $attendanceRate, $alerts, $role);
+
         return [
             'role' => $role, 'title' => $roleCopy[0], 'description' => $roleCopy[1],
             'source_status' => $scores->isEmpty() && $attendance->isEmpty() ? 'limited' : 'connected',
             'summary' => $summary,
+            'insights' => $insights,
+            'voice_report' => $this->voiceReport($role, $insights),
             'metrics' => [
                 ['label' => 'Active students', 'value' => $students->count(), 'tone' => 'indigo'],
                 ['label' => 'Average score', 'value' => round((float) ($summary['average_score'] ?? 0), 1) . '%', 'tone' => 'violet'],
@@ -72,7 +76,30 @@ final class SyscendIntelligenceService
     {
         $student = Student::where('school_id', $schoolId)->where('user_id', $userId)->firstOrFail();
         $profile = (new StudentPerformanceEngine($schoolId))->getStudentProfile($student);
-        return ['role' => 'student', 'title' => 'Personal learning intelligence', 'description' => 'A private view of your academic progress, attendance, and next steps.', 'profile' => $profile, 'ai' => ['available' => false, 'message' => 'AI explanations are unavailable; this view uses your recorded results only.']];
+        $insights = $this->studentInsights($profile);
+        return [
+            'role' => 'student',
+            'title' => 'Personal learning intelligence',
+            'description' => 'A private view of your academic progress, attendance, and next steps.',
+            'profile' => $profile,
+            'insights' => $insights,
+            'voice_report' => $this->voiceReport('student', $insights),
+            'ai' => ['available' => false, 'message' => 'AI explanations use your verified results and clearly identify any missing evidence.'],
+        ];
+    }
+
+    public function parent(int $schoolId, int $userId): array
+    {
+        $guardian = \App\Models\Guardian::where('school_id', $schoolId)->where('user_id', $userId)->first();
+        $children = $guardian ? $guardian->students : collect();
+        $insights = [];
+        foreach ($children as $child) {
+            $profile = (new StudentPerformanceEngine($schoolId))->getStudentProfile($child);
+            $score = $profile['current_score'] ?? null;
+            $value = is_object($score) ? ($score->total_score ?? null) : (is_array($score) ? ($score['total_score'] ?? null) : null);
+            $insights[] = ['type' => 'family', 'title' => $child->full_name . ' progress', 'message' => $value === null ? "No current score is available for {$child->full_name}." : "{$child->full_name}’s latest recorded score is {$value}%. Review the detailed report for subject-level context.", 'priority' => 'normal'];
+        }
+        return ['role' => 'parent', 'insights' => $insights, 'recommendations' => ['Discuss any declining subject with your child and the relevant teacher.', 'Review attendance and upcoming academic deadlines together.'], 'voice_report' => collect($children)->isEmpty() ? 'There is no linked child record available for an academic report.' : 'Good morning. Here is the academic report for ' . collect($children)->pluck('full_name')->implode(', ') . '. ' . collect($insights)->pluck('message')->implode(' '), 'ai' => ['message' => 'This report is limited to verified records belonging to your linked children.']];
     }
 
     public function unavailable(string $role): array
@@ -89,6 +116,47 @@ final class SyscendIntelligenceService
             'recommendations' => ['Please try again later or contact your school administrator if this continues.'],
             'ai' => ['available' => false, 'message' => 'No insight was generated because the underlying campus data could not be read.'],
         ];
+    }
+
+    private function schoolInsights(array $summary, ?float $attendanceRate, $alerts, string $role): array
+    {
+        $insights = [];
+        if (($summary['average_score'] ?? 0) > 0) {
+            $insights[] = ['type' => 'academic', 'title' => 'Academic performance', 'message' => sprintf('The current school average is %s%% across %d recorded performance records.', $summary['average_score'], $summary['total_students']), 'priority' => ($summary['critical_count'] ?? 0) > 0 ? 'high' : 'normal'];
+        }
+        if (($summary['needs_support_count'] ?? 0) + ($summary['critical_count'] ?? 0) > 0) {
+            $insights[] = ['type' => 'intervention', 'title' => 'Students need attention', 'message' => sprintf('%d students are classified as needing support or critical intervention.', ($summary['needs_support_count'] ?? 0) + ($summary['critical_count'] ?? 0)), 'priority' => 'high'];
+        }
+        if ($attendanceRate !== null && $attendanceRate < 90) {
+            $insights[] = ['type' => 'attendance', 'title' => 'Attendance is below target', 'message' => sprintf('Attendance is %s%%. Review recurring absence patterns and assign follow-up.', $attendanceRate), 'priority' => 'medium'];
+        }
+        if ($alerts->count() > 0) {
+            $insights[] = ['type' => 'alert', 'title' => 'Open alerts require triage', 'message' => sprintf('%d unresolved alerts are available to the responsible staff.', $alerts->count()), 'priority' => 'medium'];
+        }
+        return $insights ?: [['type' => 'monitoring', 'title' => 'No urgent signal detected', 'message' => 'Continue monitoring the next assessment and attendance cycle.', 'priority' => 'normal']];
+    }
+
+    private function studentInsights(array $profile): array
+    {
+        $current = $profile['current_score'] ?? null;
+        $metadata = is_object($current) ? ($current->metadata ?? []) : (is_array($current) ? ($current['metadata'] ?? []) : []);
+        $homework = $metadata['homework_detail'] ?? [];
+        $attendance = $metadata['attendance_detail'] ?? [];
+        $subjectScores = is_object($current) ? ($current->subject_scores ?? []) : ($current['subject_scores'] ?? []);
+        $insights = [];
+        foreach ($subjectScores as $subject) {
+            $percentage = (float) ($subject['percentage'] ?? 0);
+            if ($percentage < 60) $insights[] = ['type' => 'subject', 'title' => ($subject['subject_name'] ?? 'Subject') . ' needs attention', 'message' => sprintf('Your recorded average is %s%%. Spend focused time on practice and review with your teacher.', $percentage), 'priority' => 'high'];
+        }
+        if (($homework['missing'] ?? 0) > 0) $insights[] = ['type' => 'assignment', 'title' => 'Outstanding assignments', 'message' => sprintf('You have %d outstanding assignment(s). Completing them is your immediate priority.', $homework['missing']), 'priority' => 'high'];
+        if (($attendance['percentage'] ?? 100) < 90) $insights[] = ['type' => 'attendance', 'title' => 'Attendance needs attention', 'message' => sprintf('Your attendance is %s%%. Consistent attendance will support your progress.', $attendance['percentage']), 'priority' => 'medium'];
+        return $insights ?: [['type' => 'progress', 'title' => 'Good progress', 'message' => 'No urgent academic signal was detected in the available records. Maintain your current routine.', 'priority' => 'normal']];
+    }
+
+    private function voiceReport(string $role, array $insights): string
+    {
+        $opening = $role === 'student' ? 'Hello. Here is your latest academic progress report.' : 'Good morning. Here is your latest Syscend Intelligence report.';
+        return $opening . ' ' . collect($insights)->pluck('message')->implode(' ') . ' I will continue monitoring the verified records and help you decide the next practical action.';
     }
 
     private function roleMetrics(int $schoolId, string $role): array

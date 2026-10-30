@@ -11,6 +11,7 @@ use App\Models\Message;
 use App\Models\ReportCard;
 use App\Models\Student;
 use App\Services\FamilyResolver;
+use App\Services\SyscendIntelligenceService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -140,6 +141,7 @@ class ParentPortalController extends Controller
             'childrenIndex'=> $childIndex,
             'selectedChild'=> $this->validatedChildId,
             'announcements'=> $announcements,
+            'intelligence' => app(SyscendIntelligenceService::class)->parent((int) $user->school_id, (int) $user->id),
         ]);
     }
 

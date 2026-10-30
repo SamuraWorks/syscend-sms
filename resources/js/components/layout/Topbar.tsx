@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { Moon, Sun, LogOut, User, KeyRound, Check, Shield, Bell } from 'lucide-react';
+import { Moon, Sun, LogOut, User, KeyRound, Check, Bell, ExternalLink, CheckCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem,
@@ -12,45 +12,62 @@ import type { PageProps } from '@/Types';
 import ProfileAvatar from '@/components/ProfileAvatar';
 
 /** Live unread badge for the platform notification centre. */
+interface NotificationItem {
+    id: string;
+    title: string;
+    body: string;
+    created_at: string | null;
+    read: boolean;
+    url?: string | null;
+}
+
 function NotificationBell() {
     const [count, setCount] = useState(0);
+    const [items, setItems] = useState<NotificationItem[]>([]);
+    const [open, setOpen] = useState(false);
+
+    async function load() {
+        try {
+            const res = await fetch('/notifications/summary', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+            if (!res.ok) return;
+            const data = await res.json();
+            setCount(data.unread_count ?? 0);
+            setItems(data.notifications ?? []);
+        } catch { /* notification centre is best-effort */ }
+    }
 
     useEffect(() => {
-        let cancelled = false;
-
-        async function poll() {
-            try {
-                const res = await fetch('/super-admin/notifications/unread-count', {
-                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                    credentials: 'same-origin',
-                });
-                if (!res.ok) return;
-                const data = await res.json();
-                if (!cancelled) setCount(data.count ?? 0);
-            } catch {
-                /* badge is best-effort */
-            }
-        }
-
-        poll();
-        const id = setInterval(poll, 15000);
-        return () => { cancelled = true; clearInterval(id); };
+        load();
+        const id = window.setInterval(load, 15000);
+        return () => window.clearInterval(id);
     }, []);
 
+    async function markRead(id: string) {
+        await fetch(`/notifications/${id}/read`, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '', Accept: 'application/json' }, credentials: 'same-origin' });
+        setItems((current) => current.map((item) => item.id === id ? { ...item, read: true } : item));
+        setCount((current) => Math.max(0, current - 1));
+    }
+
+    async function markAllRead() {
+        await fetch('/notifications/read-all', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '', Accept: 'application/json' }, credentials: 'same-origin' });
+        setItems((current) => current.map((item) => ({ ...item, read: true })));
+        setCount(0);
+    }
+
     return (
-        <Button
-            variant="ghost" size="icon"
-            className="relative text-muted-foreground"
-            title="Platform notifications"
-            onClick={() => router.visit('/super-admin/notifications')}
-        >
-            <Bell className="w-4 h-4" />
-            {count > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
-                    {count > 99 ? '99+' : count}
-                </span>
+        <div className="relative">
+            <Button variant="ghost" size="icon" className="relative text-muted-foreground" title="Notifications" aria-label="Notifications" onClick={() => { setOpen((current) => !current); if (!open) load(); }}>
+                <Bell className="w-4 h-4" />
+                {count > 0 && <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">{count > 99 ? '99+' : count}</span>}
+            </Button>
+            {open && (
+                <div className="fixed inset-x-3 top-[4.25rem] z-[60] max-h-[calc(100vh-5.5rem)] overflow-hidden rounded-xl border border-border bg-card shadow-2xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-11 sm:w-96">
+                    <div className="flex items-center justify-between border-b border-border px-4 py-3"><div><p className="text-sm font-semibold">Notifications</p><p className="text-xs text-muted-foreground">Relevant updates for your role</p></div>{count > 0 && <button type="button" className="text-xs text-primary" onClick={markAllRead}><CheckCheck className="mr-1 inline size-3" />Mark all read</button>}</div>
+                    <div className="max-h-80 overflow-y-auto">{items.length === 0 ? <p className="px-4 py-8 text-center text-sm text-muted-foreground">You&apos;re all caught up.</p> : items.map((item) => <div key={item.id} className={`border-b border-border px-4 py-3 ${!item.read ? 'bg-primary/[0.04]' : ''}`}><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-medium">{item.title}</p><p className="mt-1 text-xs text-muted-foreground">{item.body}</p><p className="mt-1 text-[11px] text-muted-foreground">{item.created_at ? new Date(item.created_at).toLocaleString() : ''}</p></div>{!item.read && <button type="button" className="shrink-0 text-xs text-primary" onClick={() => markRead(item.id)}>Read</button>}</div>{item.url && <a href={item.url} className="mt-2 inline-flex items-center text-xs text-primary">View details <ExternalLink className="ml-1 size-3" /></a>}</div>)}</div>
+                    <a href="/notifications" className="block border-t border-border px-4 py-3 text-center text-xs font-medium text-primary hover:bg-muted">View all notifications</a>
+                </div>
             )}
-        </Button>
+        </div>
     );
 }
 
@@ -141,8 +158,8 @@ export default function Topbar({ title, breadcrumbs }: TopbarProps) {
 
             {/* Right */}
             <div className="flex items-center gap-2">
-                {/* Platform notifications — super-admin only */}
-                {activeRole === 'super-admin' && <NotificationBell />}
+                {/* Role-scoped notification centre for every authenticated portal */}
+                <NotificationBell />
 
                 {/* Theme toggle */}
                 <Button
