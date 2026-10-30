@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import {
     Crown,
     Building,
@@ -15,19 +16,19 @@ import {
 } from 'lucide-react';
 
 const ROLES = [
-    { icon: Crown, label: 'Super Admin' },
-    { icon: Building, label: 'School Owner' },
-    { icon: ShieldUser, label: 'Administrator' },
-    { icon: School, label: 'Principal' },
-    { icon: Presentation, label: 'Teacher' },
-    { icon: UserCog, label: 'Form Master' },
-    { icon: BookOpen, label: 'Subject Teacher' },
-    { icon: User, label: 'Student' },
-    { icon: Users, label: 'Parent / Guardian' },
-    { icon: Calculator, label: 'Accountant' },
-    { icon: Library, label: 'Librarian' },
-    { icon: Bus, label: 'Transport Officer' },
-    { icon: BedDouble, label: 'Hostel Manager' },
+    { icon: Crown, label: 'Super Admin', href: '/super-admin/dashboard' },
+    { icon: Building, label: 'School Owner', href: '/school/proprietor/dashboard' },
+    { icon: ShieldUser, label: 'Administrator', href: '/school/reports/dashboard' },
+    { icon: School, label: 'Principal', href: '/school/principal/dashboard' },
+    { icon: Presentation, label: 'Teacher', href: '/school/teacher/dashboard' },
+    { icon: UserCog, label: 'Form Master', href: '/school/teacher/dashboard' },
+    { icon: BookOpen, label: 'Subject Teacher', href: '/school/teacher/dashboard' },
+    { icon: User, label: 'Student', href: '/school/student/dashboard' },
+    { icon: Users, label: 'Parent / Guardian', href: '/school/parent/dashboard' },
+    { icon: Calculator, label: 'Accountant', href: '/school/accountant/dashboard' },
+    { icon: Library, label: 'Librarian', href: '/school/librarian/dashboard' },
+    { icon: Bus, label: 'Transport Officer', href: '/school/driver/dashboard' },
+    { icon: BedDouble, label: 'Hostel Manager', href: '/school/warden/dashboard' },
 ];
 
 export default function Roles() {
@@ -51,13 +52,14 @@ export default function Roles() {
 
                     <div className="flex flex-wrap content-center justify-center gap-3 self-center">
                         {ROLES.map((role) => (
-                            <span
+                            <Link
                                 key={role.label}
+                                href={role.href}
                                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:border-[#1f66f5]/40 hover:text-[#1f66f5]"
                             >
                                 <role.icon className="size-4 text-[#1f66f5]" aria-hidden="true" />
                                 {role.label}
-                            </span>
+                            </Link>
                         ))}
                     </div>
                 </div>
