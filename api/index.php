@@ -30,6 +30,7 @@ $set = static function (string $key, string $value): void {
 
 $set('LOG_CHANNEL', 'stderr');
 $set('QUEUE_CONNECTION', 'sync');
+$set('DB_SSLMODE', 'require');
 
 // Vercel stores the production Supabase configuration under the *_2 names.
 // Map those values at the serverless boundary so Laravel keeps its standard
