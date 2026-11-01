@@ -113,7 +113,6 @@ Route::get('/cron/{job}', function (Request $request, string $job) {
         'expire-subscriptions' => ['subscriptions:expire', []],
         'check-escalations'    => ['syscend:check-escalations', []],
         'archive-old-records'  => ['syscend:archive-old-records', []],
-        'migrate'              => ['migrate', ['--force' => true]],
     ];
 
     if (! array_key_exists($job, $commands)) {
