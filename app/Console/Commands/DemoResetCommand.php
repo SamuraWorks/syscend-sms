@@ -55,16 +55,8 @@ class DemoResetCommand extends Command
         $this->info(' Demo environment ready! (took '.$elapsed.'s)');
         $this->info('══════════════════════════════════════════════');
         $this->info('');
-        $this->info(' Login Credentials:');
-        $this->info(' ─────────────────');
-        $this->info(' Super Admin : syscend@gmail.com / Demo@123');
-        $this->info(' School Admin: admin@freetownacademy.edu / Demo@123');
-        $this->info(' Principal   : principal@freetownacademy.edu / Demo@123');
-        $this->info(' Teacher     : amara.kamara@freetownacademy.edu / Demo@123');
-        $this->info(' Accountant  : accountant@freetownacademy.edu / Demo@123');
-        $this->info(' Librarian   : librarian@freetownacademy.edu / Demo@123');
-        $this->info(' Student     : student1@freetownacademy.edu / Demo@123');
-        $this->info(' Parent      : parent1@freetownacademy.edu / Demo@123');
+        $this->info(' Demo access is controlled by DEMO_ENABLED and DEMO_PASSWORD in the isolated environment.');
+        $this->info(' Credentials are intentionally not printed or persisted in source.');
         $this->info('');
 
         return self::SUCCESS;

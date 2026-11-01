@@ -51,10 +51,15 @@ class DemoSeeder extends Seeder
     private array $exams = [];
 
     private string $domain = 'freetownacademy.edu';
-    private string $demoPass = 'Demo@123';
+    private string $demoPass;
 
     public function run(): void
     {
+        $this->demoPass = (string) env('DEMO_PASSWORD', '');
+        if ($this->demoPass === '') {
+            throw new \RuntimeException('DEMO_PASSWORD must be configured before seeding the demonstration environment.');
+        }
+
         $this->command->info('Seeding Freetown International Academy demo environment...');
 
         $this->createPlatformDemoUsers();
@@ -1032,7 +1037,7 @@ class DemoSeeder extends Seeder
         $this->command->info('');
         $this->command->info('Demo Accounts:');
         $this->command->line('  Super Admin: syscend@gmail.com');
-        $this->command->line('  All demo accounts use password: Demo@123');
+        $this->command->line('  Demo accounts use the password configured in DEMO_PASSWORD.');
         $this->command->info('');
     }
 }

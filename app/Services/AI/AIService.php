@@ -82,7 +82,7 @@ class AIService
         $config  = config('ai.features.' . $feature, []);
 
         $params = array_merge([
-            'model'           => $config['model'] ?? null,
+            'model'           => $this->modelForProvider($config['model'] ?? null),
             'temperature'     => $config['temperature'] ?? null,
             'max_tokens'      => $config['max_tokens'] ?? null,
             'timeout'         => $config['timeout'] ?? null,
@@ -168,6 +168,32 @@ class AIService
             ],
             'generated_at' => now()->toISOString(),
         ];
+    }
+
+    private function modelForProvider(?string $configuredModel): ?string
+    {
+        $provider = app(AIProvider::class);
+        $name = $provider->clientName();
+
+        // A fallback chain must let each provider select its own compatible default.
+        if (str_contains($name, '+')) {
+            return null;
+        }
+
+        $providerModel = config('ai.providers.' . $name . '.model');
+        if ($configuredModel === null || $configuredModel === '') {
+            return $providerModel;
+        }
+
+        if ($name === 'gemini' && str_starts_with($configuredModel, 'gpt-')) {
+            return $providerModel;
+        }
+
+        if ($name === 'openai' && str_starts_with($configuredModel, 'gemini-')) {
+            return $providerModel;
+        }
+
+        return $configuredModel;
     }
 
     private function providerErrorMessage(Throwable $e): string

@@ -43,15 +43,11 @@ export default function DemoReset() {
 
                         <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                             <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
-                                <ShieldCheck className="w-4 h-4" /> Preserved Credentials
+                                <ShieldCheck className="w-4 h-4" /> Demo access
                             </h4>
-                            <div className="text-sm text-blue-700 dark:text-blue-400 space-y-1 font-mono">
-                                <p>Super Admin: syscend@gmail.com / Demo@123</p>
-                                <p>School Admin: mohamed.sesay@freetownacademy.edu / Demo@123</p>
-                                <p>Principal: fatima.bangura@freetownacademy.edu / Demo@123</p>
-                                <p>Teacher: amara.kamara@freetownacademy.edu / Demo@123</p>
-                                <p>Student: Ibrahim Bangura (Primary 4A)</p>
-                            </div>
+                            <p className="text-sm text-blue-700 dark:text-blue-400">
+                                Demo access is controlled by the isolated environment configuration. Credentials are never displayed in the application.
+                            </p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-4">

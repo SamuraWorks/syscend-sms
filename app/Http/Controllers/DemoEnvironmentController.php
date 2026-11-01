@@ -32,12 +32,17 @@ class DemoEnvironmentController extends Controller
 
     public function enter(Request $request, string $portal): RedirectResponse
     {
+        abort_unless((bool) env('DEMO_ENABLED', false), 404);
+
         $identity = self::IDENTITIES[$portal] ?? null;
         abort_unless($identity, 404);
 
+        $demoPassword = (string) env('DEMO_PASSWORD', '');
+        abort_unless($demoPassword !== '', 503, 'The demonstration environment is not configured.');
+
         $school = School::query()->where('slug', self::SCHOOL_SLUG)->where('status', 'active')->first();
         $platformRole = in_array($identity['role'], ['super-admin', 'ministry-admin', 'district-officer'], true);
-        $credentials = ['email' => $identity['email'], 'password' => 'Demo@123'];
+        $credentials = ['email' => $identity['email'], 'password' => $demoPassword];
         if (! $platformRole) {
             $credentials['school_id'] = $school?->id;
         }
