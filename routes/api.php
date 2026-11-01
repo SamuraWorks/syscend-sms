@@ -40,6 +40,7 @@ Route::prefix('v1')->group(function () {
 
     Route::post('/webhooks/orange-money-subscription', function (Request $request) {
         Log::info('Orange Money subscription webhook received', [
+            'payload' => $request->all(),
             'timestamp' => now()->toIso8601String(),
         ]);
 
@@ -112,6 +113,7 @@ Route::get('/cron/{job}', function (Request $request, string $job) {
         'expire-subscriptions' => ['subscriptions:expire', []],
         'check-escalations'    => ['syscend:check-escalations', []],
         'archive-old-records'  => ['syscend:archive-old-records', []],
+        'migrate'              => ['migrate', ['--force' => true]],
     ];
 
     if (! array_key_exists($job, $commands)) {
