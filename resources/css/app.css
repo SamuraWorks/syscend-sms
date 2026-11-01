@@ -1,0 +1,262 @@
+@import 'tailwindcss';
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/inter";
+
+@custom-variant dark (&:is(.dark *));
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.{js,ts,tsx}';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@theme inline {
+    --font-heading: 'Georgia', serif;
+    --font-sans: 'Geist Variable', sans-serif;
+    --font-serif: 'Georgia', serif;
+    --font-mono: 'Geist Variable', ui-monospace, monospace;
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+    /* Neutrals: warm off-white paper + deep forest-green ink */
+    --background: oklch(0.985 0.006 95);
+    --foreground: oklch(0.21 0.02 150);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.21 0.02 150);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.21 0.02 150);
+    /* Primary: deep forest green */
+    --primary: oklch(0.42 0.09 152);
+    --primary-foreground: oklch(0.985 0.006 95);
+    /* Secondary: warm light cream */
+    --secondary: oklch(0.95 0.012 110);
+    --secondary-foreground: oklch(0.32 0.05 152);
+    /* Muted */
+    --muted: oklch(0.95 0.01 110);
+    --muted-foreground: oklch(0.5 0.02 140);
+    /* Accent: warm earth ochre */
+    --accent: oklch(0.7 0.13 70);
+    --accent-foreground: oklch(0.21 0.02 150);
+    --destructive: oklch(0.577 0.245 27.325);
+    --border: oklch(0.9 0.012 110);
+    --input: oklch(0.9 0.012 110);
+    --ring: oklch(0.42 0.09 152);
+    --chart-1: oklch(0.42 0.09 152);
+    --chart-2: oklch(0.58 0.1 150);
+    --chart-3: oklch(0.7 0.13 70);
+    --chart-4: oklch(0.5 0.02 140);
+    --chart-5: oklch(0.3 0.03 152);
+    --radius: 0.25rem;
+    --sidebar: oklch(0.985 0.006 95);
+    --sidebar-foreground: oklch(0.21 0.02 150);
+    --sidebar-primary: oklch(0.42 0.09 152);
+    --sidebar-primary-foreground: oklch(0.985 0.006 95);
+    --sidebar-accent: oklch(0.95 0.012 110);
+    --sidebar-accent-foreground: oklch(0.32 0.05 152);
+    --sidebar-border: oklch(0.9 0.012 110);
+    --sidebar-ring: oklch(0.42 0.09 152);
+}
+
+.dark {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* ------------------------------------------------------------------ */
+/* Landing scope (BizHive-style): blue/orange on a light-gray canvas   */
+/* Applied only to public marketing pages via the .landing wrapper.    */
+/* ------------------------------------------------------------------ */
+.landing {
+    --background: #f4f7fb;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #1f66f5;
+    --primary-foreground: #ffffff;
+    --secondary: #e8eef7;
+    --secondary-foreground: #0f172a;
+    --muted: #e8eef7;
+    --muted-foreground: #64748b;
+    --accent: #ff5b3a;
+    --accent-foreground: #ffffff;
+    --destructive: #e5484d;
+    --border: #e3eaf2;
+    --input: #d7e0ec;
+    --ring: #1f66f5;
+    --sidebar: #ffffff;
+    --sidebar-border: #e3eaf2;
+    --radius: 0.625rem;
+    --chart-1: #1f66f5;
+    --chart-2: #35c759;
+    --chart-3: #ff5b3a;
+    --chart-4: #f5a623;
+    --chart-5: #7c3aed;
+
+    font-family: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+}
+
+.landing .font-serif,
+.landing.font-serif {
+    font-family: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+}
+
+.landing .font-mono,
+.landing.font-mono {
+    font-family: 'Inter Variable', ui-monospace, monospace;
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+    body {
+        @apply bg-background text-foreground;
+    }
+    html {
+        @apply font-sans;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Scroll-reveal animations (landing / public marketing pages)         */
+/* ------------------------------------------------------------------ */
+.reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition:
+        opacity 0.6s ease-out,
+        transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.reveal.is-visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* Stagger direct children of a revealed grid/list */
+.reveal.is-visible .reveal-grid > * {
+    animation: reveal-rise 0.55s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.reveal.is-visible .reveal-grid > *:nth-child(1) { animation-delay: 0.04s; }
+.reveal.is-visible .reveal-grid > *:nth-child(2) { animation-delay: 0.09s; }
+.reveal.is-visible .reveal-grid > *:nth-child(3) { animation-delay: 0.14s; }
+.reveal.is-visible .reveal-grid > *:nth-child(4) { animation-delay: 0.19s; }
+.reveal.is-visible .reveal-grid > *:nth-child(5) { animation-delay: 0.24s; }
+.reveal.is-visible .reveal-grid > *:nth-child(6) { animation-delay: 0.29s; }
+.reveal.is-visible .reveal-grid > *:nth-child(7) { animation-delay: 0.34s; }
+.reveal.is-visible .reveal-grid > *:nth-child(8) { animation-delay: 0.39s; }
+.reveal.is-visible .reveal-grid > *:nth-child(9) { animation-delay: 0.44s; }
+.reveal.is-visible .reveal-grid > *:nth-child(10) { animation-delay: 0.49s; }
+.reveal.is-visible .reveal-grid > *:nth-child(11) { animation-delay: 0.54s; }
+.reveal.is-visible .reveal-grid > *:nth-child(12) { animation-delay: 0.59s; }
+.reveal.is-visible .reveal-grid > *:nth-child(13) { animation-delay: 0.64s; }
+
+@keyframes reveal-rise {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal,
+    .reveal.is-visible {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+
+    .reveal.is-visible .reveal-grid > * {
+        animation: none;
+    }
+}
+
+/* School branding — dynamic sidebar active state */
+.sidebar-active {
+    background-color: var(--school-primary-light, oklch(0.42 0.09 152 / 10%));
+    color: var(--school-primary, oklch(0.42 0.09 152));
+}
+.dark .sidebar-active {
+    background-color: var(--school-primary-light, rgba(255, 255, 255, 0.08));
+    color: var(--school-primary, oklch(0.488 0.243 264.376));
+}

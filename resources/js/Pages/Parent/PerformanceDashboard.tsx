@@ -1,0 +1,384 @@
+import { useState } from 'react';
+import AppLayout from '@/Layouts/AppLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+    User, GraduationCap, Target, BookOpen, ClipboardCheck, HandHeart, Shield, Award,
+    AlertTriangle, TrendingUp, BarChart3, Star, CheckCircle, Trophy, Baby,
+} from 'lucide-react';
+import { usePage } from '@inertiajs/react';
+import type { PageProps } from '@/Types';
+
+interface ChildScore {
+    total_score: number;
+    classification: string;
+    academic_score: number;
+    attendance_score: number;
+    homework_score: number;
+    behavior_score: number;
+    participation_score: number;
+    class_rank: number | null;
+    school_rank: number | null;
+    subject_scores: Record<string, {
+        subject_name: string;
+        percentage: number;
+        average_obtained: number;
+        full_marks: number;
+        grade: string | null;
+    }> | null;
+    metadata: Record<string, any>;
+}
+
+interface Child {
+    student: {
+        id: number;
+        full_name: string;
+        admission_no: string;
+        class_id: number;
+        photo: string | null; photo_url: string | null;
+        schoolClass?: { name: string };
+        section?: { name: string };
+    };
+    current_score: ChildScore | null;
+    goals: any[];
+    achievements: any[];
+}
+
+interface Props {
+    linked: boolean;
+    children: Child[];
+}
+
+const classificationColors: Record<string, string> = {
+    excellent: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+    good: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+    needs_monitoring: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+    needs_support: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+    critical: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+};
+
+const classificationLabels: Record<string, string> = {
+    excellent: 'Excellent', good: 'Good', needs_monitoring: 'Needs Monitoring',
+    needs_support: 'Needs Support', critical: 'Critical',
+};
+
+const gaugeColors: Record<string, string> = {
+    excellent: 'text-green-500', good: 'text-blue-500', needs_monitoring: 'text-yellow-500',
+    needs_support: 'text-orange-500', critical: 'text-red-500',
+};
+
+function ProgressBar({ label, value, icon: Icon }: { label: string; value: number; icon: React.ElementType }) {
+    const color =
+        value >= 80 ? 'bg-green-500' :
+        value >= 60 ? 'bg-blue-500' :
+        value >= 40 ? 'bg-yellow-500' :
+        value >= 20 ? 'bg-orange-500' : 'bg-red-500';
+
+    return (
+        <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-400">
+                    <Icon className="w-3.5 h-3.5" /> {label}
+                </span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">{Number(value).toFixed(1)}%</span>
+            </div>
+            <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${Math.min(value, 100)}%` }} />
+            </div>
+        </div>
+    );
+}
+
+export default function PerformanceDashboard({ linked, children: childList }: Props) {
+    const [activeChild, setActiveChild] = useState(0);
+    const { schoolConfig } = usePage<PageProps>().props;
+    const posShow = schoolConfig?.result_show_position ?? 'none';
+
+    if (!linked) {
+        return (
+            <AppLayout title="My Children's Performance">
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                    <Baby className="w-16 h-16 text-slate-300 dark:text-slate-600 mb-4" />
+                    <h2 className="text-xl font-bold text-slate-700 dark:text-slate-300">Account Not Linked</h2>
+                    <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-md">Link your account to a school to view your children's performance.</p>
+                </div>
+            </AppLayout>
+        );
+    }
+
+    const child = childList[activeChild];
+    const score = child?.current_score;
+    const classification = score?.classification || 'needs_monitoring';
+    const totalScore = score?.total_score ?? 0;
+
+    const circumference = 2 * Math.PI * 54;
+    const strokeDashoffset = circumference - (totalScore / 100) * circumference;
+
+    const breakdownItems = score ? [
+        { label: 'Academic', value: score.academic_score, icon: BookOpen },
+        { label: 'Attendance', value: score.attendance_score, icon: CheckCircle },
+        { label: 'Homework', value: score.homework_score, icon: ClipboardCheck },
+        { label: 'Behavior', value: score.behavior_score, icon: Shield },
+        { label: 'Participation', value: score.participation_score, icon: HandHeart },
+    ] : [];
+
+    const subjectEntries = score?.subject_scores ? Object.values(score.subject_scores) : [];
+
+    return (
+        <AppLayout title="My Children's Performance">
+            <div className="space-y-6">
+                <div className="rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white flex items-center gap-5">
+                    <div className="flex items-center justify-center w-14 h-14 rounded-full bg-white/20">
+                        <Baby className="w-7 h-7" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold">My Children's Performance</h1>
+                        <p className="text-white/80 text-sm mt-1">Track your children's academic progress and achievements</p>
+                    </div>
+                </div>
+
+                {childList.length > 1 && (
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                        {childList.map((c, i) => (
+                            <button
+                                key={c.student.id}
+                                onClick={() => setActiveChild(i)}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                                    i === activeChild
+                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700'
+                                }`}
+                            >
+                                <div className="w-6 h-6 rounded-full bg-purple-200 dark:bg-purple-800 flex items-center justify-center overflow-hidden shrink-0">
+                                    {c.student.photo_url
+                                        ? <img src={c.student.photo_url} alt="" className="w-6 h-6 rounded-full object-cover" />
+                                        : <span className="text-[10px] font-bold text-purple-600">{c.student.full_name[0]}</span>
+                                    }
+                                </div>
+                                {c.student.full_name}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {child && (
+                    <>
+                        <div className="flex items-center gap-4 p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                            <div className="w-14 h-14 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center overflow-hidden shrink-0">
+                                {child.student.photo_url
+                                    ? <img src={child.student.photo_url} alt="" className="w-14 h-14 rounded-full object-cover" />
+                                    : <User className="w-7 h-7 text-purple-600 dark:text-purple-400" />
+                                }
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">{child.student.full_name}</h2>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                    {child.student.schoolClass?.name}{child.student.section?.name ? ` — ${child.student.section.name}` : ''} · Adm# {child.student.admission_no}
+                                </p>
+                            </div>
+                            {score && (
+                                <Badge className={`text-[11px] ${classificationColors[classification] || ''}`}>
+                                    {classificationLabels[classification] || classification}
+                                </Badge>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <Card className="lg:col-span-1">
+                                <CardContent className="p-6 flex flex-col items-center">
+                                    <div className="relative w-32 h-32">
+                                        <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                                            <circle cx="60" cy="60" r="54" fill="none" strokeWidth="8"
+                                                className="stroke-slate-200 dark:stroke-slate-700" />
+                                            <circle cx="60" cy="60" r="54" fill="none" strokeWidth="8"
+                                                strokeLinecap="round"
+                                                strokeDasharray={circumference}
+                                                strokeDashoffset={strokeDashoffset}
+                                                className={`${gaugeColors[classification] || 'text-purple-500'} transition-all duration-700`}
+                                                style={{ stroke: 'currentColor' }} />
+                                        </svg>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span className="text-2xl font-bold text-slate-900 dark:text-white">{Number(totalScore).toFixed(1)}</span>
+                                            <span className="text-[10px] text-slate-500 dark:text-slate-400">/ 100</span>
+                                        </div>
+                                    </div>
+                                    <Badge className={`mt-3 text-[11px] ${classificationColors[classification] || ''}`}>
+                                        {classificationLabels[classification] || classification}
+                                    </Badge>
+                                    <div className="mt-4 w-full space-y-2">
+                                        {(posShow === 'class' || posShow === 'subject') && score?.class_rank && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-slate-500 dark:text-slate-400">Class Rank</span>
+                                                <span className="font-semibold text-slate-800 dark:text-slate-200">#{score.class_rank}</span>
+                                            </div>
+                                        )}
+                                        {(posShow === 'overall' || posShow === 'subject') && score?.school_rank && (
+                                            <div className="flex items-center justify-between text-sm">
+                                                <span className="text-slate-500 dark:text-slate-400">School Rank</span>
+                                                <span className="font-semibold text-slate-800 dark:text-slate-200">#{score.school_rank}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <div className="lg:col-span-2 space-y-4">
+                                <Card>
+                                    <CardHeader className="pb-2">
+                                        <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                            <BarChart3 className="w-4 h-4 text-purple-500" /> Score Breakdown
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        {breakdownItems.map((item) => (
+                                            <ProgressBar key={item.label} label={item.label} value={item.value} icon={item.icon} />
+                                        ))}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
+
+                        {subjectEntries.length > 0 && (
+                            <Card>
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                        <BookOpen className="w-4 h-4 text-blue-500" /> Subject Performance
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="text-xs uppercase text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                                                    <th className="text-left py-2 font-medium">Subject</th>
+                                                    <th className="text-center py-2 font-medium">Obtained</th>
+                                                    <th className="text-center py-2 font-medium">Full Marks</th>
+                                                    <th className="text-center py-2 font-medium">Percentage</th>
+                                                    <th className="text-center py-2 font-medium">Grade</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {subjectEntries.map((sub, i) => (
+                                                    <tr key={i} className="border-b border-slate-50 dark:border-slate-800/50">
+                                                        <td className="py-2 text-slate-700 dark:text-slate-300 font-medium">{sub.subject_name}</td>
+                                                        <td className="py-2 text-center text-slate-600 dark:text-slate-400">{Number(sub.average_obtained).toFixed(1)}</td>
+                                                        <td className="py-2 text-center text-slate-500">{sub.full_marks}</td>
+                                                        <td className="py-2 text-center">
+                                                            <span className="font-semibold text-purple-600 dark:text-purple-400">{Number(sub.percentage).toFixed(1)}%</span>
+                                                        </td>
+                                                        <td className="py-2 text-center">
+                                                            {sub.grade
+                                                                ? <Badge className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">{sub.grade}</Badge>
+                                                                : <span className="text-slate-400">—</span>}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {child.goals.length > 0 && (
+                            <Card>
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                        <Target className="w-4 h-4 text-violet-500" /> Goals
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-2">
+                                        {child.goals.map((goal: any, i: number) => (
+                                            <div key={i} className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                                <div>
+                                                    <p className="text-sm font-medium text-slate-900 dark:text-white">{goal.title || goal.description || `Goal #${i + 1}`}</p>
+                                                    {goal.due_date && <p className="text-xs text-slate-500 dark:text-slate-400">Due: {goal.due_date}</p>}
+                                                </div>
+                                                <Badge className={`text-[10px] ${
+                                                    goal.status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                                    : goal.status === 'in_progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                                                    : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                                                }`}>
+                                                    {goal.status || 'pending'}
+                                                </Badge>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {child.achievements.length > 0 && (
+                            <Card>
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                        <Award className="w-4 h-4 text-yellow-500" /> Achievements
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="flex flex-wrap gap-2">
+                                        {child.achievements.map((ach: any, i: number) => (
+                                            <Badge key={i} variant="secondary" className="flex items-center gap-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                                <Star className="w-3 h-3" /> {ach.title || ach.name || `Achievement #${i + 1}`}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                            {(posShow === 'class' || posShow === 'subject') && (
+                            <Card>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30">
+                                        <TrendingUp className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-slate-900 dark:text-white">{score?.class_rank ? `#${score.class_rank}` : '—'}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Class Rank</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            )}
+                            {(posShow === 'overall' || posShow === 'subject') && (
+                            <Card>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30">
+                                        <Trophy className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-slate-900 dark:text-white">{score?.school_rank ? `#${score.school_rank}` : '—'}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">School Rank</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            )}
+                            <Card>
+                                <CardContent className="p-4 flex items-center gap-3">
+                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30">
+                                        <Award className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-slate-900 dark:text-white">{child.achievements.length}</p>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">Achievements Earned</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </>
+                )}
+
+                {childList.length === 0 && (
+                    <Card>
+                        <CardContent className="py-16 text-center">
+                            <Baby className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                            <p className="text-sm text-slate-400">No children linked to your account yet.</p>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
+        </AppLayout>
+    );
+}

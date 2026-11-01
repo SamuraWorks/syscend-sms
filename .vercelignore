@@ -1,0 +1,24 @@
+# Uploaded to Vercel, but not needed inside the deployment.
+# Everything in here is (re)installed by vercel.json / the vercel-php runtime
+# or simply has no place on the serverless filesystem.
+
+.git
+.github
+.idea
+.vscode
+node_modules
+vendor
+tests
+syscend-web
+infra
+docs
+.env
+.env.*
+!.env.example
+storage/app
+storage/framework/views
+storage/logs
+storage/pail
+*.log
+*.tmp
+cookies*.txt

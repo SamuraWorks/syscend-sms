@@ -1,0 +1,177 @@
+import AppLayout from '@/Layouts/AppLayout';
+import { cn } from '@/lib/utils';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+    Package, AlertTriangle, ShoppingCart, Box, TrendingDown, Warehouse,
+} from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import ProfileAvatar from '@/components/ProfileAvatar';
+
+interface Staff {
+    id: number; full_name: string; emp_id: string; photo_url: string | null;
+}
+interface Stats {
+    total_items: number; low_stock_items: number; total_stock_value: number;
+}
+interface Purchase {
+    id: number; item_name: string; vendor: string; quantity: number;
+    total_price: number; purchase_date: string | null;
+}
+interface LowStockItem {
+    id: number; name: string; category: string;
+    current_stock: number; minimum_stock: number; unit: string;
+}
+interface Props {
+    linked: boolean; staff: Staff | null;
+    stats: Stats; recentPurchases: Purchase[]; lowStockList: LowStockItem[];
+}
+
+const QUICK_ACTIONS = [
+    { label: 'Items', href: '/school/store-manager/items', icon: Package, color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
+    { label: 'Purchases', href: '/school/store-manager/purchases', icon: ShoppingCart, color: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
+    { label: 'Issues', href: '/school/store-manager/issues', icon: Box, color: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' },
+    { label: 'Announcements', href: '/school/store-manager/announcements', icon: Warehouse, color: 'bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400' },
+];
+
+export default function StoreManagerDashboard({
+    linked, staff, stats, recentPurchases, lowStockList,
+}: Props) {
+    if (!linked || !staff) {
+        return (
+            <AppLayout title="Store Manager Dashboard">
+                <div className="flex flex-col items-center justify-center py-24 text-center">
+                    <Package className="w-16 h-16 text-slate-300 mb-4" />
+                    <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-300">Account not linked</h2>
+                    <p className="text-slate-500 mt-2 max-w-sm">Your user account hasn&apos;t been linked to a staff record yet. Please contact your school administrator.</p>
+                </div>
+            </AppLayout>
+        );
+    }
+
+    const statCards = [
+        { label: 'Total Items', value: stats.total_items, icon: Package, color: 'bg-blue-100 dark:bg-blue-900/30', iconColor: 'text-blue-600' },
+        { label: 'Low Stock Alerts', value: stats.low_stock_items, icon: AlertTriangle, color: 'bg-red-100 dark:bg-red-900/30', iconColor: 'text-red-600' },
+        { label: 'Stock Value', value: `Le ${stats.total_stock_value.toLocaleString()}`, icon: TrendingDown, color: 'bg-emerald-100 dark:bg-emerald-900/30', iconColor: 'text-emerald-600' },
+        { label: 'Recent Purchases', value: recentPurchases.length, icon: ShoppingCart, color: 'bg-amber-100 dark:bg-amber-900/30', iconColor: 'text-amber-600' },
+    ];
+
+    return (
+        <AppLayout title="Store Manager Dashboard">
+            <div className="space-y-6">
+
+                <div className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white flex items-center gap-5">
+                    <ProfileAvatar
+                        src={staff.photo_url}
+                        name={staff.full_name}
+                        size="xl"
+                        showRing
+                    />
+                    <div className="flex-1 min-w-0">
+                        <h1 className="text-xl font-bold">{staff.full_name}</h1>
+                        <p className="text-white/80 text-sm">{staff.emp_id}</p>
+                        <Badge className="mt-1 text-[10px] border-0 bg-white/20 text-white">Store Manager</Badge>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {statCards.map(s => (
+                        <Card key={s.label}>
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center', s.color)}>
+                                        <s.icon className={cn('w-4 h-4', s.iconColor)} />
+                                    </div>
+                                </div>
+                                <p className="text-2xl font-bold text-slate-900 dark:text-white">{s.value}</p>
+                                <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {QUICK_ACTIONS.map(a => (
+                        <Link key={a.label} href={a.href} className="block">
+                            <div className="flex flex-col items-center gap-2 p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:shadow-md transition-shadow text-center">
+                                <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center', a.color)}>
+                                    <a.icon className="w-5 h-5" />
+                                </div>
+                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{a.label}</span>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+                    <div className="lg:col-span-3">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                    <ShoppingCart className="w-4 h-4 text-emerald-500" /> Recent Purchases
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {recentPurchases.length === 0 ? (
+                                    <p className="text-sm text-slate-400 text-center py-4">No recent purchases.</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {recentPurchases.map((p) => (
+                                            <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/50">
+                                                <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                                                    <ShoppingCart className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{p.item_name}</p>
+                                                    <p className="text-xs text-slate-400">{p.vendor} · Qty: {p.quantity}</p>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">Le {p.total_price.toLocaleString()}</p>
+                                                    <p className="text-[11px] text-slate-400">{p.purchase_date}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    <div className="lg:col-span-2">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+                                    <AlertTriangle className="w-4 h-4 text-red-500" /> Low Stock Alerts
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                {lowStockList.length === 0 ? (
+                                    <p className="text-sm text-slate-400 text-center py-4">No low stock items.</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {lowStockList.map((item) => (
+                                            <div key={item.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/30">
+                                                <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{item.name}</p>
+                                                    <p className="text-xs text-slate-400">{item.category} · {item.unit}</p>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <p className="text-sm font-semibold text-red-600">{item.current_stock}</p>
+                                                    <p className="text-[11px] text-slate-400">Min: {item.minimum_stock}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                </div>
+
+            </div>
+        </AppLayout>
+    );
+}

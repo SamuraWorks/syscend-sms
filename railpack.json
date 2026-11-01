@@ -1,0 +1,9 @@
+{
+    "provider": "php",
+    "phases": {
+        "setup": {
+            "aptPackages": ["libpng-dev", "libjpeg-dev", "libfreetype6-dev", "libgd-dev", "libpq-dev", "unzip", "zip", "git"],
+            "phpExtensions": ["gd", "pdo_pgsql", "mbstring", "bcmath", "exif", "pcntl", "redis", "opcache", "ctype", "curl", "dom", "fileinfo", "filter", "hash", "openssl", "pcre", "pdo", "session", "tokenizer", "xml"]
+        }
+    }
+}

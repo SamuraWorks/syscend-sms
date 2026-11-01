@@ -1,0 +1,24 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+
+class DatabaseSeeder extends Seeder
+{
+    use \Illuminate\Database\Console\Seeds\WithoutModelEvents;
+
+    public function run(): void
+    {
+        $this->call([
+            PermissionSeeder::class,       // roles + permissions (basic)
+            RolePermissionSeeder::class,   // granular permissions + ministry/district roles
+            PackageSeeder::class,          // packages + module grants (must exist before any school trial)
+            AdminSeeder::class,            // Super Admin + Ministry Admin + District Officer
+            MinistrySeeder::class,         // 15 districts of Sierra Leone
+            SierraLeoneSetupSeeder::class, // grade scales, assessment types, academic terms
+            CurriculumSeeder::class,       // national subject catalogue for the onboarding wizard
+            AcademicCalendarTemplateSeeder::class, // national 3-term academic calendar template
+        ]);
+    }
+}
