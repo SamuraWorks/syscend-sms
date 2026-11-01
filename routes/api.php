@@ -40,7 +40,6 @@ Route::prefix('v1')->group(function () {
 
     Route::post('/webhooks/orange-money-subscription', function (Request $request) {
         Log::info('Orange Money subscription webhook received', [
-            'payload' => $request->all(),
             'timestamp' => now()->toIso8601String(),
         ]);
 
